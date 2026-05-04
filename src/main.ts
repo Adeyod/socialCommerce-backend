@@ -67,7 +67,7 @@ async function bootstrap() {
 
   const serverUrl =
     process.env.NODE_ENV === 'production'
-      ? 'https://socialcommerce-backend.onrender.com'
+      ? 'https://qanda-backend-1bj1.onrender.com'
       : `http://localhost:${port}`;
 
   // Enable Swagger Docs
