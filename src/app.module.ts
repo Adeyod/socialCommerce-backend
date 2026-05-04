@@ -59,8 +59,6 @@ import { VendorsModule } from './modules/vendors/vendors.module';
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        console.log('🚀 Initializing Bull (Redis)...');
-
         const redisUrl = configService.get<string>('REDIS_URL');
 
         if (redisUrl) {
@@ -68,7 +66,6 @@ import { VendorsModule } from './modules/vendors/vendors.module';
 
           const url = new URL(redisUrl);
 
-          console.log('🔌 Connecting to Redis:', url.hostname, url.port);
           return {
             redis: {
               host: url.hostname,
