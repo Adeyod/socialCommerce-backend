@@ -1,0 +1,104 @@
+import { BullModule } from '@nestjs/bull';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import Joi from 'joi';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { CloudinaryModule } from './common/infrastructure/cloudinary/cloudinary.module';
+import configuration from './config/configuration';
+import { MailModule } from './mail/mail.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { ProductsModule } from './modules/products/products.module';
+import { RefreshTokensModule } from './modules/refresh-tokens/refresh-tokens.module';
+import { TokensModule } from './modules/tokens/tokens.module';
+import { UsersModule } from './modules/users/users.module';
+import { VendorsModule } from './modules/vendors/vendors.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+      validationSchema: Joi.object({
+        JWT_SECRET: Joi.string().required(),
+        JWT_REFRESH_SECRET: Joi.string().required(),
+        JWT_EXPIRES_IN: Joi.string().required(),
+        MONGO_URI: Joi.string().required(),
+      }),
+      envFilePath: '.env',
+    }),
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.getOrThrow<string>('MONGO_URI'),
+
+        connectionFactory: (connection) => {
+          if (connection.readyState === 1) {
+            console.log(`MongoDB connected to database: ${connection.name}`);
+          }
+
+          connection.on('reconnected', () => {
+            console.log('🔄 MongoDB reconnected...');
+          });
+
+          connection.on('error', (error) => {
+            console.error('MongoDB connection error:', error);
+          });
+
+          connection.on('disconnected', () => {
+            console.warn('MongoDB disconnected');
+          });
+
+          return connection;
+        },
+      }),
+    }),
+
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        console.log('🚀 Initializing Bull (Redis)...');
+
+        const redisUrl = configService.get<string>('REDIS_URL');
+
+        if (redisUrl) {
+          const redisArray = redisUrl.split(':');
+
+          const url = new URL(redisUrl);
+
+          console.log('🔌 Connecting to Redis:', url.hostname, url.port);
+          return {
+            redis: {
+              host: url.hostname,
+              port: Number(url.port),
+              maxRetriesPerRequest: null,
+            },
+          };
+        }
+
+        console.log('⚠️ Using default Redis localhost:6379');
+        return {
+          redis: {
+            host: '127.0.0.1',
+            port: 6379,
+          },
+        };
+      },
+    }),
+
+    MailModule,
+    AuthModule,
+    TokensModule,
+    UsersModule,
+    RefreshTokensModule,
+    CloudinaryModule,
+    ProductsModule,
+    VendorsModule,
+    PaymentsModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
