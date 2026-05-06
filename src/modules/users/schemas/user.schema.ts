@@ -51,6 +51,9 @@ export class User {
 
   @Prop({ default: false })
   isVerified!: boolean;
+
+  @Prop({ default: false })
+  isBusinessPartner!: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

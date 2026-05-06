@@ -9,12 +9,14 @@ import { CloudinaryModule } from './common/infrastructure/cloudinary/cloudinary.
 import configuration from './config/configuration';
 import { MailModule } from './mail/mail.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BusinessesModule } from './modules/businesses/businesses.module';
+import { PartnersModule } from './modules/partners/partners.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductsModule } from './modules/products/products.module';
 import { RefreshTokensModule } from './modules/refresh-tokens/refresh-tokens.module';
+import { StaffAccessControlModule } from './modules/staff-access-control/staff-access-control.module';
 import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
-import { VendorsModule } from './modules/vendors/vendors.module';
 
 @Module({
   imports: [
@@ -92,8 +94,10 @@ import { VendorsModule } from './modules/vendors/vendors.module';
     RefreshTokensModule,
     CloudinaryModule,
     ProductsModule,
-    VendorsModule,
     PaymentsModule,
+    BusinessesModule,
+    PartnersModule,
+    StaffAccessControlModule,
   ],
   controllers: [AppController],
   providers: [AppService],
