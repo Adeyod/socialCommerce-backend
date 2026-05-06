@@ -62,6 +62,8 @@ export class PartnersService {
       user.sub,
     );
 
+    console.log('findBusiness:', findBusiness);
+
     let businessId: Types.ObjectId;
 
     if (!findBusiness) {
@@ -81,6 +83,8 @@ export class PartnersService {
         createBusinessDto,
       );
 
+      console.log('createBiz:', createBiz);
+
       if (!createBiz) {
         throw new BadRequestException({
           message: 'Unable to create business.',
@@ -89,14 +93,20 @@ export class PartnersService {
         });
       }
 
+      const userDoc = await this.usersRepository.update(user.sub, {
+        isBusinessPartner: true,
+      });
+
       businessId = createBiz._id;
+      console.log('createBiz businessId:', businessId);
     } else {
       businessId = findBusiness._id;
+      console.log('findBusiness businessId:', businessId);
     }
 
     // business is found here
 
-    if (becomePartnerDto.business) {
+    if (findBusiness && becomePartnerDto.business) {
       throw new BadRequestException({
         message: 'Business already exist.',
         success: false,
@@ -106,41 +116,51 @@ export class PartnersService {
 
     const referralCode = '';
     const userId = user.sub;
+    let partnerProfile: object;
 
     switch (becomePartnerDto.role) {
       case PartnerRole.promoter: {
         const data = becomePartnerDto.data as PromoterDataDto;
 
-        await this.partnersRepository.createPromoterProfile(
+        const promoterAcc = await this.partnersRepository.createPromoterProfile(
           userId,
           referralCode,
           businessId,
         );
+        partnerProfile = promoterAcc;
         break;
       }
 
       case PartnerRole.rider: {
         const data = becomePartnerDto.data as RiderDataDto;
 
-        await this.partnersRepository.createRiderProfile(
+        const riderAcc = await this.partnersRepository.createRiderProfile(
           userId,
           data,
           businessId,
         );
+        partnerProfile = riderAcc;
         break;
       }
 
       case PartnerRole.vendor: {
         const data = becomePartnerDto.data as VendorDataDto;
 
-        await this.partnersRepository.createVendorProfile(
+        const vendorAcc = await this.partnersRepository.createVendorProfile(
           userId,
           data,
           businessId,
         );
+
+        partnerProfile = vendorAcc;
         break;
       }
     }
+
+    return {
+      message: 'Partnership processed successfully.',
+      partnerProfile,
+    };
 
     // if business is found, then create the profile for the role using the businessId
     // if no business, create one for the user and create the profile for the requested role
