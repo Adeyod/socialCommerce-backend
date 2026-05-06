@@ -62,11 +62,10 @@ export class PartnersController {
       user,
     );
 
-    console.log('response:', response);
     return response;
   }
 
-  @Get('init')
+  @Get('status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.user)
   @ApiBearerAuth('JWT-auth')
@@ -91,7 +90,6 @@ export class PartnersController {
   })
   async checkIfPartnerHasBusiness(@GetCurrentUser() user: JwtUser) {
     const res = await this.partnersService.checkIfPartnerHasBusiness(user);
-    console.log('res:', res);
     return res;
   }
 }

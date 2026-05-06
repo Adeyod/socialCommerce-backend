@@ -29,12 +29,11 @@ export class BusinessesRepository {
     return business;
   }
 
-  async createBusiness(
-    userId: Types.ObjectId,
-    createBusinessDto: CreateBusinessDto,
-  ) {
+  async createBusiness(userId: string, createBusinessDto: CreateBusinessDto) {
+    const id = new Types.ObjectId(userId);
+
     const newBusiness = await new this.businessModel({
-      ownerId: userId,
+      ownerId: id,
       businessName: createBusinessDto.businessName,
       businessRoles: createBusinessDto.businessRoles,
     }).save();

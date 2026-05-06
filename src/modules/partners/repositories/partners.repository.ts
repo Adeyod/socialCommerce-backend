@@ -28,13 +28,15 @@ export class PartnersRepository {
   ) {}
 
   async createRiderProfile(
-    userId: Types.ObjectId,
+    userId: string,
     riderDataDto: RiderDataDto,
     businessId: Types.ObjectId,
   ) {
+    const id = new Types.ObjectId(userId);
+
     const details = await new this.riderModel({
       businessId,
-      userId,
+      userId: id,
       vehicleType: riderDataDto.vehicleType,
       licenseNumber: riderDataDto.licenseNumber,
     }).save();
@@ -42,13 +44,14 @@ export class PartnersRepository {
     return details;
   }
   async createVendorProfile(
-    userId: Types.ObjectId,
+    userId: string,
     vendorDataDto: VendorDataDto,
     businessId: Types.ObjectId,
   ) {
+    const id = new Types.ObjectId(userId);
     const details = await new this.vendorModel({
       businessId,
-      userId,
+      userId: id,
       storeName: vendorDataDto.storeName,
       description: vendorDataDto.description,
     }).save();
@@ -56,17 +59,47 @@ export class PartnersRepository {
     return details;
   }
   async createPromoterProfile(
-    userId: Types.ObjectId,
+    userId: string,
     referralCode: string,
     businessId: Types.ObjectId,
   ) {
+    const id = new Types.ObjectId(userId);
     // Generate referral code for promoter here before creating the promoter.
     const details = await new this.promoterModel({
       businessId,
-      userId,
+      userId: id,
       referralCode,
     }).save();
 
     return details;
+  }
+
+  async getPromoterProfileByUserId(
+    userId: string,
+  ): Promise<PromoterProfileDocument | null> {
+    const id = new Types.ObjectId(userId);
+    const promoter = await this.promoterModel.findOne({
+      userId: id,
+    });
+    return promoter;
+  }
+  async getVendorProfileByUserId(
+    userId: string,
+  ): Promise<VendorProfileDocument | null> {
+    const id = new Types.ObjectId(userId);
+    const vendor = await this.vendorModel.findOne({
+      userId: id,
+    });
+    return vendor;
+  }
+  async getRiderProfileByUserId(
+    userId: string,
+  ): Promise<RiderProfileDocument | null> {
+    const id = new Types.ObjectId(userId);
+    const rider = await this.riderModel.findOne({
+      userId: id,
+    });
+
+    return rider;
   }
 }

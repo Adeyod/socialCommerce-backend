@@ -35,6 +35,11 @@ export class PartnersService {
     const businessExist =
       await this.businessesRepository.findBusinessWithUserId(userExist._id);
 
+    console.log('userExist.isBusinessPartner:', userExist.isBusinessPartner);
+    console.log('businessExist:', businessExist);
+    console.log('!!businessExist:', !!businessExist);
+    console.log('!businessExist:', !businessExist);
+
     return {
       isBusinessPartner: userExist.isBusinessPartner,
       hasBusiness: !!businessExist,
@@ -62,6 +67,42 @@ export class PartnersService {
       user.sub,
     );
 
+    let userPartnerRole: object | null = null;
+
+    switch (becomePartnerDto.role) {
+      case PartnerRole.promoter: {
+        userPartnerRole =
+          await this.partnersRepository.getPromoterProfileByUserId(
+            user.sub.toString(),
+          );
+        break;
+      }
+
+      case PartnerRole.rider: {
+        userPartnerRole = await this.partnersRepository.getRiderProfileByUserId(
+          user.sub.toString(),
+        );
+
+        break;
+      }
+
+      case PartnerRole.vendor: {
+        userPartnerRole =
+          await this.partnersRepository.getVendorProfileByUserId(
+            user.sub.toString(),
+          );
+        break;
+      }
+    }
+
+    if (userPartnerRole) {
+      throw new BadRequestException({
+        message: `You already have a ${becomePartnerDto.role} partner account.`,
+        success: false,
+        status: 400,
+      });
+    }
+
     let businessId: Types.ObjectId;
 
     if (!findBusiness) {
@@ -76,8 +117,20 @@ export class PartnersService {
       const userId = user.sub;
       const createBusinessDto = becomePartnerDto.business;
 
+      if (
+        becomePartnerDto.role.toLowerCase().trim() !==
+        becomePartnerDto.business.businessRoles[0].toLowerCase().trim()
+      ) {
+        throw new BadRequestException({
+          message:
+            'Selected role and the first role inside business roles must be the same.',
+          success: false,
+          status: 400,
+        });
+      }
+
       const createBiz = await this.businessesRepository.createBusiness(
-        userId,
+        userId.toString(),
         createBusinessDto,
       );
 
@@ -109,7 +162,7 @@ export class PartnersService {
     }
 
     const referralCode = '';
-    const userId = user.sub;
+    const userId = user.sub.toString();
     let partnerProfile: object;
 
     switch (becomePartnerDto.role) {
