@@ -62,8 +62,6 @@ export class PartnersService {
       user.sub,
     );
 
-    console.log('findBusiness:', findBusiness);
-
     let businessId: Types.ObjectId;
 
     if (!findBusiness) {
@@ -83,8 +81,6 @@ export class PartnersService {
         createBusinessDto,
       );
 
-      console.log('createBiz:', createBiz);
-
       if (!createBiz) {
         throw new BadRequestException({
           message: 'Unable to create business.',
@@ -98,10 +94,8 @@ export class PartnersService {
       });
 
       businessId = createBiz._id;
-      console.log('createBiz businessId:', businessId);
     } else {
       businessId = findBusiness._id;
-      console.log('findBusiness businessId:', businessId);
     }
 
     // business is found here
