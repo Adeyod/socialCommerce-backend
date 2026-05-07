@@ -1,23 +1,55 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { BusinessRole } from '../../businesses/schemas/business.schema';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { CreateBusinessDto } from '../../businesses/dtos/create-business.dto';
+import { PartnerRole } from '../enums/partner-role.enum';
 
 export class PromoterDataDto {
-  @ApiProperty({
-    description: 'Name of the business the promoter is associated with.',
-    example: 'Klassic Marketing Agency',
+  @ApiPropertyOptional({
+    description:
+      'Business creation data. Required only if the user does not already have a business.',
+    type: CreateBusinessDto,
   })
-  @IsString()
-  @IsNotEmpty()
-  businessName!: string;
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateBusinessDto)
+  business?: CreateBusinessDto;
 
   @ApiProperty({
-    description: 'Roles assigned to the promoter within the business.',
-    enum: BusinessRole,
-    isArray: true,
-    example: [BusinessRole.promoter],
+    description: 'The partner role the user wants to become.',
+    example: 'promoter',
   })
-  @IsArray()
-  @IsEnum(BusinessRole, { each: true })
-  businessRoles!: BusinessRole[];
+  @IsEnum(PartnerRole)
+  role!: PartnerRole;
+
+  @ApiProperty({
+    description:
+      'The account number that the promoter will be using to receive payment.',
+    example: '1029382938',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Please provide account number' })
+  accountNumber!: string;
+
+  @ApiProperty({
+    description: 'This is the name on the account.',
+    example: 'John Doe',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Please provide account name' })
+  accountName!: string;
+
+  @ApiProperty({
+    description: 'Name of the bank that the account was opened.',
+    example: 'Access Bank',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Please provide bank name' })
+  bankName!: string;
 }

@@ -1,10 +1,5 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiExtraModels,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { GetCurrentUser } from '../../common/decorators/get-current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SuccessMessage } from '../../common/decorators/success-message.decorator';
@@ -12,9 +7,7 @@ import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtUser } from '../../common/types/jwt-user.type';
-import { CreateBusinessDto } from '../businesses/dtos/create-business.dto';
 import { Role } from '../users/schemas/user.schema';
-import { BecomePartnerDto } from './dtos/become-partner.dto';
 import { PromoterDataDto } from './dtos/promoter-data.dto';
 import { RiderDataDto } from './dtos/rider-data.dto';
 import { VendorDataDto } from './dtos/vendor-data.dto';
@@ -24,20 +17,14 @@ import { PartnersService } from './partners.service';
 export class PartnersController {
   constructor(private readonly partnersService: PartnersService) {}
 
-  @Post('become')
+  @Post('become-rider')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.user)
   @ApiBearerAuth('JWT-auth')
   @SuccessMessage('Business partnership submitted successfully.')
-  @ApiExtraModels(
-    VendorDataDto,
-    RiderDataDto,
-    PromoterDataDto,
-    CreateBusinessDto,
-  )
   @ApiOperation({
-    summary: 'Endpoint to become a partner',
-    description: 'This is the endpoint that user will use to become a parnter.',
+    summary: 'Endpoint to become a rider',
+    description: 'This is the endpoint that user will use to become a rider.',
   })
   @ApiResponse({
     status: 200,
@@ -53,12 +40,82 @@ export class PartnersController {
     status: 500,
     description: 'Internal server error',
   })
-  async becomePartner(
-    @Body() becomePartnerDto: BecomePartnerDto,
+  async becomeRider(
+    @Body() riderDataDto: RiderDataDto,
     @GetCurrentUser() user: JwtUser,
   ) {
-    const response = await this.partnersService.becomePartner(
-      becomePartnerDto,
+    console.log('riderDataDto:', riderDataDto);
+    const response = await this.partnersService.becomeRider(riderDataDto, user);
+
+    return response;
+  }
+
+  @Post('become-vendor')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.user)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Business partnership submitted successfully.')
+  @ApiOperation({
+    summary: 'Endpoint to become a vendor',
+    description: 'This is the endpoint that user will use to become a vendor.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Business partnership submitted successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad request. Unable to process business partnership for this user.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async becomeVendor(
+    @Body() vendorDataDto: VendorDataDto,
+    @GetCurrentUser() user: JwtUser,
+  ) {
+    console.log('vendorDataDto:', vendorDataDto);
+    const response = await this.partnersService.becomeVendor(
+      vendorDataDto,
+      user,
+    );
+
+    return response;
+  }
+  @Post('become-promoter')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.user)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Business partnership submitted successfully.')
+  @ApiOperation({
+    summary: 'Endpoint to become a promoter',
+    description:
+      'This is the endpoint that user will use to become a promoter.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Business partnership submitted successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad request. Unable to process business partnership for this user.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async becomePromoter(
+    @Body() promoterDataDto: PromoterDataDto,
+    @GetCurrentUser() user: JwtUser,
+  ) {
+    console.log('promoterDataDto:', promoterDataDto);
+    const response = await this.partnersService.becomePromoter(
+      promoterDataDto,
       user,
     );
 

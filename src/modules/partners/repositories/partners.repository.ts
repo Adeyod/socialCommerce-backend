@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { PromoterDataDto } from '../dtos/promoter-data.dto';
 import { RiderDataDto } from '../dtos/rider-data.dto';
 import { VendorDataDto } from '../dtos/vendor-data.dto';
 import {
@@ -61,6 +62,7 @@ export class PartnersRepository {
   async createPromoterProfile(
     userId: string,
     referralCode: string,
+    promoterDataDto: PromoterDataDto,
     businessId: Types.ObjectId,
   ) {
     const id = new Types.ObjectId(userId);
@@ -68,6 +70,9 @@ export class PartnersRepository {
     const details = await new this.promoterModel({
       businessId,
       userId: id,
+      bankName: promoterDataDto.bankName,
+      accountName: promoterDataDto.accountName,
+      accountNumber: promoterDataDto.accountNumber,
       referralCode,
     }).save();
 
@@ -102,4 +107,15 @@ export class PartnersRepository {
 
     return rider;
   }
+
+  // async updateVendorDetailsByVendorId(vendorId: string, data: UpdateVendorDetailsDto) {
+  //   const id = new Types.ObjectId(vendorId)
+
+  //   const update = await this.vendorModel.findByIdAndUpdate(
+  //     id,
+  //     {
+
+  //     }
+  //   )
+  // }
 }

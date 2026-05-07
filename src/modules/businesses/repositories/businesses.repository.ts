@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { PartnerRole } from '../../partners/enums/partner-role.enum';
 import { CreateBusinessDto } from '../dtos/create-business.dto';
 import { Business, BusinessDocument } from '../schemas/business.schema';
 
@@ -12,10 +13,11 @@ export class BusinessesRepository {
   ) {}
 
   async findBusinessWithUserId(
-    userId: Types.ObjectId,
+    userId: string,
   ): Promise<BusinessDocument | null> {
+    const id = new Types.ObjectId(userId);
     const business = await this.businessModel.findOne({
-      ownerId: userId,
+      ownerId: id,
     });
 
     return business;
@@ -39,5 +41,18 @@ export class BusinessesRepository {
     }).save();
 
     return newBusiness;
+  }
+
+  async addPartnerRole(businessId: string, partnerRole: PartnerRole) {
+    const id = new Types.ObjectId(businessId);
+    const update = await this.businessModel.findByIdAndUpdate(
+      id,
+      {
+        $addToSet: { businessRoles: partnerRole },
+      },
+      { returnDocument: 'after' },
+    );
+
+    return update;
   }
 }

@@ -6,15 +6,10 @@ import {
 import { Type } from 'class-transformer';
 import { IsEnum, IsObject, IsOptional, ValidateNested } from 'class-validator';
 import { CreateBusinessDto } from '../../businesses/dtos/create-business.dto';
+import { PartnerRole } from '../enums/partner-role.enum';
 import { PromoterDataDto } from './promoter-data.dto';
 import { RiderDataDto } from './rider-data.dto';
 import { VendorDataDto } from './vendor-data.dto';
-
-export enum PartnerRole {
-  vendor = 'vendor',
-  rider = 'rider',
-  promoter = 'promoter',
-}
 
 export class BecomePartnerDto {
   @ApiProperty({
@@ -35,6 +30,7 @@ export class BecomePartnerDto {
   @Type(() => CreateBusinessDto)
   business?: CreateBusinessDto;
 
+  // Try to solve the issue here
   @ApiProperty({
     description: 'Role-specific data. Structure depends on the selected role.',
     discriminator: {
@@ -48,5 +44,16 @@ export class BecomePartnerDto {
   })
   @IsObject()
   @ValidateNested()
+  @Type(() => Object, {
+    discriminator: {
+      property: 'role',
+      subTypes: [
+        { value: VendorDataDto, name: PartnerRole.vendor },
+        { value: RiderDataDto, name: PartnerRole.rider },
+        { value: PromoterDataDto, name: PartnerRole.promoter },
+      ],
+    },
+    keepDiscriminatorProperty: true,
+  })
   data!: VendorDataDto | RiderDataDto | PromoterDataDto;
 }

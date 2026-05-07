@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { BusinessRole } from '../schemas/business.schema';
+import { PartnerRole } from '../../partners/enums/partner-role.enum';
 
 export class CreateBusinessDto {
   @ApiProperty({
@@ -13,11 +13,11 @@ export class CreateBusinessDto {
 
   @ApiProperty({
     description: 'Roles assigned to the business.',
-    enum: BusinessRole,
+    enum: PartnerRole,
     isArray: true,
-    example: [BusinessRole.vendor],
+    example: [PartnerRole.vendor],
   })
   @IsArray()
-  @IsEnum(BusinessRole, { each: true })
-  businessRoles!: BusinessRole[];
+  @IsEnum(PartnerRole, { each: true })
+  businessRoles!: PartnerRole[];
 }

@@ -1,11 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { PartnerRole } from '../../partners/enums/partner-role.enum';
 
-export enum BusinessRole {
-  vendor = 'vendor',
-  rider = 'rider',
-  promoter = 'promoter',
-}
 export type BusinessDocument = HydratedDocument<Business>;
 
 @Schema({ timestamps: true })
@@ -21,10 +17,10 @@ export class Business {
 
   @Prop({
     type: [String],
-    enum: BusinessRole,
+    enum: PartnerRole,
     isArray: true,
   })
-  businessRoles!: BusinessRole[];
+  businessRoles!: PartnerRole[];
 }
 
 export const BusinessSchema = SchemaFactory.createForClass(Business);

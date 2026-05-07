@@ -13,6 +13,15 @@ export class PromoterProfile {
 
   @Prop({ required: true, unique: true })
   referralCode!: string;
+
+  @Prop({ required: true })
+  bankName!: string;
+
+  @Prop({ required: true })
+  accountNumber!: string;
+
+  @Prop({ required: true })
+  accountName!: string;
 }
 
 export const PromoterProfileSchema =

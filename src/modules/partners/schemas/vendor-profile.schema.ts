@@ -16,6 +16,36 @@ export class VendorProfile {
 
   @Prop()
   description!: string;
+
+  // STORE ENHANCEMENT FIELDS
+  @Prop()
+  logo?: string;
+
+  @Prop()
+  banner?: string;
+
+  @Prop()
+  phoneNumber?: string;
+
+  @Prop({ default: false })
+  isOpen!: boolean;
+
+  @Prop({ default: false })
+  isVerified!: boolean;
+
+  @Prop({ default: false })
+  isActive?: boolean;
+
+  @Prop({
+    type: {
+      open: String,
+      close: String,
+    },
+  })
+  businessHours?: {
+    open: string;
+    close: string;
+  };
 }
 
 export const VendorProfileSchema = SchemaFactory.createForClass(VendorProfile);
