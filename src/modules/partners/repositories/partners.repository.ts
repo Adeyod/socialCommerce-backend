@@ -108,6 +108,22 @@ export class PartnersRepository {
     return rider;
   }
 
+  async getAllProfilesByUserId(userId: string) {
+    const id = new Types.ObjectId(userId);
+
+    const [vendor, rider, promoter] = await Promise.all([
+      this.vendorModel.findOne({ userId: id }),
+      this.riderModel.findOne({ userId: id }),
+      this.promoterModel.findOne({ userId: id }),
+    ]);
+
+    return {
+      vendor,
+      rider,
+      promoter,
+    };
+  }
+
   // async updateVendorDetailsByVendorId(vendorId: string, data: UpdateVendorDetailsDto) {
   //   const id = new Types.ObjectId(vendorId)
 

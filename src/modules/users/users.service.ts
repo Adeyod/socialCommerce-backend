@@ -5,12 +5,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
+import { PartnersRepository } from '../partners/repositories/partners.repository';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UsersRepository } from './repositories/users.repository';
 
 @Injectable()
 export class UsersService {
-  constructor(private usersRepository: UsersRepository) {}
+  constructor(
+    private usersRepository: UsersRepository,
+    private partnersRepository: PartnersRepository,
+  ) {}
   async findUserById(id: Types.ObjectId): Promise<UserResponseDto> {
     const user = await this.usersRepository.findById(id);
 
@@ -26,6 +30,32 @@ export class UsersService {
     const { password, ...others } = userObj;
 
     return others;
+  }
+
+  async findMeById(id: Types.ObjectId) {
+    const user = await this.usersRepository.findById(id);
+
+    if (!user) {
+      throw new NotFoundException({
+        message: 'User not found',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const roles = await this.partnersRepository.getAllProfilesByUserId(
+      user._id.toString(),
+    );
+
+    const userObj = user.toObject();
+    const { password, ...others } = userObj;
+
+    const userDetails = {
+      others,
+      roles,
+    };
+
+    return userDetails;
   }
 
   async findUserByEmail(email: string): Promise<UserResponseDto> {
