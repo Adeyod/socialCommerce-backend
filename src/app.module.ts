@@ -17,6 +17,9 @@ import { RefreshTokensModule } from './modules/refresh-tokens/refresh-tokens.mod
 import { StaffAccessControlModule } from './modules/staff-access-control/staff-access-control.module';
 import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
+import { DiscountsModule } from './modules/discounts/discounts.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -98,6 +101,9 @@ import { UsersModule } from './modules/users/users.module';
     BusinessesModule,
     PartnersModule,
     StaffAccessControlModule,
+    DiscountsModule,
+    ReviewsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

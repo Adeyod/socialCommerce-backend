@@ -4,24 +4,16 @@ import { Permission } from '../enums/permissions.enum';
 
 export const ROLE_PERMISSIONS = {
   owner: [
-    Permission.listing_create,
-    Permission.listing_update,
-    Permission.listing_delete,
-    Permission.booking_view,
-    Permission.booking_cancel,
-    Permission.member_manage,
+    Permission.create_product,
+    Permission.delete_product,
+    Permission.update_product,
   ],
 
-  admin: [
-    Permission.listing_create,
-    Permission.listing_update,
-    Permission.booking_view,
-    Permission.booking_cancel,
-  ],
+  admin: [Permission.create_product, Permission.update_product],
 
-  manager: [Permission.listing_update, Permission.booking_view],
+  manager: [Permission.create_product, Permission.update_product],
 
-  staff: [Permission.booking_view],
+  staff: [Permission.view_product],
 
   viewer: [],
 };

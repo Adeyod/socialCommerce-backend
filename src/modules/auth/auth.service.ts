@@ -13,6 +13,7 @@ import { Model, Types } from 'mongoose';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { generateCode } from '../../common/utils/code';
 import { MailService } from '../../mail/mail.service';
+import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
 import { RefreshTokensService } from '../refresh-tokens/refresh-tokens.service';
 import { TokensRepository } from '../tokens/repositories/tokens.repository';
 import { TokenPurpose } from '../tokens/schemas/token.schema';
@@ -36,6 +37,7 @@ export class AuthService {
     private tokensRepository: TokensRepository,
     private mailService: MailService,
     private refreshTokensService: RefreshTokensService,
+    private businessesRepository: BusinessesRepository,
   ) {}
   async registerUser(registerUserDto: RegisterUserDto) {
     console.log('registerUserDto:', registerUserDto);
@@ -196,10 +198,17 @@ export class AuthService {
         user.role,
         user._id,
       );
+      const business = await this.businessesRepository.findBusinessWithUserId(
+        user._id.toString(),
+      );
+
+      const businessId = business?._id;
+
       const accessToken = await this.generateAccessTokens(
         user.email,
         user._id,
         user.role,
+        businessId,
       );
 
       const { password, ...others } = user.toObject();
@@ -403,9 +412,14 @@ export class AuthService {
     email: string,
     id: Types.ObjectId,
     role: string,
+    businessId?: Types.ObjectId,
   ) {
     console.log('I want to generate access token');
-    const payload = { sub: id, email, role };
+    const payload: any = { sub: id, email, role };
+
+    if (businessId) {
+      payload.businessId = businessId;
+    }
 
     const accessToken = await this.jwtService.signAsync(payload, {
       expiresIn: '1d',

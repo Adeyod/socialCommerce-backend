@@ -1,8 +1,6 @@
 export enum Permission {
-  listing_create = 'listing.create',
-  listing_update = 'listing.update',
-  listing_delete = 'listing.delete',
-  booking_view = 'booking.view',
-  booking_cancel = 'booking.cancel',
-  member_manage = 'member.manage',
+  create_product = 'create_product',
+  update_product = 'update_product',
+  delete_product = 'delete_product',
+  view_product = 'view_product',
 }

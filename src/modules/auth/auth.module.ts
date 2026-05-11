@@ -14,6 +14,7 @@ import {
 } from './schemas/black-listed-token.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { BusinessesModule } from '../businesses/businesses.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
     UsersModule,
     MailModule,
     RefreshTokensModule,
+    BusinessesModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, RefreshTokenStrategy],
