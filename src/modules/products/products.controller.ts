@@ -8,9 +8,18 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { GetCurrentUser } from '../../common/decorators/get-current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -42,6 +51,32 @@ export class ProductsController {
     description:
       'This is the endpoint that a vendor will use to create product that he want to sell.',
   })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+        name: { type: 'string' },
+        price: { type: 'number' },
+        stock: { type: 'number' },
+        category: { type: 'string' },
+        tags: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+        },
+        description: { type: 'string' },
+      },
+    },
+  })
   @ApiResponse({
     status: 201,
     description: 'Product created successfully.',
@@ -55,15 +90,35 @@ export class ProductsController {
     status: 500,
     description: 'Internal server error',
   })
+  @UseInterceptors(
+    FilesInterceptor('files', 4, {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.includes('image/')) {
+          return cb(new Error('Only image files allowed'), false);
+        }
+
+        cb(null, true);
+      },
+    }),
+  )
   async createProduct(
     @Param('businessId') businessId: string,
+    @UploadedFiles() files: Express.Multer.File[],
     @Body() createProductDto: CreateProductDto,
     @GetCurrentUser() user: JwtUser,
   ) {
+    console.log('createProductDto:', createProductDto);
+    console.log('files:', files);
+
     const response = await this.productsService.createProduct(
       businessId,
       user,
       createProductDto,
+      files,
     );
 
     console.log('response:', response);

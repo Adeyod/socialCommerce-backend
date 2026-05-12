@@ -23,6 +23,7 @@ export class ProductsService {
     businessId: string,
     user: JwtUser,
     createProductDto: CreateProductDto,
+    files: Express.Multer.File[],
   ) {
     const id = new Types.ObjectId(businessId);
 
@@ -46,15 +47,18 @@ export class ProductsService {
     }
 
     const uploadMedias = await this.cloudinaryService.uploadMany(
-      createProductDto.images,
+      files,
       'Social-Commerce',
     );
+
+    console.log('uploadMedias:', uploadMedias);
 
     const data = {
       ...createProductDto,
       media: uploadMedias,
       businessId: businessExist._id.toString(),
       inStock: (createProductDto.stock ?? 0) > 0,
+      sku: this.generateSku(),
     };
     const product = await this.productsRepository.createProduct(data);
 
@@ -199,5 +203,9 @@ export class ProductsService {
     return {
       message: 'Product deleted successfully.',
     };
+  }
+
+  private generateSku(): string {
+    return `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   }
 }

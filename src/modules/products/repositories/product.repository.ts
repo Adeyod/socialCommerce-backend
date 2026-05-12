@@ -10,18 +10,27 @@ export class ProductsRepository {
     private productModel: Model<ProductDocument>,
   ) {}
 
-  async createProduct(data) {
+  async createProduct(data: {
+    name: string;
+    description?: string;
+    sku: string;
+    category?: string;
+    tags?: string[];
+    price: number;
+    stock: number;
+    media: {
+      url: string;
+      publicUrl: string;
+    }[];
+    businessId: string;
+    inStock: boolean;
+  }) {
     const newProduct = await new this.productModel({
       name: data.name,
       businessId: data.businessId,
-      description: data.description && data.description,
+      description: data.description,
       price: data.price,
-      media: [
-        {
-          url: data.media.url,
-          publicUrl: data.media.publicUrl,
-        },
-      ],
+      media: data.media,
       stock: data.stock,
       category: data.category,
       tags: data.tags,
