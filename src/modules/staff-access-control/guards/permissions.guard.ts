@@ -37,13 +37,14 @@ export class PermissionsGuard implements CanActivate {
       });
     }
 
-    // 👑 PLATFORM ADMIN
+    // PLATFORM ADMIN
     if (user.role === 'admin') {
       return true;
     }
 
-    // 🔍 Resolve businessId safely
-    const rawBusinessId = request.headers['x-business-id'];
+    // Resolve businessId safely
+    // const rawBusinessId = request.headers['x-business-id'];
+    const rawBusinessId = request.params.businessId;
 
     const businessId =
       (Array.isArray(rawBusinessId) ? rawBusinessId[0] : rawBusinessId) ||
@@ -57,12 +58,12 @@ export class PermissionsGuard implements CanActivate {
       });
     }
 
-    // 👑 BUSINESS OWNER (bypass staff system)
+    // BUSINESS OWNER (bypass staff system)
     if (user.businessId?.toString() === businessId.toString()) {
       return true;
     }
 
-    // 🔥 STAFF PERMISSION CHECK
+    // STAFF PERMISSION CHECK
     const staffContext = await this.staffPermissionService.getStaffPermissions(
       user._id.toString(),
       businessId.toString(),

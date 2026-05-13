@@ -52,7 +52,7 @@ export class Product {
   @Prop({ trim: true })
   category?: string;
 
-  @Prop({ type: [String], default: [] })
+  @Prop({ type: [String], trim: true, default: [] })
   tags!: string[];
 
   // SKU (for tracking products)

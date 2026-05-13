@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
+import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { CloudinaryService } from '../../common/infrastructure/cloudinary/cloudinary.service';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
@@ -86,8 +87,11 @@ export class ProductsService {
     };
   }
 
-  async getProductByBusinessId(businessId: string) {
-    const product = await this.productsRepository.findByBusinessId(businessId);
+  async getAProductByBusinessId(businessId: string, productId: string) {
+    const product = await this.productsRepository.findAProductByBusinessId(
+      businessId,
+      productId,
+    );
 
     if (!product) {
       throw new NotFoundException({
@@ -99,6 +103,28 @@ export class ProductsService {
 
     return {
       message: 'Product fetched successfully.',
+      data: product,
+    };
+  }
+  async getProductsByBusinessId(
+    businessId: string,
+    queryWithPaginationDto: QueryWithPaginationDto,
+  ) {
+    const product = await this.productsRepository.findProductsByBusinessId(
+      businessId,
+      queryWithPaginationDto,
+    );
+
+    if (!product) {
+      throw new NotFoundException({
+        message: 'Products not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return {
+      message: 'Products fetched successfully.',
       data: product,
     };
   }

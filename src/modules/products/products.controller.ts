@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -25,6 +26,7 @@ import { Permissions } from '../../common/decorators/permissions.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SuccessMessage } from '../../common/decorators/success-message.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
+import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { Permission } from '../../common/enums/permissions.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -111,9 +113,6 @@ export class ProductsController {
     @Body() createProductDto: CreateProductDto,
     @GetCurrentUser() user: JwtUser,
   ) {
-    console.log('createProductDto:', createProductDto);
-    console.log('files:', files);
-
     const response = await this.productsService.createProduct(
       businessId,
       user,
@@ -121,7 +120,6 @@ export class ProductsController {
       files,
     );
 
-    console.log('response:', response);
     return response;
   }
 
@@ -152,19 +150,57 @@ export class ProductsController {
     const response =
       await this.productsService.getProductByProductId(productId);
 
-    console.log('response:', response);
     return response;
   }
 
-  @Get('get-product-by-businessId/:businessId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('get-products-by-businessId/:businessId')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user, Role.admin)
+  @Permissions(Permission.view_product)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Products fetched successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Fetch products endpoint.',
+    description:
+      'This is the endpoint for fetching products of a business on the platform. Only those that are part of the business can use this endpoint.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Products fetched successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Unable to fetch products.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async getProductsByBusinessId(
+    @Param('businessId') businessId: string,
+    @Query() queryWithPaginationDto: QueryWithPaginationDto,
+  ) {
+    const response = await this.productsService.getProductsByBusinessId(
+      businessId,
+      queryWithPaginationDto,
+    );
+
+    console.log('response:', response);
+    return response;
+  }
+  @Get('get-product-by-businessId/:businessId/:productId')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles(Role.user)
+  @Permissions(Permission.view_product)
   @ApiBearerAuth('JWT-auth')
   @SuccessMessage('Product fetched successfully.')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Fetch product endpoint.',
-    description: 'This is the endpoint for fetching a product on the platform.',
+    description:
+      'This is the endpoint for fetching a product of a business on the platform. Only those that are part of the business can use this endpoint.',
   })
   @ApiResponse({
     status: 200,
@@ -179,9 +215,14 @@ export class ProductsController {
     status: 500,
     description: 'Internal server error',
   })
-  async getProductByBusinessId(@Param('businessId') businessId: string) {
-    const response =
-      await this.productsService.getProductByBusinessId(businessId);
+  async getAProductByBusinessId(
+    @Param('businessId') businessId: string,
+    @Param('productId') productId: string,
+  ) {
+    const response = await this.productsService.getAProductByBusinessId(
+      businessId,
+      productId,
+    );
 
     console.log('response:', response);
     return response;
