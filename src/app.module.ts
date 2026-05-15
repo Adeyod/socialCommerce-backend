@@ -8,18 +8,18 @@ import { AppService } from './app.service';
 import { CloudinaryModule } from './common/infrastructure/cloudinary/cloudinary.module';
 import configuration from './config/configuration';
 import { MailModule } from './mail/mail.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
+import { DiscountsModule } from './modules/discounts/discounts.module';
 import { PartnersModule } from './modules/partners/partners.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductsModule } from './modules/products/products.module';
 import { RefreshTokensModule } from './modules/refresh-tokens/refresh-tokens.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { StaffAccessControlModule } from './modules/staff-access-control/staff-access-control.module';
 import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
-import { DiscountsModule } from './modules/discounts/discounts.module';
-import { ReviewsModule } from './modules/reviews/reviews.module';
-import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [

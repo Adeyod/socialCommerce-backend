@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { Permission } from '../../../../common/enums/permissions.enum';
 
 export type RoleDocument = HydratedDocument<Role>;
 
@@ -13,6 +14,14 @@ export class Role {
 
   @Prop()
   description!: string;
+
+  @Prop()
+  permissions!: Permission[];
 }
 
 export const RoleSchema = SchemaFactory.createForClass(Role);
+
+/**
+ * Remove central schemas inside staff-access-control and let each module inside it have its own schema to avoid confusion
+ *
+ */

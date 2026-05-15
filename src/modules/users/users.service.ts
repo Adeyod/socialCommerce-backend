@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
+import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
 import { PartnersRepository } from '../partners/repositories/partners.repository';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UsersRepository } from './repositories/users.repository';
@@ -14,6 +15,7 @@ export class UsersService {
   constructor(
     private usersRepository: UsersRepository,
     private partnersRepository: PartnersRepository,
+    private businessesRepository: BusinessesRepository,
   ) {}
   async findUserById(id: Types.ObjectId): Promise<UserResponseDto> {
     const user = await this.usersRepository.findById(id);
@@ -43,6 +45,10 @@ export class UsersService {
       });
     }
 
+    const myBusiness = await this.businessesRepository.findBusinessWithUserId(
+      user._id.toString(),
+    );
+
     const roles = await this.partnersRepository.getAllProfilesByUserId(
       user._id.toString(),
     );
@@ -53,6 +59,7 @@ export class UsersService {
     const userDetails = {
       others,
       roles,
+      business: myBusiness ? myBusiness : null,
     };
 
     return userDetails;

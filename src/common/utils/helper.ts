@@ -43,3 +43,14 @@ export const generateRefCode = (): string => {
 
 //   return ref;
 // };
+
+export const normalizeDto = (dto: Record<string, any>) => {
+  const response = Object.fromEntries(
+    Object.entries(dto).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? value.toLowerCase() : value,
+    ]),
+  );
+
+  return response;
+};

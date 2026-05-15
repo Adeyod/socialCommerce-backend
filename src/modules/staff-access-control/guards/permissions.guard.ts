@@ -7,7 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../../../common/decorators/permissions.decorator';
 import { Permission } from '../../../common/enums/permissions.enum';
-import { StaffPermissionService } from '../services/staff-permission.service';
+import { StaffPermissionService } from '../staff-permission/staff-permission.service';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -43,8 +43,15 @@ export class PermissionsGuard implements CanActivate {
     }
 
     // Resolve businessId safely
-    // const rawBusinessId = request.headers['x-business-id'];
     const rawBusinessId = request.params.businessId;
+
+    if (!rawBusinessId) {
+      throw new ForbiddenException({
+        message: 'Business ID is required.',
+        success: false,
+        status: 403,
+      });
+    }
 
     const businessId =
       (Array.isArray(rawBusinessId) ? rawBusinessId[0] : rawBusinessId) ||
@@ -60,6 +67,18 @@ export class PermissionsGuard implements CanActivate {
 
     // BUSINESS OWNER (bypass staff system)
     if (user.businessId?.toString() === businessId.toString()) {
+      // const staffContext =
+      //   await this.staffPermissionService.getStaffPermissions(
+      //     user._id.toString(),
+      //     businessId.toString(),
+      //   );
+
+      // treat owner as SUPER STAFF (all permissions)
+      request.staffContext = {
+        // ...staffContext,
+        permissions: Object.values(Permission),
+      };
+
       return true;
     }
 
@@ -79,8 +98,14 @@ export class PermissionsGuard implements CanActivate {
 
     request.staffContext = staffContext;
 
+    // const hasAccess = requiredPermissions.every((permission) =>
+    //   staffContext.permissions.includes(permission),
+    // );
+
+    const permissionSet = new Set(staffContext.permissions);
+
     const hasAccess = requiredPermissions.every((permission) =>
-      staffContext.permissions.includes(permission),
+      permissionSet.has(permission),
     );
 
     if (!hasAccess) {
