@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -23,6 +24,7 @@ import type { JwtUser } from '../../../common/types/jwt-user.type';
 import { Role } from '../../users/schemas/user.schema';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { CreateRoleDto } from './dtos/create-role.dto';
+import { UpdateRoleDto } from './dtos/update-role.dto';
 import { RoleService } from './role.service';
 
 @Controller('role')
@@ -58,11 +60,13 @@ export class RoleController {
     @Param('businessId') businessId: string,
     @GetCurrentUser() user: JwtUser,
     @Body() createRoleDto: CreateRoleDto,
+    @Req() req: any,
   ) {
     const response = await this.roleService.createRole(
       businessId,
       user,
       createRoleDto,
+      req.staffContext,
     );
 
     return response;
@@ -96,8 +100,13 @@ export class RoleController {
   async findRoleById(
     @Param('roleId') roleId: string,
     @GetCurrentUser() user: JwtUser,
+    @Req() req: any,
   ) {
-    const response = await this.roleService.findRoleById(roleId, user);
+    const response = await this.roleService.findRoleById(
+      roleId,
+      user,
+      req.staffContext,
+    );
 
     return response;
   }
@@ -131,11 +140,13 @@ export class RoleController {
     @Param('businessId') businessId: string,
     @Query() queryWithPaginationDto: QueryWithPaginationDto,
     @GetCurrentUser() user: JwtUser,
+    @Req() req: any,
   ) {
     const response = await this.roleService.findRolesByBusinessId(
       businessId,
       user,
       queryWithPaginationDto,
+      req.staffContext,
     );
 
     return response;
@@ -170,11 +181,15 @@ export class RoleController {
     @Param('businessId') businessId: string,
     @Param('roleId') roleId: string,
     @GetCurrentUser() user: JwtUser,
+    @Body() updateRoleDto: UpdateRoleDto,
+    @Req() req: any,
   ) {
     const response = await this.roleService.updateRoleById(
       roleId,
       user,
       businessId,
+      updateRoleDto,
+      req.staffContext,
     );
 
     return response;

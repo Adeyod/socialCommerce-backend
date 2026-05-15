@@ -17,6 +17,9 @@ export class Role {
 
   @Prop()
   permissions!: Permission[];
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  createdBy!: Types.ObjectId;
 }
 
 export const RoleSchema = SchemaFactory.createForClass(Role);

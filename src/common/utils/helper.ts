@@ -1,4 +1,4 @@
-import { NotAcceptableException } from '@nestjs/common';
+import { ForbiddenException, NotAcceptableException } from '@nestjs/common';
 import parsePhoneNumberFromString from 'libphonenumber-js';
 import { customAlphabet } from 'nanoid';
 
@@ -53,4 +53,13 @@ export const normalizeDto = (dto: Record<string, any>) => {
   );
 
   return response;
+};
+
+export const validateBusinessOwnership = (
+  resourceBusinessId: string,
+  businessId: string,
+) => {
+  if (resourceBusinessId !== businessId) {
+    throw new ForbiddenException('Access denied');
+  }
 };
