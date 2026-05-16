@@ -6,7 +6,9 @@ import {
 import { Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { CloudinaryService } from '../../common/infrastructure/cloudinary/cloudinary.service';
+import { CloudinaryResponse } from '../../common/infrastructure/cloudinary/cloudinary.types';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import { buildSmartPatch } from '../../common/utils/helper';
 import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { UpdateProductDto } from './dtos/update-product.dto';
@@ -51,8 +53,6 @@ export class ProductsService {
       files,
       'Social-Commerce',
     );
-
-    console.log('uploadMedias:', uploadMedias);
 
     const data = {
       ...createProductDto,
@@ -133,7 +133,12 @@ export class ProductsService {
     productId: string,
     updateProductDto: UpdateProductDto,
     user: JwtUser,
+    businessId: string,
+    files: Express.Multer.File[] | undefined,
   ) {
+    console.log('updateProductDto:', updateProductDto);
+    console.log('files:', files);
+
     if (!user.businessId) {
       throw new ForbiddenException({
         message: 'You are not allowed to update this product.',
@@ -142,58 +147,7 @@ export class ProductsService {
       });
     }
 
-    const id = new Types.ObjectId(user?.businessId.toString());
-
-    const business =
-      await this.businessesRepository.findBusinessByBusinessId(id);
-
-    if (!business) {
-      throw new NotFoundException({
-        message: 'Business not found.',
-        success: false,
-        status: 404,
-      });
-    }
-
-    const product = await this.productsRepository.updateProduct(productId, {
-      ...updateProductDto,
-      ...(updateProductDto.stock !== undefined && {
-        inStock: updateProductDto.stock > 0,
-      }),
-    });
-
-    if (!product) {
-      throw new NotFoundException({
-        message: 'Product not found.',
-        success: false,
-        status: 404,
-      });
-    }
-
-    if (product.businessId !== business._id) {
-      throw new ForbiddenException({
-        message: 'You are not allowed to update this product.',
-        success: false,
-        status: 403,
-      });
-    }
-
-    return {
-      message: 'Product updated successfully.',
-      data: product,
-    };
-  }
-
-  async deleteProductById(productId: string, user: JwtUser) {
-    if (!user.businessId) {
-      throw new ForbiddenException({
-        message: 'You are not allowed to update this product.',
-        success: false,
-        status: 403,
-      });
-    }
-
-    const id = new Types.ObjectId(user?.businessId.toString());
+    const id = new Types.ObjectId(businessId);
 
     const business =
       await this.businessesRepository.findBusinessByBusinessId(id);
@@ -208,9 +162,107 @@ export class ProductsService {
 
     const productExist = await this.productsRepository.findById(productId);
 
-    if (productExist && productExist.businessId !== business._id) {
+    if (!productExist) {
+      throw new NotFoundException({
+        message: 'Product not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (productExist.businessId.toString() !== business._id.toString()) {
       throw new ForbiddenException({
         message: 'You are not allowed to update this product.',
+        success: false,
+        status: 403,
+      });
+    }
+
+    const images = productExist.media.map((img) => img.publicUrl);
+
+    let newMedia: CloudinaryResponse[] = [];
+
+    if (files && files.length > 0 && images.length > 0) {
+      const deleteImages = await this.cloudinaryService.delete(images);
+
+      const uploadMedias = await this.cloudinaryService.uploadMany(
+        files,
+        'Social-Commerce',
+      );
+
+      newMedia = uploadMedias;
+    }
+
+    const rawData = {
+      ...updateProductDto,
+      ...(newMedia.length > 0 && { media: newMedia }),
+      ...(updateProductDto.stock !== undefined && {
+        inStock: updateProductDto.stock > 0,
+      }),
+    };
+
+    // const data = Object.fromEntries(
+    //   Object.entries(rawData).filter(([_, value]) => value !== undefined),
+    // );
+
+    const data = buildSmartPatch(rawData);
+
+    const product = await this.productsRepository.updateProduct(
+      productId,
+      data,
+    );
+
+    if (!product) {
+      throw new NotFoundException({
+        message: 'Product not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    console.log('product.businessId:', product.businessId);
+    console.log('business._id:', business._id);
+
+    return {
+      message: 'Product updated successfully.',
+      data: product,
+    };
+  }
+
+  async deleteProductById(
+    productId: string,
+    user: JwtUser,
+    businessId: string,
+  ) {
+    if (!user.businessId) {
+      throw new ForbiddenException({
+        message: 'You are not allowed to update this product.',
+        success: false,
+        status: 403,
+      });
+    }
+
+    const id = new Types.ObjectId(businessId);
+
+    const business =
+      await this.businessesRepository.findBusinessByBusinessId(id);
+
+    if (!business) {
+      throw new NotFoundException({
+        message: 'Business not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const productExist = await this.productsRepository.findById(productId);
+
+    if (
+      productExist &&
+      productExist.businessId.toString() !== business._id.toString()
+    ) {
+      throw new ForbiddenException({
+        message: 'This Product has business mis-match.',
         success: false,
         status: 403,
       });
@@ -220,7 +272,7 @@ export class ProductsService {
 
     if (!product) {
       throw new NotFoundException({
-        message: 'Product not found.',
+        message: 'Unable to delete Product.',
         success: false,
         status: 404,
       });

@@ -23,6 +23,41 @@ export const generateRefCode = (): string => {
   return code;
 };
 
+export function buildSmartPatch<T extends Record<string, any>>(
+  dto: T,
+): Partial<T> {
+  const patch: Partial<T> = {};
+
+  for (const [key, value] of Object.entries(dto)) {
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      const cleaned = value
+        .map((v) => (typeof v === 'string' ? v.trim() : v))
+        .filter((v) => v !== '' && v !== null && v !== undefined);
+
+      if (cleaned.length === 0) continue;
+
+      patch[key as keyof T] = cleaned as T[keyof T];
+      continue;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed === '') continue;
+
+      patch[key as keyof T] = trimmed as T[keyof T];
+      continue;
+    }
+
+    patch[key as keyof T] = value;
+  }
+
+  return patch;
+}
+
 // export const generatePaymentReference = (payload: {
 //   bookingId: string;
 //   listingType: ListingType;
@@ -48,7 +83,7 @@ export const normalizeDto = (dto: Record<string, any>) => {
   const response = Object.fromEntries(
     Object.entries(dto).map(([key, value]) => [
       key,
-      typeof value === 'string' ? value.toLowerCase() : value,
+      typeof value === 'string' ? value.toLowerCase().trim() : value,
     ]),
   );
 

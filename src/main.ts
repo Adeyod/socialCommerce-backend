@@ -9,6 +9,7 @@ import { Queue } from 'bull';
 import { AppModule } from './app.module';
 import { MongoExceptionFilter } from './common/filters/mongo-exception.filter';
 import { GlobalResponseInterceptor } from './common/interceptor/global-response.interceptor';
+import { FormDataNormalizePipe } from './common/pipes/formdata-normalize.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -32,6 +33,7 @@ async function bootstrap() {
 
   // Configure pipes
   app.useGlobalPipes(
+    new FormDataNormalizePipe(),
     new ValidationPipe({
       whitelist: true, // This removes any property not defined in dtos
       forbidNonWhitelisted: false,

@@ -228,7 +228,7 @@ export class ProductsController {
     return response;
   }
 
-  @Patch('update-product-by-productId/:productId')
+  @Patch('update-product-by-productId/:businessId/:productId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user)
   @Permissions(Permission.update_product)
@@ -238,6 +238,32 @@ export class ProductsController {
   @ApiOperation({
     summary: 'Update product endpoint.',
     description: 'This is the endpoint for updating a product on the platform.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+        name: { type: 'string' },
+        price: { type: 'number' },
+        stock: { type: 'number' },
+        category: { type: 'string' },
+        tags: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+        },
+        description: { type: 'string' },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -252,22 +278,41 @@ export class ProductsController {
     status: 500,
     description: 'Internal server error',
   })
+  @UseInterceptors(
+    FilesInterceptor('files', 4, {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.includes('image/')) {
+          return cb(new Error('Only image files allowed'), false);
+        }
+
+        cb(null, true);
+      },
+    }),
+  )
   async updateProductByProductId(
     @Param('productId') productId: string,
     @Body() updateProductDto: UpdateProductDto,
     @GetCurrentUser() user: JwtUser,
+    @Param('businessId') businessId: string,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
     const response = await this.productsService.updateProduct(
       productId,
       updateProductDto,
       user,
+      businessId,
+      files,
     );
 
     console.log('response:', response);
     return response;
   }
 
-  @Delete('delete-product-by-productId/:productId')
+  @Delete('delete-product-by-productId/:businessId/:productId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user)
   @Permissions(Permission.delete_product)
@@ -293,11 +338,13 @@ export class ProductsController {
   })
   async deleteProductById(
     @Param('productId') productId: string,
+    @Param('businessId') businessId: string,
     @GetCurrentUser() user: JwtUser,
   ) {
     const response = await this.productsService.deleteProductById(
       productId,
       user,
+      businessId,
     );
 
     console.log('response:', response);

@@ -44,7 +44,11 @@ export class ProductsRepository {
   async findById(id: string) {
     const productId = new Types.ObjectId(id);
 
-    const product = await this.productModel.findById(productId);
+    const product = await this.productModel.findOne({
+      _id: productId,
+      isDeleted: false,
+      isActive: true,
+    });
 
     return product;
   }
@@ -55,6 +59,8 @@ export class ProductsRepository {
     const product = await this.productModel.findOne({
       _id: prodId,
       businessId: id,
+      isDeleted: false,
+      isActive: true,
     });
 
     return product;
@@ -71,7 +77,11 @@ export class ProductsRepository {
 
     const id = new Types.ObjectId(businessId);
 
-    let query = this.productModel.find({ businessId: id });
+    let query = this.productModel.find({
+      businessId: id,
+      isDeleted: false,
+      isActive: true,
+    });
 
     if (searchParams) {
       const regex = new RegExp(searchParams, 'i');
@@ -126,6 +136,7 @@ export class ProductsRepository {
 
     const updatedProduct = await this.productModel.findByIdAndUpdate(id, data, {
       new: true,
+      runValidators: true,
     });
 
     return updatedProduct;
