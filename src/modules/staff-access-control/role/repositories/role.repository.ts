@@ -37,6 +37,21 @@ export class RoleRepository {
     return response;
   }
 
+  async findRoleByBusinessIdAndName(
+    businessId: string,
+    name: string,
+  ): Promise<RoleDocument | null> {
+    const id = new Types.ObjectId(businessId);
+    const formattedName = name.trim().toLowerCase();
+
+    const role = await this.roleModel.findOne({
+      businessId: id,
+      name: formattedName,
+    });
+
+    return role;
+  }
+
   async findRolesByBusinessId(
     businessId: string,
     queryWithPaginationDto: QueryWithPaginationDto,
@@ -94,7 +109,9 @@ export class RoleRepository {
   ): Promise<RoleDocument | null> {
     const id = new Types.ObjectId(roleId);
 
-    const response = await this.roleModel.findByIdAndUpdate(id, updateRoleDto);
+    const response = await this.roleModel.findByIdAndUpdate(id, updateRoleDto, {
+      returnDocument: 'after',
+    });
 
     return response;
   }

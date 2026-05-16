@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission } from '../../../../common/enums/permissions.enum';
 
 export class CreateRoleDto {
@@ -22,5 +22,7 @@ export class CreateRoleDto {
       'These are the responsibilities(Permissions) that the person holding such role will have opportunity to carry out.',
     example: [Permission.create_product, Permission.update_product],
   })
+  @IsArray()
+  @IsEnum(Permission, { each: true })
   permissions!: Permission[];
 }

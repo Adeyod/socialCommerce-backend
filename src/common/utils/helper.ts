@@ -79,16 +79,16 @@ export function buildSmartPatch<T extends Record<string, any>>(
 //   return ref;
 // };
 
-export const normalizeDto = (dto: Record<string, any>) => {
-  const response = Object.fromEntries(
-    Object.entries(dto).map(([key, value]) => [
-      key,
-      typeof value === 'string' ? value.toLowerCase().trim() : value,
-    ]),
-  );
+// export const normalizeDto = (dto: Record<string, any>) => {
+//   const response = Object.fromEntries(
+//     Object.entries(dto).map(([key, value]) => [
+//       key,
+//       typeof value === 'string' ? value.toLowerCase().trim() : value,
+//     ]),
+//   );
 
-  return response;
-};
+//   return response;
+// };
 
 export const validateBusinessOwnership = (
   resourceBusinessId: string,

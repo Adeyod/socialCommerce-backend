@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -20,6 +21,7 @@ import { QueryWithPaginationDto } from '../../../common/dto/query-with-paginatio
 import { Permission } from '../../../common/enums/permissions.enum';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
+import { NormalizeDtoPipe } from '../../../common/pipes/normalize-dto.pipe';
 import type { JwtUser } from '../../../common/types/jwt-user.type';
 import { Role } from '../../users/schemas/user.schema';
 import { PermissionsGuard } from '../guards/permissions.guard';
@@ -59,7 +61,7 @@ export class RoleController {
   async createRole(
     @Param('businessId') businessId: string,
     @GetCurrentUser() user: JwtUser,
-    @Body() createRoleDto: CreateRoleDto,
+    @Body(new NormalizeDtoPipe()) createRoleDto: CreateRoleDto,
     @Req() req: any,
   ) {
     const response = await this.roleService.createRole(
@@ -72,7 +74,7 @@ export class RoleController {
     return response;
   }
 
-  @Get('find-role/:roleId')
+  @Get('find-role/:businessId/:roleId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user, Role.admin)
   @Permissions(Permission.view_role)
@@ -98,11 +100,13 @@ export class RoleController {
     description: 'Internal server error.',
   })
   async findRoleById(
+    @Param('businessId') businessId: string,
     @Param('roleId') roleId: string,
     @GetCurrentUser() user: JwtUser,
     @Req() req: any,
   ) {
     const response = await this.roleService.findRoleById(
+      businessId,
       roleId,
       user,
       req.staffContext,
@@ -152,7 +156,7 @@ export class RoleController {
     return response;
   }
 
-  @Get('update-role/:businessId/:roleId')
+  @Patch('update-role/:businessId/:roleId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user)
   @Permissions(Permission.update_role)
@@ -181,7 +185,7 @@ export class RoleController {
     @Param('businessId') businessId: string,
     @Param('roleId') roleId: string,
     @GetCurrentUser() user: JwtUser,
-    @Body() updateRoleDto: UpdateRoleDto,
+    @Body(new NormalizeDtoPipe()) updateRoleDto: UpdateRoleDto,
     @Req() req: any,
   ) {
     const response = await this.roleService.updateRoleById(

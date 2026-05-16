@@ -49,6 +49,20 @@ export class RoleService {
 
     const creator = user.sub.toString();
 
+    const roleExistForBusiness =
+      await this.roleRepository.findRoleByBusinessIdAndName(
+        businessId,
+        createRoleDto.name,
+      );
+
+    if (roleExistForBusiness) {
+      throw new ForbiddenException({
+        message: `This business already have ${createRoleDto.name} role created before.`,
+        success: false,
+        status: 403,
+      });
+    }
+
     const role = await this.roleRepository.createRole(
       id,
       createRoleDto,
@@ -70,7 +84,12 @@ export class RoleService {
 
     return role;
   }
-  async findRoleById(roleId: string, user: JwtUser, staffContext: any) {
+  async findRoleById(
+    businessId: string,
+    roleId: string,
+    user: JwtUser,
+    staffContext: any,
+  ) {
     const role = await this.roleRepository.findRoleById(roleId);
 
     if (!role) {
@@ -78,6 +97,14 @@ export class RoleService {
         message: 'Role not found.',
         success: false,
         status: 404,
+      });
+    }
+
+    if (role.businessId.toString() !== businessId) {
+      throw new ForbiddenException({
+        message: 'You are not allowed to view this resource.',
+        success: false,
+        status: 403,
       });
     }
 
