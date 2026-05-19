@@ -1,10 +1,13 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { ProductsRepository } from '../products/repositories/product.repository';
+import { Role } from '../users/schemas/user.schema';
 import { CreateOrderDto, CreateVendorOrderDto } from './dtos/create-order.dto';
 import { OrderRepository } from './repositories/order.repository';
 import { OrderStatus, VendorOrderStatus } from './schemas/order.schema';
@@ -82,6 +85,7 @@ export class OrdersService {
 
       processedVendorOrders.push({
         vendorId: vendorOrder.vendorId,
+        businessId: vendorOrder.businessId,
         items: processedItems,
         subtotal: vendorSubtotal,
         status: VendorOrderStatus.pending,
@@ -113,5 +117,76 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  async getCustomerOrderDetails(
+    customerId: string,
+    orderId: string,
+    user: JwtUser,
+  ) {
+    if (user.role !== Role.admin) {
+      if (user.sub.toString() !== customerId) {
+        throw new ForbiddenException({
+          message: 'You can only view order that belong to you.',
+          success: false,
+          status: 403,
+        });
+      }
+    }
+
+    const response = await this.orderRepository.findOrderByOrderId(orderId);
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'Order not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (response.customerId.toString() !== customerId) {
+      throw new ForbiddenException({
+        message: 'You can only view order that belong to you.',
+        success: false,
+        status: 403,
+      });
+    }
+
+    return response;
+  }
+  async getCustomerOrders(
+    customerId: string,
+    user: JwtUser,
+    queryWithPaginationDto: QueryWithPaginationDto,
+  ) {
+    if (user.role !== Role.admin) {
+      if (user.sub.toString() !== customerId) {
+        throw new ForbiddenException({
+          message: 'You can only view orders that belong to you.',
+          success: false,
+          status: 403,
+        });
+      }
+    }
+
+    const response = await this.orderRepository.findOrdersByCustomer(
+      user.sub.toString(),
+      queryWithPaginationDto,
+    );
+
+    return response;
+  }
+
+  async getVendorOrdersByBusinessId(
+    businessId: string,
+    queryWithPaginationDto: QueryWithPaginationDto,
+    user: JwtUser,
+  ) {
+    const response = await this.orderRepository.findOrdersByBusinessId(
+      businessId,
+      queryWithPaginationDto,
+    );
+
+    return response;
   }
 }

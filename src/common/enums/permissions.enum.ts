@@ -7,4 +7,7 @@ export enum Permission {
   create_role = 'create_role',
   view_role = 'view_role',
   update_role = 'update_role',
+
+  view_order = 'view_order',
+  update_order = 'update_order',
 }

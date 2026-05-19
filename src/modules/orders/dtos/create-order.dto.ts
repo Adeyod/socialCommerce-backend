@@ -31,6 +31,10 @@ export class CreateOrderItemDto {
 export class CreateVendorOrderDto {
   @ApiProperty()
   @IsString()
+  businessId!: string;
+
+  @ApiProperty()
+  @IsString()
   vendorId!: string;
 
   @ApiProperty({ type: [CreateOrderItemDto] })

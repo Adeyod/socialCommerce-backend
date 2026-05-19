@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { QueryWithPaginationDto } from '../../../common/dto/query-with-pagination';
 import { CreateOrderDto } from '../dtos/create-order.dto';
 import { UpdateOrderDto } from '../dtos/update-order.dto';
 import {
@@ -41,12 +42,97 @@ export class OrderRepository {
   // This is what we use to get the orders that a customer has made
   async findOrdersByCustomer(
     customerId: string,
+    queryWithPaginationDto: QueryWithPaginationDto,
   ): Promise<OrderDocument[] | null> {
+    const { page = 1, limit = 10, searchParams } = queryWithPaginationDto;
+
     const id = new Types.ObjectId(customerId);
-    const orders = await this.orderModel
-      .find({ customerId: id })
-      .sort({ createdAt: -1 })
-      .exec();
+
+    const skip = (page - 1) * limit;
+
+    let query = this.orderModel.find({ customerId: id });
+
+    if (searchParams) {
+      const regex = new RegExp(searchParams, 'i');
+
+      query = query.where({
+        $or: [
+          { deliveryAddress: { $regex: regex } },
+          { 'vendorOrders.items.name': { $regex: regex } },
+        ],
+      });
+    }
+
+    const count = await query.clone().countDocuments();
+    let pages = 0;
+
+    if (page !== undefined && limit !== undefined && count !== 0) {
+      const offset = (page - 1) * limit;
+
+      query = query.skip(offset).limit(limit);
+      pages = Math.ceil(count / limit);
+
+      if (page > pages) {
+        throw new NotFoundException({
+          message: 'Page can not be found',
+          status: 404,
+          success: false,
+        });
+      }
+    }
+
+    const orders = await query.sort({ createdAt: -1 }).exec();
+
+    return orders;
+  }
+  async findOrdersByBusinessId(
+    businessId: string,
+    queryWithPaginationDto: QueryWithPaginationDto,
+  ) {
+    const { page = 1, limit = 10, searchParams } = queryWithPaginationDto;
+
+    const id = new Types.ObjectId(businessId);
+
+    const matchStage: any = {
+      'vendorOrders.businessId': id,
+    };
+
+    if (searchParams) {
+      const regex = new RegExp(searchParams, 'i');
+
+      matchStage.$or = [
+        { deliveryAddress: { $regex: regex } },
+        { 'vendorOrders.items.name': { $regex: regex } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const pipeline: any[] = [
+      { $match: matchStage },
+      {
+        $project: {
+          customerId: 1,
+          subtotal: 1,
+          total: 1,
+          deliveryAddress: 1,
+          status: 1,
+          createdAt: 1,
+          vendorOrders: {
+            $filter: {
+              input: '$vendorOrders',
+              as: 'v',
+              cond: { $eq: ['$$v.businessId', id] },
+            },
+          },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+    ];
+
+    const orders = await this.orderModel.aggregate(pipeline);
 
     return orders;
   }

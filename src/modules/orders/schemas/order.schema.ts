@@ -61,6 +61,7 @@ export class Order {
   })
   vendorOrders!: {
     vendorId: Types.ObjectId;
+    businessId: Types.ObjectId;
     items: {
       productId: Types.ObjectId;
       name: string;
