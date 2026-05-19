@@ -8,7 +8,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { CreateBusinessDto } from '../../businesses/dtos/create-business.dto';
-import { PartnerRole } from '../enums/partner-role.enum';
+import { PartnerRole } from '../../partners/enums/partner-role.enum';
 
 export class PromoterDataDto {
   @ApiPropertyOptional({

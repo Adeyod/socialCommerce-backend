@@ -11,15 +11,22 @@ import { MailModule } from './mail/mail.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
+import { DeliveryMarketplaceModule } from './modules/delivery-marketplace/delivery-marketplace.module';
+import { DeliveryModule } from './modules/delivery/delivery.module';
 import { DiscountsModule } from './modules/discounts/discounts.module';
 import { PartnersModule } from './modules/partners/partners.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductsModule } from './modules/products/products.module';
+import { PromotersModule } from './modules/promoters/promoters.module';
 import { RefreshTokensModule } from './modules/refresh-tokens/refresh-tokens.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { RiderModule } from './modules/rider/rider.module';
 import { StaffAccessControlModule } from './modules/staff-access-control/staff-access-control.module';
 import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
+import { VendorModule } from './modules/vendor/vendor.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { BuyersModule } from './modules/buyers/buyers.module';
 
 @Module({
   imports: [
@@ -104,6 +111,13 @@ import { UsersModule } from './modules/users/users.module';
     DiscountsModule,
     ReviewsModule,
     AnalyticsModule,
+    DeliveryModule,
+    DeliveryMarketplaceModule,
+    RiderModule,
+    VendorModule,
+    PromotersModule,
+    OrdersModule,
+    BuyersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

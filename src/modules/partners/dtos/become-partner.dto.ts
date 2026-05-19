@@ -6,10 +6,10 @@ import {
 import { Type } from 'class-transformer';
 import { IsEnum, IsObject, IsOptional, ValidateNested } from 'class-validator';
 import { CreateBusinessDto } from '../../businesses/dtos/create-business.dto';
+import { PromoterDataDto } from '../../promoters/dtos/promoter-data.dto';
+import { RiderDataDto } from '../../rider/dtos/rider-data.dto';
+import { VendorDataDto } from '../../vendor/dtos/vendor-data.dto';
 import { PartnerRole } from '../enums/partner-role.enum';
-import { PromoterDataDto } from './promoter-data.dto';
-import { RiderDataDto } from './rider-data.dto';
-import { VendorDataDto } from './vendor-data.dto';
 
 export class BecomePartnerDto {
   @ApiProperty({

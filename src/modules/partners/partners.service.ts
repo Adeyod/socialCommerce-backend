@@ -3,21 +3,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { generateRefCode } from '../../common/utils/helper';
 import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
+import { PromoterDataDto } from '../promoters/dtos/promoter-data.dto';
+import { PromoterProfileRepository } from '../promoters/repositories/promoter.repository';
+import { RiderDataDto } from '../rider/dtos/rider-data.dto';
+import { RiderProfileRepository } from '../rider/repositories/rider.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
-import { PromoterDataDto } from './dtos/promoter-data.dto';
-import { RiderDataDto } from './dtos/rider-data.dto';
-import { VendorDataDto } from './dtos/vendor-data.dto';
+import { VendorDataDto } from '../vendor/dtos/vendor-data.dto';
+import { VendorProfileRepository } from '../vendor/repositories/vendor.repository';
 import { PartnerRole } from './enums/partner-role.enum';
 import { PartnersRepository } from './repositories/partners.repository';
-import {
-  PromoterProfile,
-  PromoterProfileDocument,
-} from './schemas/promoter-profile.schema';
 
 @Injectable()
 export class PartnersService {
@@ -25,8 +23,9 @@ export class PartnersService {
     private readonly partnersRepository: PartnersRepository,
     private readonly businessesRepository: BusinessesRepository,
     private readonly usersRepository: UsersRepository,
-    @InjectModel(PromoterProfile.name)
-    private promoterModel: Model<PromoterProfileDocument>,
+    private readonly vendorProfileRepository: VendorProfileRepository,
+    private readonly riderProfileRepository: RiderProfileRepository,
+    private readonly promoterProfileRepository: PromoterProfileRepository,
   ) {}
 
   async checkIfPartnerHasBusiness(user: JwtUser) {
@@ -67,7 +66,7 @@ export class PartnersService {
     );
 
     const userPartnerRole =
-      await this.partnersRepository.getRiderProfileByUserId(
+      await this.riderProfileRepository.getRiderProfileByUserId(
         user.sub.toString(),
       );
 
@@ -141,7 +140,7 @@ export class PartnersService {
     }
     const userId = user.sub.toString();
 
-    const riderAcc = await this.partnersRepository.createRiderProfile(
+    const riderAcc = await this.riderProfileRepository.createRiderProfile(
       userId,
       riderDataDto,
       businessId,
@@ -175,7 +174,7 @@ export class PartnersService {
     );
 
     const userPartnerRole =
-      await this.partnersRepository.getVendorProfileByUserId(
+      await this.vendorProfileRepository.getVendorProfileByUserId(
         user.sub.toString(),
       );
 
@@ -249,7 +248,7 @@ export class PartnersService {
     }
     const userId = user.sub.toString();
 
-    const vendorAcc = await this.partnersRepository.createVendorProfile(
+    const vendorAcc = await this.vendorProfileRepository.createVendorProfile(
       userId,
       vendorDataDto,
       businessId,
@@ -283,7 +282,7 @@ export class PartnersService {
     );
 
     const userPartnerRole =
-      await this.partnersRepository.getPromoterProfileByUserId(
+      await this.promoterProfileRepository.getPromoterProfileByUserId(
         user.sub.toString(),
       );
 
@@ -362,20 +361,20 @@ export class PartnersService {
     do {
       const code = generateRefCode();
       refCode = code;
-      const existing = await this.promoterModel.exists({
-        referralCode: refCode.trim().toLowerCase(),
-      });
+      const existing =
+        await this.promoterProfileRepository.refCodeExist(refCode);
       exists = !!existing;
     } while (exists);
 
     const referralCode = refCode;
 
-    const promoterAcc = await this.partnersRepository.createPromoterProfile(
-      userId,
-      referralCode,
-      promoterDataDto,
-      businessId,
-    );
+    const promoterAcc =
+      await this.promoterProfileRepository.createPromoterProfile(
+        userId,
+        referralCode,
+        promoterDataDto,
+        businessId,
+      );
 
     const updateBusiness = await this.businessesRepository.addPartnerRole(
       businessId.toString(),
@@ -390,6 +389,20 @@ export class PartnersService {
     // if business is found, then create the profile for the role using the businessId
     // if no business, create one for the user and create the profile for the requested role
     // then return the result
+  }
+
+  async getAllProfilesByUserId(userId: string) {
+    const [vendor, rider, promoter] = await Promise.all([
+      this.vendorProfileRepository.getVendorProfileByUserId(userId),
+      this.promoterProfileRepository.getPromoterProfileByUserId(userId),
+      this.riderProfileRepository.getRiderProfileByUserId(userId),
+    ]);
+
+    return {
+      vendor,
+      rider,
+      promoter,
+    };
   }
 
   // async becomePartner(becomePartnerDto: BecomePartnerDto, user: JwtUser) {

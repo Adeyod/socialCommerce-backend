@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
-import { PartnersRepository } from '../partners/repositories/partners.repository';
+import { PartnersService } from '../partners/partners.service';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UsersRepository } from './repositories/users.repository';
 
@@ -14,7 +14,7 @@ import { UsersRepository } from './repositories/users.repository';
 export class UsersService {
   constructor(
     private usersRepository: UsersRepository,
-    private partnersRepository: PartnersRepository,
+    private partnersService: PartnersService,
     private businessesRepository: BusinessesRepository,
   ) {}
   async findUserById(id: Types.ObjectId): Promise<UserResponseDto> {
@@ -49,7 +49,7 @@ export class UsersService {
       user._id.toString(),
     );
 
-    const roles = await this.partnersRepository.getAllProfilesByUserId(
+    const roles = await this.partnersService.getAllProfilesByUserId(
       user._id.toString(),
     );
 

@@ -7,10 +7,10 @@ import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtUser } from '../../common/types/jwt-user.type';
+import { PromoterDataDto } from '../promoters/dtos/promoter-data.dto';
+import { RiderDataDto } from '../rider/dtos/rider-data.dto';
 import { Role } from '../users/schemas/user.schema';
-import { PromoterDataDto } from './dtos/promoter-data.dto';
-import { RiderDataDto } from './dtos/rider-data.dto';
-import { VendorDataDto } from './dtos/vendor-data.dto';
+import { VendorDataDto } from '../vendor/dtos/vendor-data.dto';
 import { PartnersService } from './partners.service';
 
 @Controller('partners')
