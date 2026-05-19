@@ -41,6 +41,14 @@ export class ProductsService {
       });
     }
 
+    if (!businessExist.isVerified) {
+      throw new ForbiddenException({
+        message: 'Only verified business can create product.',
+        success: false,
+        status: 403,
+      });
+    }
+
     if (user.sub.toString() !== businessExist.ownerId.toString()) {
       throw new ForbiddenException({
         message: 'You are not allowed to create product for this business.',

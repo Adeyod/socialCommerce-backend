@@ -44,11 +44,13 @@ export class ProductsRepository {
   async findById(id: string) {
     const productId = new Types.ObjectId(id);
 
-    const product = await this.productModel.findOne({
-      _id: productId,
-      isDeleted: false,
-      isActive: true,
-    });
+    const product = await this.productModel
+      .findOne({
+        _id: productId,
+        isDeleted: false,
+        isActive: true,
+      })
+      .populate({ path: 'businessId', select: 'businessName' });
 
     return product;
   }
@@ -517,7 +519,7 @@ export class ProductsRepository {
       isDeleted: false,
     };
 
-    // 🔍 Search (name + category)
+    // Search (name + category)
     if (searchParams) {
       const regex = new RegExp(searchParams, 'i');
 
@@ -528,12 +530,12 @@ export class ProductsRepository {
       ];
     }
 
-    // 📦 Category filter
+    // Category filter
     if (category) {
       match.category = category;
     }
 
-    // 💰 Price filter
+    // Price filter
     if (minPrice || maxPrice) {
       match.price = {};
       if (minPrice) match.price.$gte = Number(minPrice);
@@ -542,11 +544,11 @@ export class ProductsRepository {
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    // 🧱 BASE PIPELINE
+    // BASE PIPELINE
     const basePipeline: any[] = [
       { $match: match },
 
-      // 👤 Join Business (vendor equivalent)
+      // Join Business (vendor equivalent)
       {
         $lookup: {
           from: 'businesses',
@@ -557,14 +559,14 @@ export class ProductsRepository {
       },
       { $unwind: '$business' },
 
-      // 🎲 fairness factor
+      // fairness factor
       {
         $addFields: {
           randomFactor: { $rand: {} },
         },
       },
 
-      // ⭐ CLEAN SCORE (based only on your schema)
+      // CLEAN SCORE (based only on your schema)
       {
         $addFields: {
           score: {
@@ -579,7 +581,7 @@ export class ProductsRepository {
       },
     ];
 
-    // 🎯 SORT LOGIC
+    // SORT LOGIC
     let sortStage: any = { score: -1 };
 
     switch (sort) {
@@ -600,7 +602,7 @@ export class ProductsRepository {
         break;
     }
 
-    // 🚀 FINAL PIPELINE WITH FACET (FIXES YOUR TOTAL ISSUE)
+    // FINAL PIPELINE WITH FACET (FIXES YOUR TOTAL ISSUE)
     const result = await this.productModel.aggregate([
       ...basePipeline,
 

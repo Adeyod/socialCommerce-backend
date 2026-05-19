@@ -16,7 +16,12 @@ export class BuyersService {
       limit: Number(limit),
     });
 
-    console.log('response:', response);
+    return response;
+  }
+
+  async getBuyerProductDetails(productId: string) {
+    const response = await this.productsRepository.findById(productId);
+
     return response;
   }
 }
