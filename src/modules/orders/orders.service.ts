@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import { PaymentsRepository } from '../payments/repositories/payment.repository';
+import { PaymentProvider } from '../payments/schemas/payment.schema';
 import { ProductsRepository } from '../products/repositories/product.repository';
 import { Role } from '../users/schemas/user.schema';
 import { CreateOrderDto, CreateVendorOrderDto } from './dtos/create-order.dto';
@@ -17,6 +19,7 @@ export class OrdersService {
   constructor(
     private readonly orderRepository: OrderRepository,
     private readonly productsRepository: ProductsRepository,
+    private readonly paymentsRepository: PaymentsRepository,
   ) {}
 
   // async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
@@ -207,7 +210,25 @@ export class OrdersService {
       throw new BadRequestException('Order creation failed');
     }
 
-    return order;
+    const orderId = order._id;
+    const userId = user.sub;
+    const provider = PaymentProvider.PAYSTACK;
+    const amount = total;
+
+    // create payment intent here for user to pay and return it to the frontend
+    const paymentIntent = await this.paymentsRepository.createPaymentIntent(
+      userId,
+      provider,
+      orderId,
+      amount,
+    );
+
+    const response = {
+      paymentIntent,
+      order,
+    };
+
+    return response;
   }
 
   async getCustomerOrderDetails(

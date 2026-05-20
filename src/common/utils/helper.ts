@@ -1,4 +1,8 @@
-import { ForbiddenException, NotAcceptableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotAcceptableException,
+} from '@nestjs/common';
 import parsePhoneNumberFromString from 'libphonenumber-js';
 import { customAlphabet } from 'nanoid';
 
@@ -57,6 +61,24 @@ export function buildSmartPatch<T extends Record<string, any>>(
 
   return patch;
 }
+
+export const generatePaymentReference = (payload) => {
+  const { userId, orderId } = payload;
+
+  console.log('payload:', payload);
+
+  if (!userId || !orderId) {
+    throw new BadRequestException({
+      message: 'User ID and order ID are required.',
+      success: false,
+      status: 400,
+    });
+  }
+
+  const ref = `PAYMENT_${orderId}_${userId}_${Date.now()}`;
+
+  return ref;
+};
 
 // export const generatePaymentReference = (payload: {
 //   bookingId: string;

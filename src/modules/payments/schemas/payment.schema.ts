@@ -19,6 +19,9 @@ export class Payment {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId!: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Order', required: true })
+  orderId!: Types.ObjectId;
+
   @Prop({ required: true })
   expiresAt!: Date;
 
@@ -64,7 +67,7 @@ export const PaymentSchema = SchemaFactory.createForClass(Payment);
 
 PaymentSchema.index({
   userId: 1,
-  plan: 1,
+  orderId: 1,
   status: 1,
   expiresAt: 1,
 });
