@@ -21,15 +21,15 @@ export enum VendorOrderStatus {
 
 @Schema({ timestamps: true })
 export class Order {
-  // 👤 Customer
+  // Customer
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   customerId!: Types.ObjectId;
 
-  // 🏪 MULTI-VENDOR STRUCTURE
+  // MULTI-VENDOR STRUCTURE
   @Prop({
     type: [
       {
-        vendorId: {
+        businessId: {
           type: Types.ObjectId,
           ref: 'Business',
           required: true,
@@ -52,15 +52,14 @@ export class Order {
 
         status: {
           type: String,
-          enum: ['PENDING', 'PROCESSING', 'READY'],
-          default: 'PENDING',
+          enum: VendorOrderStatus,
+          default: VendorOrderStatus.pending,
         },
       },
     ],
     required: true,
   })
   vendorOrders!: {
-    vendorId: Types.ObjectId;
     businessId: Types.ObjectId;
     items: {
       productId: Types.ObjectId;

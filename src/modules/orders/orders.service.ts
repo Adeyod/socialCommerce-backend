@@ -19,6 +19,105 @@ export class OrdersService {
     private readonly productsRepository: ProductsRepository,
   ) {}
 
+  // async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
+  //   const {
+  //     customerId,
+  //     vendorOrders,
+  //     deliveryFee,
+  //     deliveryAddress,
+  //     contactPhone,
+  //   } = createOrderDto;
+
+  //   if (user.sub.toString() !== customerId) {
+  //     throw new BadRequestException({
+  //       message: 'Invalid user. Mis-match',
+  //       status: 400,
+  //       success: false,
+  //     });
+  //   }
+
+  //   if (!vendorOrders?.length) {
+  //     throw new BadRequestException({
+  //       message: 'Cart is empty',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   let globalSubtotal = 0;
+
+  //   const processedVendorOrders: CreateVendorOrderDto[] = [];
+
+  //   for (const vendorOrder of vendorOrders) {
+  //     let vendorSubtotal = 0;
+
+  //     const processedItems: {
+  //       productId: string;
+  //       name: string;
+  //       price: number;
+  //       quantity: number;
+  //     }[] = [];
+
+  //     for (const item of vendorOrder.items) {
+  //       const product = await this.productsRepository.findById(item.productId);
+
+  //       if (!product) {
+  //         throw new NotFoundException({
+  //           message: `Product not found: ${item.productId}`,
+  //           success: false,
+  //           status: 404,
+  //         });
+  //       }
+
+  //       const price = product.price * item.quantity;
+
+  //       vendorSubtotal += price;
+
+  //       processedItems.push({
+  //         productId: product._id.toString(),
+  //         name: product.name,
+  //         price: product.price,
+  //         quantity: item.quantity,
+  //       });
+  //     }
+
+  //     globalSubtotal += vendorSubtotal;
+
+  //     processedVendorOrders.push({
+  //       businessId: vendorOrder.businessId,
+  //       items: processedItems,
+  //       subtotal: vendorSubtotal,
+  //       status: VendorOrderStatus.pending,
+  //     });
+  //   }
+
+  //   const total = globalSubtotal + deliveryFee;
+
+  //   const orderPayload = {
+  //     customerId,
+  //     vendorOrders: processedVendorOrders,
+  //     subtotal: globalSubtotal,
+  //     deliveryFee,
+  //     total,
+  //     deliveryAddress,
+  //     contactPhone,
+  //     status: OrderStatus.pending,
+  //     isPaid: false,
+  //   };
+
+  //   const order = await this.orderRepository.createOrder(orderPayload);
+
+  //   if (!order) {
+  //     throw new BadRequestException({
+  //       message: 'Order creation failed',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   return order;
+  // }
+
   async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
     const {
       customerId,
@@ -28,19 +127,16 @@ export class OrdersService {
       contactPhone,
     } = createOrderDto;
 
-    if (user.sub.toString() !== createOrderDto.customerId) {
+    // 1. AUTH CHECK
+    if (user.sub.toString() !== customerId) {
       throw new BadRequestException({
-        message: 'Invalid user. Mis-match',
-        status: 400,
-        success: false,
+        message: 'Invalid user mismatch',
       });
     }
 
-    if (!vendorOrders || vendorOrders.length === 0) {
+    if (!vendorOrders?.length) {
       throw new BadRequestException({
         message: 'Cart is empty',
-        success: false,
-        status: 400,
       });
     }
 
@@ -48,6 +144,7 @@ export class OrdersService {
 
     const processedVendorOrders: CreateVendorOrderDto[] = [];
 
+    // 2. PROCESS EACH VENDOR
     for (const vendorOrder of vendorOrders) {
       let vendorSubtotal = 0;
 
@@ -58,20 +155,17 @@ export class OrdersService {
         quantity: number;
       }[] = [];
 
+      // 3. PROCESS ITEMS
       for (const item of vendorOrder.items) {
         const product = await this.productsRepository.findById(item.productId);
 
         if (!product) {
-          throw new NotFoundException({
-            message: `Product not found: ${item.productId}`,
-            success: false,
-            status: 404,
-          });
+          throw new NotFoundException(`Product not found: ${item.productId}`);
         }
 
-        const price = product.price * item.quantity;
+        const itemTotal = product.price * item.quantity;
 
-        vendorSubtotal += price;
+        vendorSubtotal += itemTotal;
 
         processedItems.push({
           productId: product._id.toString(),
@@ -84,7 +178,6 @@ export class OrdersService {
       globalSubtotal += vendorSubtotal;
 
       processedVendorOrders.push({
-        vendorId: vendorOrder.vendorId,
         businessId: vendorOrder.businessId,
         items: processedItems,
         subtotal: vendorSubtotal,
@@ -92,9 +185,10 @@ export class OrdersService {
       });
     }
 
+    // 4. FINAL TOTAL
     const total = globalSubtotal + deliveryFee;
 
-    const orderPayload = {
+    const payload = {
       customerId,
       vendorOrders: processedVendorOrders,
       subtotal: globalSubtotal,
@@ -102,18 +196,15 @@ export class OrdersService {
       total,
       deliveryAddress,
       contactPhone,
-      status: OrderStatus.pending,
       isPaid: false,
+      status: OrderStatus.pending,
     };
 
-    const order = await this.orderRepository.createOrder(orderPayload);
+    // 5. CREATE ORDER
+    const order = await this.orderRepository.createOrder(payload);
 
     if (!order) {
-      throw new BadRequestException({
-        message: 'Order creation failed',
-        success: false,
-        status: 400,
-      });
+      throw new BadRequestException('Order creation failed');
     }
 
     return order;

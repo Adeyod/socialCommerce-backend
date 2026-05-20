@@ -33,10 +33,6 @@ export class CreateVendorOrderDto {
   @IsString()
   businessId!: string;
 
-  @ApiProperty()
-  @IsString()
-  vendorId!: string;
-
   @ApiProperty({ type: [CreateOrderItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
