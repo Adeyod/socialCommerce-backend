@@ -21,6 +21,9 @@ export enum VendorOrderStatus {
 
 @Schema({ timestamps: true })
 export class Order {
+  @Prop({ unique: true, required: true })
+  idempotencyKey!: string;
+
   // Customer
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   customerId!: Types.ObjectId;

@@ -50,7 +50,25 @@ export class PaymentsRepository {
       provider,
     }).save();
 
+    console.log('newPayment:', newPayment);
+
     return newPayment;
+  }
+
+  async updatePaymentExpirationUsingPaymentId(
+    paymentId: Types.ObjectId,
+  ): Promise<PaymentDocument | null> {
+    const payment = await this.paymentModel.findByIdAndUpdate(
+      paymentId,
+      {
+        isExpired: true,
+      },
+      {
+        returnDocument: 'after',
+      },
+    );
+
+    return payment;
   }
 
   async updatePaymentStatusUsingPaymentId(
@@ -233,5 +251,14 @@ export class PaymentsRepository {
     });
 
     return paymentTransaction;
+  }
+
+  async findPaymentByOrderId(orderId: string): Promise<PaymentDocument | null> {
+    const id = new Types.ObjectId(orderId);
+    const response = await this.paymentModel.findOne({
+      orderId: id,
+    });
+
+    return response;
   }
 }

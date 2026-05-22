@@ -21,9 +21,11 @@ export class OrderRepository {
   async createOrder(
     createOrderDto: CreateOrderDto,
   ): Promise<OrderDocument | null> {
+    console.log('createOrderDto:', createOrderDto);
     const order = new this.orderModel(createOrderDto);
     await order.save();
 
+    console.log('order:', order);
     return order;
   }
 
@@ -224,5 +226,18 @@ export class OrderRepository {
     );
 
     return attachedDelivery;
+  }
+
+  async findOrderByIdempotencyKey(
+    idempotencyKey: string,
+    userId: string,
+  ): Promise<OrderDocument | null> {
+    const id = new Types.ObjectId(userId);
+    const response = await this.orderModel.findOne({
+      idempotencyKey,
+      customerId: id,
+    });
+
+    return response;
   }
 }

@@ -6,8 +6,12 @@ import {
 } from '@nestjs/common';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import { PaymentsService } from '../payments/payments.service';
 import { PaymentsRepository } from '../payments/repositories/payment.repository';
-import { PaymentProvider } from '../payments/schemas/payment.schema';
+import {
+  PaymentProvider,
+  PaymentStatus,
+} from '../payments/schemas/payment.schema';
 import { ProductsRepository } from '../products/repositories/product.repository';
 import { Role } from '../users/schemas/user.schema';
 import { CreateOrderDto, CreateVendorOrderDto } from './dtos/create-order.dto';
@@ -19,6 +23,7 @@ export class OrdersService {
   constructor(
     private readonly orderRepository: OrderRepository,
     private readonly productsRepository: ProductsRepository,
+    private readonly paymentsService: PaymentsService,
     private readonly paymentsRepository: PaymentsRepository,
   ) {}
 
@@ -128,18 +133,80 @@ export class OrdersService {
       deliveryFee,
       deliveryAddress,
       contactPhone,
+      idempotencyKey,
     } = createOrderDto;
 
+    console.log('createOrderDto:', createOrderDto);
     // 1. AUTH CHECK
     if (user.sub.toString() !== customerId) {
       throw new BadRequestException({
         message: 'Invalid user mismatch',
+        success: false,
+        status: 400,
       });
+    }
+
+    const existingOrder = await this.orderRepository.findOrderByIdempotencyKey(
+      idempotencyKey,
+      user.sub.toString(),
+    );
+
+    if (existingOrder) {
+      const paymentMade = await this.paymentsRepository.findPaymentByOrderId(
+        existingOrder._id.toString(),
+      );
+
+      if (!paymentMade) {
+        const newPayment = await this.paymentsService.createPaymentIntent(
+          PaymentProvider.PAYSTACK,
+          user,
+          existingOrder._id.toString(),
+          existingOrder.total,
+        );
+
+        return {
+          order: existingOrder,
+          payment: newPayment,
+        };
+      }
+
+      if (
+        existingOrder.isPaid &&
+        paymentMade.verified === true &&
+        paymentMade.status === PaymentStatus.successful
+      ) {
+        return {
+          order: existingOrder,
+          payment: null,
+          message: 'Order already paid',
+        };
+      } else {
+        const now = new Date();
+        if (paymentMade?.expiresAt && paymentMade.expiresAt < now) {
+          await this.paymentsRepository.updatePaymentExpirationUsingPaymentId(
+            paymentMade._id,
+          );
+
+          const newPayment = await this.paymentsService.createPaymentIntent(
+            PaymentProvider.PAYSTACK,
+            user,
+            existingOrder._id.toString(),
+            existingOrder.total,
+          );
+
+          return {
+            order: existingOrder,
+            payment: newPayment,
+          };
+        }
+      }
     }
 
     if (!vendorOrders?.length) {
       throw new BadRequestException({
         message: 'Cart is empty',
+        success: false,
+        status: 400,
       });
     }
 
@@ -163,7 +230,18 @@ export class OrdersService {
         const product = await this.productsRepository.findById(item.productId);
 
         if (!product) {
-          throw new NotFoundException(`Product not found: ${item.productId}`);
+          throw new NotFoundException({
+            message: `Product not found: ${item.productId}`,
+            success: false,
+            status: 404,
+          });
+        }
+        if (!product.inStock) {
+          throw new NotFoundException({
+            message: `Product ${item.productId} is out of stock`,
+            success: false,
+            status: 404,
+          });
         }
 
         const itemTotal = product.price * item.quantity;
@@ -201,6 +279,7 @@ export class OrdersService {
       contactPhone,
       isPaid: false,
       status: OrderStatus.pending,
+      idempotencyKey,
     };
 
     // 5. CREATE ORDER
@@ -211,15 +290,14 @@ export class OrdersService {
     }
 
     const orderId = order._id;
-    const userId = user.sub;
     const provider = PaymentProvider.PAYSTACK;
     const amount = total;
 
     // create payment intent here for user to pay and return it to the frontend
-    const paymentIntent = await this.paymentsRepository.createPaymentIntent(
-      userId,
+    const paymentIntent = await this.paymentsService.createPaymentIntent(
       provider,
-      orderId,
+      user,
+      orderId.toString(),
       amount,
     );
 
@@ -228,16 +306,18 @@ export class OrdersService {
       order,
     };
 
+    console.log('response:', response);
+
     return response;
   }
 
   async getCustomerOrderDetails(
-    customerId: string,
+    buyerId: string,
     orderId: string,
     user: JwtUser,
   ) {
     if (user.role !== Role.admin) {
-      if (user.sub.toString() !== customerId) {
+      if (user.sub.toString() !== buyerId) {
         throw new ForbiddenException({
           message: 'You can only view order that belong to you.',
           success: false,
@@ -256,7 +336,7 @@ export class OrdersService {
       });
     }
 
-    if (response.customerId.toString() !== customerId) {
+    if (response.customerId.toString() !== buyerId) {
       throw new ForbiddenException({
         message: 'You can only view order that belong to you.',
         success: false,
@@ -267,12 +347,12 @@ export class OrdersService {
     return response;
   }
   async getCustomerOrders(
-    customerId: string,
+    buyerId: string,
     user: JwtUser,
     queryWithPaginationDto: QueryWithPaginationDto,
   ) {
     if (user.role !== Role.admin) {
-      if (user.sub.toString() !== customerId) {
+      if (user.sub.toString() !== buyerId) {
         throw new ForbiddenException({
           message: 'You can only view orders that belong to you.',
           success: false,

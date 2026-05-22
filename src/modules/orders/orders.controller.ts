@@ -55,12 +55,13 @@ export class OrdersController {
     @Body() createOrderDto: CreateOrderDto,
     @GetCurrentUser() user: JwtUser,
   ) {
+    console.log('createOrderDto:', createOrderDto);
     const response = await this.ordersService.createOrder(user, createOrderDto);
 
     return response;
   }
 
-  @Get('customer-orders/:customerId')
+  @Get('buyer-orders/:buyerId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.user, Role.admin)
   @ApiBearerAuth('JWT-auth')
@@ -85,19 +86,19 @@ export class OrdersController {
     description: 'Internal server error',
   })
   async getCustomerOrders(
-    @Param('customerId') customerId: string,
+    @Param('buyerId') buyerId: string,
     @Query() queryWithPaginationDto: QueryWithPaginationDto,
     @GetCurrentUser() user: JwtUser,
   ) {
     const response = await this.ordersService.getCustomerOrders(
-      customerId,
+      buyerId,
       user,
       queryWithPaginationDto,
     );
 
     return response;
   }
-  @Get('customer-orders/:orderId/:customerId')
+  @Get('buyer-order/:buyerId/:orderId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.user, Role.admin)
   @ApiBearerAuth('JWT-auth')
@@ -122,12 +123,12 @@ export class OrdersController {
     description: 'Internal server error',
   })
   async getCustomerOrderDetails(
-    @Param('customerId') customerId: string,
+    @Param('buyerId') buyerId: string,
     @Param('orderId') orderId: string,
     @GetCurrentUser() user: JwtUser,
   ) {
     const response = await this.ordersService.getCustomerOrderDetails(
-      customerId,
+      buyerId,
       orderId,
       user,
     );

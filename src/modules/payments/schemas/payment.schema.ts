@@ -25,6 +25,9 @@ export class Payment {
   @Prop({ required: true })
   expiresAt!: Date;
 
+  @Prop({ default: false })
+  isExpired!: boolean;
+
   @Prop({ required: true })
   amount!: number; // store in kobo
 
