@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -85,6 +86,8 @@ export class CreateOrderDto {
     description:
       'This is the address that the customer want the products to be delivered to.',
   })
+  @Transform(({ value }) => value?.toString().trim())
+  @IsNotEmpty()
   @IsString()
   deliveryAddress!: string;
 

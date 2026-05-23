@@ -25,7 +25,7 @@ export class OrderRepository {
     const order = new this.orderModel(createOrderDto);
     await order.save();
 
-    console.log('order:', order);
+    console.log('order creation repository:', order);
     return order;
   }
 

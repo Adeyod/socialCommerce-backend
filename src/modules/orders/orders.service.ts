@@ -244,14 +244,32 @@ export class OrdersService {
           });
         }
 
-        const itemTotal = product.price * item.quantity;
+        const price = product.price;
+
+        if (item.quantity <= 0) {
+          throw new BadRequestException({
+            message: `Invalid quantity for ${product.name}.`,
+            status: 400,
+            success: false,
+          });
+        }
+
+        if (item.price && item.price !== price) {
+          throw new BadRequestException({
+            message: `Price mis-match detected for ${product.name}.`,
+            success: false,
+            status: 400,
+          });
+        }
+
+        const itemTotal = price * item.quantity;
 
         vendorSubtotal += itemTotal;
 
         processedItems.push({
           productId: product._id.toString(),
           name: product.name,
-          price: product.price,
+          price: price,
           quantity: item.quantity,
         });
       }
@@ -281,6 +299,8 @@ export class OrdersService {
       status: OrderStatus.pending,
       idempotencyKey,
     };
+
+    console.log('order creation payload:', payload);
 
     // 5. CREATE ORDER
     const order = await this.orderRepository.createOrder(payload);

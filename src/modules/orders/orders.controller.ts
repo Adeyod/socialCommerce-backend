@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -53,8 +54,10 @@ export class OrdersController {
   })
   async createOrder(
     @Body() createOrderDto: CreateOrderDto,
+    @Req() req: Request,
     @GetCurrentUser() user: JwtUser,
   ) {
+    console.log('RAW BODY:', req.body);
     console.log('createOrderDto:', createOrderDto);
     const response = await this.ordersService.createOrder(user, createOrderDto);
 
