@@ -21,11 +21,9 @@ export class OrderRepository {
   async createOrder(
     createOrderDto: CreateOrderDto,
   ): Promise<OrderDocument | null> {
-    console.log('createOrderDto:', createOrderDto);
-    const order = new this.orderModel(createOrderDto);
+    const order = new this.orderModel(this.toOrderPayload(createOrderDto));
     await order.save();
 
-    console.log('order creation repository:', order);
     return order;
   }
 
@@ -239,5 +237,21 @@ export class OrderRepository {
     });
 
     return response;
+  }
+
+  private toOrderPayload(dto: CreateOrderDto) {
+    return {
+      customerId: new Types.ObjectId(dto.customerId),
+
+      vendorOrders: dto.vendorOrders,
+      subtotal: dto.subtotal,
+      deliveryFee: dto.deliveryFee,
+      total: dto.total,
+      deliveryAddress: dto.deliveryAddress,
+      contactPhone: dto.contactPhone,
+      idempotencyKey: dto.idempotencyKey,
+      notes: dto.notes,
+      isPaid: dto.isPaid ?? false,
+    };
   }
 }

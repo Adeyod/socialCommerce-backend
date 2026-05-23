@@ -10,6 +10,7 @@ import { Request } from 'express';
 import { Connection, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import { CartRepository } from '../carts/repositories/cart.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { Role } from '../users/schemas/user.schema';
 import { PaymentResponseDto } from './dto/payment-response.dto';
@@ -25,6 +26,7 @@ export class PaymentsService {
   constructor(
     @InjectConnection() private readonly connection: Connection,
     private readonly paymentsRepository: PaymentsRepository,
+    private readonly cartRepository: CartRepository,
     private readonly paystackService: PaystackService,
     // private readonly flutterwaveService: flutterwaveService,
     private usersRepository: UsersRepository,
@@ -336,6 +338,9 @@ export class PaymentsService {
       // 5. Mark payment verified (outside transaction since already committed)
       payment.verified = true;
       await payment.save();
+      const clearCart = await this.cartRepository.clearCart(
+        userExist._id.toString(),
+      );
 
       return { message: 'successful' };
     } catch (error) {

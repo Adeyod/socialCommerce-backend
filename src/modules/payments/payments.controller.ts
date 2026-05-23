@@ -71,7 +71,7 @@ export class PaymentsController {
     @Param('provider') provider: PaymentProvider,
     @Req() req: Request,
   ) {
-    // console.log('Body:', req.body);
+    console.log('Webhook controller:', req.body);
     return await this.paymentsService.handleWebhook(provider, req);
   }
 
