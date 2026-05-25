@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
-  IsBoolean,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -17,16 +16,30 @@ export class CreateOrderItemDto {
   productId!: string;
 
   @ApiProperty()
+  @IsNumber()
+  quantity!: number;
+
+  @ApiProperty()
+  @IsString()
+  businessId!: string;
+}
+
+export class VendorOrderItemDto {
+  @ApiProperty()
+  @IsString()
+  productId!: string;
+
+  @ApiProperty()
   @IsString()
   name!: string;
 
   @ApiProperty()
   @IsNumber()
-  price!: number;
+  quantity!: number;
 
   @ApiProperty()
   @IsNumber()
-  quantity!: number;
+  price!: number;
 }
 
 export class CreateVendorOrderDto {
@@ -34,11 +47,11 @@ export class CreateVendorOrderDto {
   @IsString()
   businessId!: string;
 
-  @ApiProperty({ type: [CreateOrderItemDto] })
+  @ApiProperty({ type: [VendorOrderItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateOrderItemDto)
-  items!: CreateOrderItemDto[];
+  @Type(() => VendorOrderItemDto)
+  items!: VendorOrderItemDto[];
 
   @ApiProperty()
   @IsNumber()
@@ -52,35 +65,28 @@ export class CreateVendorOrderDto {
 
 export class CreateOrderDto {
   @ApiProperty({
+    description: 'This is the ID of the cart of the buyer.',
+  })
+  @IsString()
+  cartId!: string;
+
+  @ApiProperty({
     description: 'This is the ID of the buyer.',
   })
   @IsString()
   customerId!: string;
 
-  @ApiProperty({ type: [CreateVendorOrderDto] })
+  @ApiProperty({ type: [CreateOrderItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateVendorOrderDto)
-  vendorOrders!: CreateVendorOrderDto[];
-
-  @ApiProperty({
-    description: 'This is the overall total of all the products.',
-  })
-  @IsNumber()
-  subtotal!: number; //the overall total of products summed together
+  @Type(() => CreateOrderItemDto)
+  items!: CreateOrderItemDto[];
 
   @ApiProperty({
     description: 'This is the delivery fee for rider.',
   })
   @IsNumber()
   deliveryFee!: number;
-
-  @ApiProperty({
-    description:
-      'This is the actual amount that customer is going to pay which is the products cost plus delivery fees and if there is tax, it will be added.',
-  })
-  @IsNumber()
-  total!: number; // this is the amount that the customer will eventually pay. Delivery fee added, taxes(if any) as well as if there is discount.
 
   @ApiProperty({
     description:
@@ -101,14 +107,4 @@ export class CreateOrderDto {
   @ApiProperty({ description: 'This si the phone number of the customer' })
   @IsString()
   contactPhone!: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  notes?: string;
-
-  @ApiProperty({ default: false })
-  @IsOptional()
-  @IsBoolean()
-  isPaid?: boolean;
 }

@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../../common/dto/query-with-pagination';
-import { CreateOrderDto } from '../dtos/create-order.dto';
 import { UpdateOrderDto } from '../dtos/update-order.dto';
 import {
   Order,
@@ -10,6 +9,7 @@ import {
   OrderStatus,
   VendorOrderStatus,
 } from '../schemas/order.schema';
+import { ProcessedOrderData } from '../types/processed-vendor.dto';
 
 @Injectable()
 export class OrderRepository {
@@ -19,7 +19,7 @@ export class OrderRepository {
   ) {}
 
   async createOrder(
-    createOrderDto: CreateOrderDto,
+    createOrderDto: ProcessedOrderData,
   ): Promise<OrderDocument | null> {
     const order = new this.orderModel(this.toOrderPayload(createOrderDto));
     await order.save();
@@ -239,18 +239,17 @@ export class OrderRepository {
     return response;
   }
 
-  private toOrderPayload(dto: CreateOrderDto) {
+  private toOrderPayload(dto: ProcessedOrderData) {
     return {
       customerId: new Types.ObjectId(dto.customerId),
 
-      vendorOrders: dto.vendorOrders,
+      vendorOrders: dto.items,
       subtotal: dto.subtotal,
       deliveryFee: dto.deliveryFee,
       total: dto.total,
       deliveryAddress: dto.deliveryAddress,
       contactPhone: dto.contactPhone,
       idempotencyKey: dto.idempotencyKey,
-      notes: dto.notes,
       isPaid: dto.isPaid ?? false,
     };
   }

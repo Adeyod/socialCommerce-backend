@@ -28,6 +28,7 @@ import { VendorModule } from './modules/vendor/vendor.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { BuyersModule } from './modules/buyers/buyers.module';
 import { CartsModule } from './modules/carts/carts.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -120,6 +121,7 @@ import { CartsModule } from './modules/carts/carts.module';
     OrdersModule,
     BuyersModule,
     CartsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

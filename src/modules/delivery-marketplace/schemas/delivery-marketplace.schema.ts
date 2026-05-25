@@ -3,53 +3,47 @@ import { HydratedDocument, Types } from 'mongoose';
 
 export type DeliveryMarketplaceDocument = HydratedDocument<DeliveryMarketplace>;
 
-export enum DeliveryMarketplaceStatus {
+export enum MarketplaceStatus {
   open = 'open',
-  assigned = 'assigned',
-  picked_up = 'picked_up',
-  in_transit = 'in_transit',
-  delivered = 'delivered',
-  cancelled = 'cancelled',
+  claimed = 'claimed',
+  expired = 'expired',
 }
 
 @Schema({ timestamps: true })
 export class DeliveryMarketplace {
-  @Prop({ type: Types.ObjectId, ref: 'Order', required: true })
-  orderId!: Types.ObjectId;
-
-  @Prop({ type: Types.ObjectId, ref: 'Business', required: true })
-  vendorId!: Types.ObjectId;
-
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  assignedRiderId?: Types.ObjectId;
-
-  @Prop({ required: true })
-  pickup!: string;
-
-  @Prop({ required: true })
-  dropoff!: string;
-
-  @Prop({ required: true })
-  distance!: number;
-
-  @Prop({ required: true })
-  fee!: number;
+  @Prop({ type: Types.ObjectId, ref: 'Delivery', required: true })
+  deliveryId!: Types.ObjectId;
 
   @Prop({
     type: String,
-    enum: DeliveryMarketplaceStatus,
-    default: DeliveryMarketplaceStatus.open,
+    enum: MarketplaceStatus,
+    default: MarketplaceStatus.open,
   })
-  status!: DeliveryMarketplaceStatus;
+  status!: MarketplaceStatus;
 
-  @Prop({ default: null })
-  acceptedAt?: Date;
+  // riders we notified
+  @Prop({ type: [Types.ObjectId], default: [] })
+  notifiedRiders!: Types.ObjectId[];
 
-  @Prop({ default: null })
-  deliveredAt?: Date;
+  // riders who opened/viewed
+  @Prop({ type: [Types.ObjectId], default: [] })
+  viewedRiders!: Types.ObjectId[];
 
-  @Prop({ default: null })
-  cancelledAt?: Date;
+  // riders who attempted claim
+  @Prop({ type: [Types.ObjectId], default: [] })
+  attemptedRiders!: Types.ObjectId[];
+
+  // winner
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  selectedRider?: Types.ObjectId;
+
+  // expiration logic
+  @Prop()
+  expiresAt?: Date;
+
+  // number of re-broadcasts
+  @Prop({ default: 0 })
+  broadcastCount!: number;
 }
 
 export const DeliveryMarketplaceSchema =

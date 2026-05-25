@@ -19,6 +19,12 @@ export enum VendorOrderStatus {
   ready = 'ready',
 }
 
+export enum VendorItemOrderStatus {
+  pending = 'pending',
+  processing = 'processing',
+  ready = 'ready',
+}
+
 @Schema({ timestamps: true })
 export class Order {
   @Prop({ unique: true, required: true })
@@ -64,11 +70,13 @@ export class Order {
   })
   vendorOrders!: {
     businessId: Types.ObjectId;
+    businessAddress: string;
     items: {
       productId: Types.ObjectId;
       name: string;
       price: number;
       quantity: number;
+      itemStatus: VendorItemOrderStatus;
     }[];
     subtotal: number;
     status: VendorOrderStatus;

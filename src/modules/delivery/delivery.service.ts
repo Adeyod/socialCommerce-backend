@@ -1,4 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class DeliveryService {}
+export class DeliveryService {
+  /**
+   * create delivery record
+   * assign rider
+   * update delivery status
+   * track delivery lifecycle
+   */
+}

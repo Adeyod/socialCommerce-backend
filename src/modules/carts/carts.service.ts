@@ -1,10 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { ProductsRepository } from '../products/repositories/product.repository';
 import { AddItemToCartDto } from './dtos/add-item.dto';
 import { CartRepository } from './repositories/cart.repository';
 
 @Injectable()
 export class CartsService {
-  constructor(private readonly cartRepository: CartRepository) {}
+  constructor(
+    private readonly cartRepository: CartRepository,
+    private readonly productsRepository: ProductsRepository,
+  ) {}
 
   async getCart(userId: string) {
     const cart = await this.cartRepository.getCart(userId);
@@ -37,6 +45,26 @@ export class CartsService {
   async addItem(userId: string, addItemToCartDto: AddItemToCartDto) {
     const { productId, businessId, quantity } = addItemToCartDto;
 
+    const productExist = await this.productsRepository.findAProductByBusinessId(
+      businessId,
+      productId,
+    );
+
+    if (!productExist) {
+      throw new NotFoundException({
+        message: `Product with ID: ${productId} not found.`,
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (productExist.stock < quantity) {
+      throw new BadRequestException({
+        message: `This store has ${productExist.stock} ${productExist.name} left.`,
+        success: false,
+        status: 400,
+      });
+    }
     const cart = await this.cartRepository.addItem(
       userId,
       productId,

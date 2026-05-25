@@ -31,6 +31,18 @@ export class BusinessesRepository {
     return business;
   }
 
+  async findBusinessesByIds(
+    businessIds: string[],
+  ): Promise<BusinessDocument[]> {
+    const objectIds = businessIds.map((id) => new Types.ObjectId(id));
+
+    const businesses = await this.businessModel.find({
+      _id: { $in: objectIds },
+    });
+
+    return businesses;
+  }
+
   async createBusiness(userId: string, createBusinessDto: CreateBusinessDto) {
     const id = new Types.ObjectId(userId);
 
@@ -54,5 +66,25 @@ export class BusinessesRepository {
     );
 
     return update;
+  }
+
+  async addBusinessAddress(
+    businessId: string,
+    addressData: any,
+  ): Promise<BusinessDocument | null> {
+    const id = new Types.ObjectId(businessId);
+
+    const updatedBusiness = await this.businessModel.findByIdAndUpdate(
+      id,
+      {
+        $set: { businessAddress: addressData },
+      },
+      {
+        returnDocument: 'after',
+        runValidators: true,
+      },
+    );
+
+    return updatedBusiness;
   }
 }

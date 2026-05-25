@@ -6,6 +6,12 @@ import {
 } from '@nestjs/common';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
+import { CartRepository } from '../carts/repositories/cart.repository';
+import { DeliveryMarketplaceRepository } from '../delivery-marketplace/repositories/delivery-marketplace.repository';
+import { DeliveryRepository } from '../delivery/repositories/delivery.repository';
+import { DeliveryStatus } from '../delivery/schemas/delivery.schema';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PaymentsRepository } from '../payments/repositories/payment.repository';
 import {
@@ -14,129 +20,40 @@ import {
 } from '../payments/schemas/payment.schema';
 import { ProductsRepository } from '../products/repositories/product.repository';
 import { Role } from '../users/schemas/user.schema';
-import { CreateOrderDto, CreateVendorOrderDto } from './dtos/create-order.dto';
+import { CreateOrderDto } from './dtos/create-order.dto';
 import { OrderRepository } from './repositories/order.repository';
-import { OrderStatus, VendorOrderStatus } from './schemas/order.schema';
+import {
+  OrderStatus,
+  VendorItemOrderStatus,
+  VendorOrderStatus,
+} from './schemas/order.schema';
+import { ProcessedVendorOrder } from './types/processed-vendor.dto';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly orderRepository: OrderRepository,
+    private readonly cartRepository: CartRepository,
+    private readonly deliveryRepository: DeliveryRepository,
+    private readonly deliveryMarketplaceRepository: DeliveryMarketplaceRepository,
     private readonly productsRepository: ProductsRepository,
     private readonly paymentsService: PaymentsService,
+    private readonly notificationsService: NotificationsService,
     private readonly paymentsRepository: PaymentsRepository,
+    private readonly businessesRepository: BusinessesRepository,
   ) {}
-
-  // async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
-  //   const {
-  //     customerId,
-  //     vendorOrders,
-  //     deliveryFee,
-  //     deliveryAddress,
-  //     contactPhone,
-  //   } = createOrderDto;
-
-  //   if (user.sub.toString() !== customerId) {
-  //     throw new BadRequestException({
-  //       message: 'Invalid user. Mis-match',
-  //       status: 400,
-  //       success: false,
-  //     });
-  //   }
-
-  //   if (!vendorOrders?.length) {
-  //     throw new BadRequestException({
-  //       message: 'Cart is empty',
-  //       success: false,
-  //       status: 400,
-  //     });
-  //   }
-
-  //   let globalSubtotal = 0;
-
-  //   const processedVendorOrders: CreateVendorOrderDto[] = [];
-
-  //   for (const vendorOrder of vendorOrders) {
-  //     let vendorSubtotal = 0;
-
-  //     const processedItems: {
-  //       productId: string;
-  //       name: string;
-  //       price: number;
-  //       quantity: number;
-  //     }[] = [];
-
-  //     for (const item of vendorOrder.items) {
-  //       const product = await this.productsRepository.findById(item.productId);
-
-  //       if (!product) {
-  //         throw new NotFoundException({
-  //           message: `Product not found: ${item.productId}`,
-  //           success: false,
-  //           status: 404,
-  //         });
-  //       }
-
-  //       const price = product.price * item.quantity;
-
-  //       vendorSubtotal += price;
-
-  //       processedItems.push({
-  //         productId: product._id.toString(),
-  //         name: product.name,
-  //         price: product.price,
-  //         quantity: item.quantity,
-  //       });
-  //     }
-
-  //     globalSubtotal += vendorSubtotal;
-
-  //     processedVendorOrders.push({
-  //       businessId: vendorOrder.businessId,
-  //       items: processedItems,
-  //       subtotal: vendorSubtotal,
-  //       status: VendorOrderStatus.pending,
-  //     });
-  //   }
-
-  //   const total = globalSubtotal + deliveryFee;
-
-  //   const orderPayload = {
-  //     customerId,
-  //     vendorOrders: processedVendorOrders,
-  //     subtotal: globalSubtotal,
-  //     deliveryFee,
-  //     total,
-  //     deliveryAddress,
-  //     contactPhone,
-  //     status: OrderStatus.pending,
-  //     isPaid: false,
-  //   };
-
-  //   const order = await this.orderRepository.createOrder(orderPayload);
-
-  //   if (!order) {
-  //     throw new BadRequestException({
-  //       message: 'Order creation failed',
-  //       success: false,
-  //       status: 400,
-  //     });
-  //   }
-
-  //   return order;
-  // }
 
   async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
     const {
       customerId,
-      vendorOrders,
+      items,
       deliveryFee,
       deliveryAddress,
       contactPhone,
       idempotencyKey,
+      cartId,
     } = createOrderDto;
 
-    console.log('createOrderDto:', createOrderDto);
     // 1. AUTH CHECK
     if (user.sub.toString() !== customerId) {
       throw new BadRequestException({
@@ -202,7 +119,30 @@ export class OrdersService {
       }
     }
 
-    if (!vendorOrders?.length) {
+    const cartExist = await this.cartRepository.getCartByCartIdAndUserId(
+      cartId,
+      user.sub.toString(),
+    );
+
+    if (!cartExist) {
+      throw new NotFoundException({
+        message: 'Cart not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const cartItemsMap = new Map(
+      cartExist.items.map((item) => [
+        item.productId.toString(),
+        {
+          quantity: item.quantity,
+          businessId: item.businessId.toString(),
+        },
+      ]),
+    );
+
+    if (!items?.length) {
       throw new BadRequestException({
         message: 'Cart is empty',
         success: false,
@@ -210,12 +150,54 @@ export class OrdersService {
       });
     }
 
+    for (const item of items) {
+      const cartItem = cartItemsMap.get(item.productId.toString());
+
+      if (!cartItem) {
+        throw new BadRequestException({
+          message: `Product ${item.productId} not found in cart`,
+          success: false,
+          status: 400,
+        });
+      }
+
+      if (cartItem.quantity !== item.quantity) {
+        throw new BadRequestException({
+          message: `Quantity mismatch for product ${item.productId}`,
+          success: false,
+          status: 400,
+        });
+      }
+
+      if (cartItem.businessId !== item.businessId.toString()) {
+        throw new BadRequestException({
+          message: `Business mismatch for product ${item.productId}`,
+          success: false,
+          status: 400,
+        });
+      }
+    }
+
+    // Optional: Ensure no extra items are missing
+    if (items.length !== cartExist.items.length) {
+      throw new BadRequestException({
+        message: 'Cart items mismatch',
+        success: false,
+        status: 400,
+      });
+    }
+
     let globalSubtotal = 0;
 
-    const processedVendorOrders: CreateVendorOrderDto[] = [];
+    const processedVendorOrders: ProcessedVendorOrder[] = [];
+
+    const businessIds = items.map((v) => v.businessId);
+
+    const businesses =
+      await this.businessesRepository.findBusinessesByIds(businessIds);
 
     // 2. PROCESS EACH VENDOR
-    for (const vendorOrder of vendorOrders) {
+    for (const vendor of items) {
       let vendorSubtotal = 0;
 
       const processedItems: {
@@ -225,59 +207,78 @@ export class OrdersService {
         quantity: number;
       }[] = [];
 
-      // 3. PROCESS ITEMS
-      for (const item of vendorOrder.items) {
-        const product = await this.productsRepository.findById(item.productId);
+      const product = await this.productsRepository.findById(vendor.productId);
 
-        if (!product) {
-          throw new NotFoundException({
-            message: `Product not found: ${item.productId}`,
-            success: false,
-            status: 404,
-          });
-        }
-        if (!product.inStock) {
-          throw new NotFoundException({
-            message: `Product ${item.productId} is out of stock`,
-            success: false,
-            status: 404,
-          });
-        }
-
-        const price = product.price;
-
-        if (item.quantity <= 0) {
-          throw new BadRequestException({
-            message: `Invalid quantity for ${product.name}.`,
-            status: 400,
-            success: false,
-          });
-        }
-
-        if (item.price && item.price !== price) {
-          throw new BadRequestException({
-            message: `Price mis-match detected for ${product.name}.`,
-            success: false,
-            status: 400,
-          });
-        }
-
-        const itemTotal = price * item.quantity;
-
-        vendorSubtotal += itemTotal;
-
-        processedItems.push({
-          productId: product._id.toString(),
-          name: product.name,
-          price: price,
-          quantity: item.quantity,
+      if (!product) {
+        throw new NotFoundException({
+          message: `Product not found: ${vendor.productId}`,
+          success: false,
+          status: 404,
         });
       }
 
+      if (!product.inStock) {
+        throw new NotFoundException({
+          message: `Product ${product.name} is out of stock`,
+          success: false,
+          status: 404,
+        });
+      }
+
+      const price = product.price;
+
+      if (vendor.quantity <= 0) {
+        throw new BadRequestException({
+          message: `Invalid quantity for ${product.name}.`,
+          status: 400,
+          success: false,
+        });
+      }
+
+      if (product.stock < vendor.quantity) {
+        throw new BadRequestException({
+          message: `This store has ${product.stock} ${product.name} is left.`,
+          success: false,
+          status: 400,
+        });
+      }
+
+      const itemTotal = price * vendor.quantity;
+
+      vendorSubtotal += itemTotal;
+
+      processedItems.push({
+        productId: product._id.toString(),
+        name: product.name,
+        price: price,
+        quantity: vendor.quantity,
+      });
+
+      const businessMap = new Map(businesses.map((b) => [b._id.toString(), b]));
+
       globalSubtotal += vendorSubtotal;
 
+      const business = businessMap.get(vendor.businessId);
+
+      if (!business) {
+        throw new NotFoundException({
+          message: 'Business not found.',
+          status: 404,
+          success: false,
+        });
+      }
+
+      if (!business?.businessAddress) {
+        throw new NotFoundException({
+          message: `Business address not found for business with ID ${business._id.toString()} and business name: ${business.businessName}.`,
+          status: 404,
+          success: false,
+        });
+      }
+
       processedVendorOrders.push({
-        businessId: vendorOrder.businessId,
+        businessId: vendor.businessId,
+        businessAddress: business.businessAddress,
         items: processedItems,
         subtotal: vendorSubtotal,
         status: VendorOrderStatus.pending,
@@ -288,8 +289,9 @@ export class OrdersService {
     const total = globalSubtotal + deliveryFee;
 
     const payload = {
+      cartId,
       customerId,
-      vendorOrders: processedVendorOrders,
+      items: processedVendorOrders,
       subtotal: globalSubtotal,
       deliveryFee,
       total,
@@ -400,5 +402,103 @@ export class OrdersService {
     );
 
     return response;
+  }
+
+  async markBusinessItemInAnOrderAsPacked(
+    user: JwtUser,
+    orderId: string,
+    businessId: string,
+    productId: string,
+  ) {
+    const order = await this.orderRepository.findOrderByOrderId(orderId);
+
+    if (!order) {
+      throw new NotFoundException({
+        message: 'Order not found.',
+        status: 404,
+        success: false,
+      });
+    }
+
+    const businessOrder = order.vendorOrders.find(
+      (b) => b.businessId.toString() === businessId,
+    );
+
+    if (!businessOrder) {
+      throw new NotFoundException({
+        message: 'Business order not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const item = businessOrder.items.find(
+      (i) => i.productId.toString() === productId,
+    );
+
+    if (!item) {
+      throw new NotFoundException({
+        message: `Product with ID: ${productId} not found.`,
+        success: false,
+        status: 404,
+      });
+    }
+
+    item.itemStatus = VendorItemOrderStatus.ready;
+
+    const allPacked = businessOrder.items.every(
+      (i) => i.itemStatus === VendorItemOrderStatus.ready,
+    );
+
+    if (allPacked) {
+      businessOrder.status = VendorOrderStatus.ready;
+    }
+
+    const allBusinessesOrderPacked = order.vendorOrders.every(
+      (biz) => biz.status === VendorOrderStatus.ready,
+    );
+
+    if (allBusinessesOrderPacked) {
+      order.status = OrderStatus.ready_for_delivery;
+
+      const payload = {
+        orderId: order._id,
+        dropoffAddress: order.deliveryAddress,
+        pickupPoints: order.vendorOrders.map((v) => ({
+          businessId: v.businessId.toString(),
+          address: v.businessAddress,
+          isPickedUp: false,
+        })),
+
+        status: DeliveryStatus.available,
+      };
+      const delivery =
+        await this.deliveryRepository.createDeliveryFromOrder(payload);
+
+      if (!delivery) {
+        throw new BadRequestException({
+          message: 'Unable to create delivery document for this order.',
+          success: false,
+          status: 400,
+        });
+      }
+
+      const marketplaceEntry =
+        await this.deliveryMarketplaceRepository.publishDelivery(delivery._id);
+
+      const notifyRiders =
+        await this.notificationsService.notifyRidersNearby(order);
+
+      const updateOrderStatus = await this.orderRepository.updateOrderStatus(
+        order._id.toString(),
+        OrderStatus.in_delivery,
+      );
+    }
+
+    await order.save();
+
+    return {
+      message: 'Order marked successfull',
+    };
   }
 }

@@ -10,6 +10,7 @@ import { AppModule } from './app.module';
 import { MongoExceptionFilter } from './common/filters/mongo-exception.filter';
 import { GlobalResponseInterceptor } from './common/interceptor/global-response.interceptor';
 import { FormDataNormalizePipe } from './common/pipes/formdata-normalize.pipe';
+import { BusinessesRepository } from './modules/businesses/repositories/businesses.repository';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -22,6 +23,20 @@ async function bootstrap() {
   // Bull Board Express adapter
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath('/admin/queues');
+
+  // const addressData = {
+  //   street: 'No 22 Ajilosin',
+  //   state: 'Ekiti',
+  //   country: 'Nigeria',
+  //   code: 'Ado-Ekiti',
+  //   centerLat: 10.3016,
+  //   centerLng: 6.3364,
+  //   radiusKm: 10,
+  // };
+  // const businessId = '6a072f6fb400c151391f195b';
+
+  const repo = app.get(BusinessesRepository);
+  // await repo.addBusinessAddress(businessId, addressData);
 
   // Create Bull Board
   const { addQueue, removeQueue, replaceQueues } = createBullBoard({

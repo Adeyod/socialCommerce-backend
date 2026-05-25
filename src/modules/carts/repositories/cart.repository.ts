@@ -30,6 +30,19 @@ export class CartRepository {
 
     return cart;
   }
+  async getCartByCartIdAndUserId(
+    cartId: string,
+    userId: string,
+  ): Promise<CartDocument | null> {
+    const id = new Types.ObjectId(cartId);
+    const user = new Types.ObjectId(userId);
+    const cart = await this.cartModel.findOne({
+      _id: id,
+      userId: user,
+    });
+
+    return cart;
+  }
 
   async addItem(
     userId: string,

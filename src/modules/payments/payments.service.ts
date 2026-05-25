@@ -342,6 +342,8 @@ export class PaymentsService {
         userExist._id.toString(),
       );
 
+      // Create notification here(to notify vendor of the order)
+
       return { message: 'successful' };
     } catch (error) {
       await session.abortTransaction();
