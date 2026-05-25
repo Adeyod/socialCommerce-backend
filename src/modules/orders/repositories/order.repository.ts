@@ -152,6 +152,46 @@ export class OrderRepository {
     return orders;
   }
 
+  async getVendorStats(businessId: string) {
+    const bizId = new Types.ObjectId(businessId);
+
+    return this.orderModel.aggregate([
+      { $unwind: '$vendorOrders' },
+      { $unwind: '$vendorOrders.items' },
+
+      {
+        $match: {
+          'vendorOrders.businessId': bizId,
+          isPaid: true, // payment confirmed
+        },
+      },
+
+      {
+        $group: {
+          _id: null,
+
+          orders: { $addToSet: '$_id' },
+
+          revenue: {
+            $sum: {
+              $multiply: [
+                '$vendorOrders.items.price',
+                '$vendorOrders.items.quantity',
+              ],
+            },
+          },
+        },
+      },
+
+      {
+        $project: {
+          orders: { $size: '$orders' },
+          revenue: 1,
+        },
+      },
+    ]);
+  }
+
   // update order(generic) to update any part of the order
   async updateOrder(
     orderId: string,
@@ -237,6 +277,48 @@ export class OrderRepository {
     });
 
     return response;
+  }
+
+  async getBuyerOrderStats(userId: string) {
+    const orderSummarry = await this.orderModel.aggregate([
+      { $match: { customerId: new Types.ObjectId(userId) } },
+
+      {
+        $facet: {
+          stats: [
+            {
+              $group: {
+                _id: null,
+                totalOrders: { $sum: 1 },
+                pendingOrders: {
+                  $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] },
+                },
+                completedOrders: {
+                  $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] },
+                },
+              },
+            },
+          ],
+
+          recentOrders: [
+            { $sort: { createdAt: -1 } },
+            { $limit: 5 },
+            {
+              $project: {
+                _id: 1,
+                status: 1,
+                total: 1,
+                createdAt: 1,
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    console.log('orderSummarry:', orderSummarry);
+
+    return orderSummarry;
   }
 
   private toOrderPayload(dto: ProcessedOrderData) {

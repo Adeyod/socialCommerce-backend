@@ -41,6 +41,16 @@ export class ProductsRepository {
     return newProduct;
   }
 
+  async countByBusiness(businessId: string) {
+    const productCount = await this.productModel.countDocuments({
+      businessId: new Types.ObjectId(businessId),
+    });
+
+    console.log('productCount:', productCount);
+
+    return productCount;
+  }
+
   async findById(id: string) {
     const productId = new Types.ObjectId(id);
 
@@ -152,6 +162,23 @@ export class ProductsRepository {
     });
 
     return product;
+  }
+
+  async getRandomProducts(limit = 5) {
+    const response = await this.productModel.aggregate([
+      { $sample: { size: limit } },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          price: 1,
+          media: { $slice: ['$media', 1] },
+        },
+      },
+    ]);
+
+    console.log('response:', response);
+    return response;
   }
 
   // async getBuyerProducts(params: any) {

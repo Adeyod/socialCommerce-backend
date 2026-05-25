@@ -110,4 +110,17 @@ export class CartRepository {
 
     return cart.save();
   }
+
+  async getCartSummary(userId: string) {
+    const cartSummary = await this.cartModel.findOne(
+      { userId: new Types.ObjectId(userId) },
+      {
+        items: 1,
+        subtotal: 1,
+      },
+    );
+
+    console.log('cartSummary:', cartSummary);
+    return cartSummary;
+  }
 }

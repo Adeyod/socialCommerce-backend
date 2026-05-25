@@ -11,9 +11,14 @@ import { MailModule } from './mail/mail.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
+import { BuyersModule } from './modules/buyers/buyers.module';
+import { CartsModule } from './modules/carts/carts.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DeliveryMarketplaceModule } from './modules/delivery-marketplace/delivery-marketplace.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
 import { DiscountsModule } from './modules/discounts/discounts.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { OrdersModule } from './modules/orders/orders.module';
 import { PartnersModule } from './modules/partners/partners.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductsModule } from './modules/products/products.module';
@@ -25,10 +30,6 @@ import { StaffAccessControlModule } from './modules/staff-access-control/staff-a
 import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
 import { VendorModule } from './modules/vendor/vendor.module';
-import { OrdersModule } from './modules/orders/orders.module';
-import { BuyersModule } from './modules/buyers/buyers.module';
-import { CartsModule } from './modules/carts/carts.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -122,6 +123,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     BuyersModule,
     CartsModule,
     NotificationsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
