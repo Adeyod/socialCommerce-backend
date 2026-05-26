@@ -1,22 +1,27 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
-export type ProductAnalyticsDocument = HydratedDocument<ProductAnalytics>;
+export type AnalyticsDocument = HydratedDocument<Analytics>;
 
 @Schema({ timestamps: true })
-export class ProductAnalytics {
-  @Prop({ type: Types.ObjectId, ref: 'Product', required: true })
-  productId!: Types.ObjectId;
+export class Analytics {
+  @Prop({ type: Types.ObjectId, required: true, index: true })
+  businessId!: Types.ObjectId;
 
   @Prop({ default: 0 })
-  views!: number;
+  totalRevenue!: number;
 
   @Prop({ default: 0 })
-  purchases!: number;
+  totalOrders!: number;
 
   @Prop({ default: 0 })
-  clicks!: number;
+  totalProductsSold!: number;
+
+  @Prop({ default: 0 })
+  totalCustomers!: number;
+
+  @Prop()
+  lastUpdated!: Date;
 }
 
-export const ProductAnalyticsSchema =
-  SchemaFactory.createForClass(ProductAnalytics);
+export const AnalyticsSchema = SchemaFactory.createForClass(Analytics);

@@ -60,7 +60,10 @@ export class ProductsRepository {
         isDeleted: false,
         isActive: true,
       })
-      .populate({ path: 'businessId', select: 'businessName' });
+      .populate({
+        path: 'businessId',
+        select: 'businessName businessAddress.state businessAddress.town',
+      });
 
     return product;
   }

@@ -30,6 +30,7 @@ import { StaffAccessControlModule } from './modules/staff-access-control/staff-a
 import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
 import { VendorModule } from './modules/vendor/vendor.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 
 @Module({
   imports: [
@@ -124,6 +125,7 @@ import { VendorModule } from './modules/vendor/vendor.module';
     CartsModule,
     NotificationsModule,
     DashboardModule,
+    WalletModule,
   ],
   controllers: [AppController],
   providers: [AppService],

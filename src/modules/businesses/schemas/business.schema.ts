@@ -12,6 +12,9 @@ export class BusinessAddress {
   state?: string; // optional: "Lagos"
 
   @Prop()
+  town?: string; // optional: "Lagos"
+
+  @Prop()
   country?: string; // optional: "Nigeria"
 
   @Prop()
