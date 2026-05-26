@@ -10,9 +10,17 @@ import { Request } from 'express';
 import { Connection, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import {
+  generatePaymentReference,
+  platformComm,
+} from '../../common/utils/helper';
 import { CartRepository } from '../carts/repositories/cart.repository';
+import { OrderRepository } from '../orders/repositories/order.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { Role } from '../users/schemas/user.schema';
+import { WalletRepository } from '../wallet/repositories/wallet.repository';
+import { LedgerCategory } from '../wallet/schemas/ledger.schema';
+import { WalletOwnerType } from '../wallet/schemas/wallet.schema';
 import { PaymentResponseDto } from './dto/payment-response.dto';
 import { IPaymentProvider } from './providers/interfaces/provider.interface';
 import { PaystackService } from './providers/paystack/paystack.service';
@@ -30,6 +38,8 @@ export class PaymentsService {
     private readonly paystackService: PaystackService,
     // private readonly flutterwaveService: flutterwaveService,
     private usersRepository: UsersRepository,
+    private orderRepository: OrderRepository,
+    private walletRepository: WalletRepository,
   ) {
     this.providerMap = {
       [PaymentProvider.PAYSTACK]: this.paystackService,
@@ -330,6 +340,54 @@ export class PaymentsService {
         });
       }
 
+      /**
+       * This is where i will credit wallet of sellers
+       */
+
+      const order = await this.orderRepository.findOrderByOrderId(orderId);
+
+      if (!order) {
+        throw new NotFoundException({
+          message: 'Order not found.',
+          success: false,
+          status: 404,
+        });
+      }
+
+      let platformCharge: number = 0;
+
+      for (const vendor of order.vendorOrders) {
+        const platformCommission = platformComm;
+
+        const payload = {
+          userId: vendor.businessId,
+          orderId,
+        };
+
+        const fee = platformCommission * vendor.subtotal;
+        platformCharge += fee;
+
+        const vendorFee = vendor.subtotal - fee;
+
+        await this.walletRepository.creditWalletPendingBalance(
+          {
+            ownerType: WalletOwnerType.business,
+            businessId: vendor.businessId.toString(),
+          },
+          vendorFee,
+          generatePaymentReference(payload),
+          LedgerCategory.order_payment,
+        );
+      }
+
+      await this.walletRepository.creditWalletPendingBalance(
+        {
+          ownerType: WalletOwnerType.platform,
+        },
+        platformCharge,
+        generatePaymentReference({ userId: 'platform_fee', orderId }),
+        LedgerCategory.platform_fee,
+      );
       await userExist.save({ session });
 
       // 4. Commit DB changes FIRST

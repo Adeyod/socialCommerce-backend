@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
@@ -8,7 +8,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { VendorOrderStatus } from '../schemas/order.schema';
+import { DeliveryMode, VendorOrderStatus } from '../schemas/order.schema';
 
 export class CreateOrderItemDto {
   @ApiProperty()
@@ -107,4 +107,18 @@ export class CreateOrderDto {
   @ApiProperty({ description: 'This si the phone number of the customer' })
   @IsString()
   contactPhone!: string;
+
+  @ApiProperty({
+    description: 'This refer to the mode of receiving the purchased products.',
+    example: DeliveryMode.pickUpFromVendor,
+  })
+  @IsString()
+  deliveryMode!: DeliveryMode;
+
+  @ApiPropertyOptional({
+    description: 'This is one of our offices closest to the buyer address.',
+    example: 'Adebayo Office',
+  })
+  @IsString()
+  pickupCenter?: string;
 }

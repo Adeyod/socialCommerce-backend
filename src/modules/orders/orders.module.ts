@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BusinessesModule } from '../businesses/businesses.module';
 import { CartsModule } from '../carts/carts.module';
@@ -18,12 +18,12 @@ import { Order, OrderSchema } from './schemas/order.schema';
     MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
     ProductsModule,
     StaffAccessControlModule,
-    PaymentsModule,
     DeliveryModule,
     DeliveryMarketplaceModule,
     NotificationsModule,
     BusinessesModule,
     CartsModule,
+    forwardRef(() => PaymentsModule),
   ],
   controllers: [OrdersController],
   providers: [OrdersService, OrderRepository],

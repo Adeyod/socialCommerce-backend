@@ -13,6 +13,6 @@ import { Business, BusinessSchema } from './schemas/business.schema';
   ],
   controllers: [BusinessesController],
   providers: [BusinessesService, BusinessesRepository],
-  exports: [BusinessesRepository],
+  exports: [BusinessesService, BusinessesRepository],
 })
 export class BusinessesModule {}

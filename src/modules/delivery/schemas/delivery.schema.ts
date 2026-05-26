@@ -56,8 +56,11 @@ export class Delivery {
     pickedUpAt?: Date;
   }[];
 
-  @Prop({ required: true })
-  dropoffAddress!: string;
+  @Prop()
+  dropoffAddress?: string;
+
+  @Prop()
+  deliveryMode!: string;
 
   @Prop()
   deliveryFee?: number;

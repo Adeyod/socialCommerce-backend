@@ -17,6 +17,7 @@ export class DeliveryRepository {
       orderId: order.orderId,
       dropoffAddress: order.dropoffAddress,
       pickupPoints: order.pickupPoints,
+      deliveryMode: order.deliveryMode,
       status: order.status,
     }).save();
 

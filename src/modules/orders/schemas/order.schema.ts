@@ -3,6 +3,12 @@ import { HydratedDocument, Types } from 'mongoose';
 
 export type OrderDocument = HydratedDocument<Order>;
 
+export enum DeliveryMode {
+  pickUpFromVendor = 'pickUpFromVendor',
+  pickUpFromOurNearestOffice = 'pickUpFromOurNearestOffice',
+  homeDelivery = 'homeDelivery',
+}
+
 export enum OrderStatus {
   paid = 'paid',
   pending = 'pending',
@@ -93,8 +99,14 @@ export class Order {
   total!: number;
 
   // Delivery
+  @Prop()
+  deliveryAddress?: string;
+
   @Prop({ required: true })
-  deliveryAddress!: string;
+  deliveryMode!: string;
+
+  @Prop()
+  pickupCenter?: string;
 
   @Prop({ required: true })
   contactPhone!: string;

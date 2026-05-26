@@ -120,3 +120,5 @@ export const validateBusinessOwnership = (
     throw new ForbiddenException('Access denied');
   }
 };
+
+export const platformComm = 0.2;

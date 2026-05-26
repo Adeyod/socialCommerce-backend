@@ -23,6 +23,7 @@ import { Role } from '../users/schemas/user.schema';
 import { CreateOrderDto } from './dtos/create-order.dto';
 import { OrderRepository } from './repositories/order.repository';
 import {
+  DeliveryMode,
   OrderStatus,
   VendorItemOrderStatus,
   VendorOrderStatus,
@@ -52,6 +53,8 @@ export class OrdersService {
       contactPhone,
       idempotencyKey,
       cartId,
+      deliveryMode,
+      pickupCenter,
     } = createOrderDto;
 
     // 1. AUTH CHECK
@@ -61,6 +64,26 @@ export class OrdersService {
         success: false,
         status: 400,
       });
+    }
+
+    if (deliveryMode === DeliveryMode.pickUpFromOurNearestOffice) {
+      if (!pickupCenter) {
+        throw new BadRequestException({
+          message: 'Pickup center is required.',
+          success: false,
+          status: 400,
+        });
+      }
+    }
+
+    if (deliveryMode === DeliveryMode.homeDelivery) {
+      if (!deliveryAddress) {
+        throw new BadRequestException({
+          message: 'Delivery address is required.',
+          success: false,
+          status: 400,
+        });
+      }
     }
 
     const existingOrder = await this.orderRepository.findOrderByIdempotencyKey(
@@ -463,7 +486,11 @@ export class OrdersService {
 
       const payload = {
         orderId: order._id,
-        dropoffAddress: order.deliveryAddress,
+        deliveryMode: order.deliveryMode,
+        dropoffAddress:
+          order.deliveryMode === DeliveryMode.homeDelivery
+            ? order.deliveryAddress
+            : undefined,
         pickupPoints: order.vendorOrders.map((v) => ({
           businessId: v.businessId.toString(),
           address: v.businessAddress,

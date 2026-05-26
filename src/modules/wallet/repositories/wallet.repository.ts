@@ -1,8 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Ledger, LedgerDocument, LedgerType } from '../schemas/ledger.schema';
-import { Wallet, WalletDocument } from '../schemas/wallet.schema';
+import {
+  Ledger,
+  LedgerCategory,
+  LedgerDocument,
+  LedgerType,
+} from '../schemas/ledger.schema';
+import {
+  Wallet,
+  WalletDocument,
+  WalletOwnerType,
+} from '../schemas/wallet.schema';
+import { WalletOwner } from '../types/wallet-owner.types';
 
 @Injectable()
 export class WalletRepository {
@@ -14,25 +24,61 @@ export class WalletRepository {
     private readonly ledgerModel: Model<LedgerDocument>,
   ) {}
 
-  async creditWallet(
-    userId: string,
+  async creditWalletPendingBalance(
+    owner: WalletOwner,
     amount: number,
     referenceId: string,
-    source: string,
+    category: LedgerCategory,
   ) {
-    const uid = new Types.ObjectId(userId);
+    const query =
+      owner.ownerType === WalletOwnerType.user
+        ? { userId: new Types.ObjectId(owner.userId) }
+        : owner.ownerType === WalletOwnerType.business
+          ? { businessId: new Types.ObjectId(owner.businessId) }
+          : { ownerType: WalletOwnerType.platform };
 
     const newLedger = await new this.ledgerModel({
-      userId: uid,
+      ...owner,
       type: LedgerType.credit,
       amount,
       referenceId,
-      source,
+      category,
     }).save();
 
     const newWalletBalance = await this.walletModel.updateOne(
-      { userId: uid },
-      { $inc: { balance: amount } },
+      query,
+      { $inc: { yetToBeClearedBalance: amount } },
+      { upsert: true },
+    );
+
+    console.log('newWalletBalance:', newWalletBalance);
+
+    return newWalletBalance;
+  }
+  async creditWalletWithdrawableBalance(
+    owner: WalletOwner,
+    amount: number,
+    referenceId: string,
+    category: LedgerCategory,
+  ) {
+    const query =
+      owner.ownerType === WalletOwnerType.user
+        ? { userId: new Types.ObjectId(owner.userId) }
+        : owner.ownerType === WalletOwnerType.business
+          ? { businessId: new Types.ObjectId(owner.businessId) }
+          : { ownerType: WalletOwnerType.platform };
+
+    const newLedger = await new this.ledgerModel({
+      ...owner,
+      type: LedgerType.credit,
+      amount,
+      referenceId,
+      category,
+    }).save();
+
+    const newWalletBalance = await this.walletModel.updateOne(
+      query,
+      { $inc: { withdrawableBalance: amount } },
       { upsert: true },
     );
 
@@ -42,38 +88,60 @@ export class WalletRepository {
   }
 
   async debitWallet(
-    userId: string,
+    owner: WalletOwner,
     amount: number,
     referenceId: string,
-    source: string,
+    category: LedgerCategory,
   ) {
-    const uid = new Types.ObjectId(userId);
+    const query =
+      owner.ownerType === WalletOwnerType.user
+        ? { userId: new Types.ObjectId(owner.userId) }
+        : owner.ownerType === WalletOwnerType.business
+          ? { businessId: new Types.ObjectId(owner.businessId) }
+          : { ownerType: WalletOwnerType.platform };
 
     const newLedger = await new this.ledgerModel({
-      userId: uid,
+      ...owner,
       type: LedgerType.debit,
       amount,
       referenceId,
-      source,
+      category,
     }).save();
 
-    const newWalletBalance = await this.walletModel.updateOne(
-      { userId: uid },
-      { $inc: { balance: -amount } },
-    );
+    const newWalletBalance = await this.walletModel.updateOne(query, {
+      $inc: { withdrawableBalance: -amount },
+    });
 
     console.log('newWalletBalance:', newWalletBalance);
 
     return newWalletBalance;
   }
 
-  async getWallet(userId: string): Promise<WalletDocument | null> {
-    const uid = new Types.ObjectId(userId);
+  async getWallet(owner: WalletOwner): Promise<WalletDocument | null> {
+    const query =
+      owner.ownerType === WalletOwnerType.user
+        ? { userId: new Types.ObjectId(owner.userId) }
+        : owner.ownerType === WalletOwnerType.business
+          ? { businessId: new Types.ObjectId(owner.businessId) }
+          : { ownerType: WalletOwnerType.platform };
 
-    const wallet = await this.walletModel.findOne({
-      userId: uid,
-    });
+    const wallet = await this.walletModel.findOne(query);
 
     return wallet;
   }
+
+  /**
+   * Run this ones to create wallet for the platform
+   * await this.walletModel.updateOne(
+  { ownerType: WalletOwnerType.platform },
+  {
+    $setOnInsert: {
+      ownerType: WalletOwnerType.platform,
+      withdrawableBalance: 0,
+      yetToBeClearedBalance: 0,
+    },
+  },
+  { upsert: true },
+);
+   */
 }

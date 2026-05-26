@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { BusinessesModule } from '../businesses/businesses.module';
 import { UsersModule } from '../users/users.module';
 import { WalletRepository } from './repositories/wallet.repository';
 import { Ledger, LedgerSchema } from './schemas/ledger.schema';
@@ -14,6 +15,7 @@ import { WalletService } from './wallet.service';
       { name: Ledger.name, schema: LedgerSchema },
     ]),
     UsersModule,
+    BusinessesModule,
   ],
   controllers: [WalletController],
   providers: [WalletService, WalletRepository],
