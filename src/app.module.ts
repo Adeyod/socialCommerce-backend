@@ -31,6 +31,7 @@ import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { WalletModule } from './modules/wallet/wallet.module';
+import { PickupCenterModule } from './modules/pickup-center/pickup-center.module';
 
 @Module({
   imports: [
@@ -126,6 +127,7 @@ import { WalletModule } from './modules/wallet/wallet.module';
     NotificationsModule,
     DashboardModule,
     WalletModule,
+    PickupCenterModule,
   ],
   controllers: [AppController],
   providers: [AppService],
