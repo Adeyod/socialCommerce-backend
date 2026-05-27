@@ -47,6 +47,11 @@ export class CartRepository {
   async addItem(
     userId: string,
     productId: string,
+    productName: string,
+    productPrice: number,
+    productState: string,
+    productTown: string,
+    productweight: number,
     businessId: string,
     quantity: number,
   ): Promise<CartDocument> {
@@ -65,6 +70,12 @@ export class CartRepository {
         productId: productObjectId,
         businessId: new Types.ObjectId(businessId),
         quantity,
+
+        name: productName,
+        price: productPrice,
+        vendorState: productState,
+        vendorTown: productTown,
+        weight: productweight,
       });
     }
 

@@ -28,6 +28,14 @@ export class Cart {
           required: true,
           min: 1,
         },
+
+        name: { type: String, required: true },
+        price: { type: Number, required: true },
+
+        vendorState: { type: String },
+        vendorTown: { type: String },
+
+        weight: { type: Number },
       },
     ],
     default: [],
@@ -36,6 +44,14 @@ export class Cart {
     productId: Types.ObjectId;
     businessId: Types.ObjectId;
     quantity: number;
+
+    name: string;
+    price: number;
+
+    vendorState: string;
+    vendorTown?: string;
+
+    weight?: number;
   }[];
 }
 

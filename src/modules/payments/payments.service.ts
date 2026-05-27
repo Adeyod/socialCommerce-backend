@@ -354,30 +354,43 @@ export class PaymentsService {
         });
       }
 
+      // ===============================
+      // VENDOR WALLET DISTRIBUTION
+      // ===============================
+
       let platformCharge: number = 0;
 
-      for (const vendor of order.vendorOrders) {
-        const platformCommission = platformComm;
+      for (const shipment of order.shipments) {
+        for (const vendor of shipment.vendors) {
+          let vendorSubtotal = 0;
 
-        const payload = {
-          userId: vendor.businessId,
-          orderId,
-        };
+          // calculate vendor revenue from items
+          for (const item of vendor.items) {
+            vendorSubtotal += item.price * item.quantity;
+          }
 
-        const fee = platformCommission * vendor.subtotal;
-        platformCharge += fee;
+          const platformCommission = platformComm; // e.g 0.05 or 0.1
 
-        const vendorFee = vendor.subtotal - fee;
+          const fee = platformCommission * vendorSubtotal;
+          platformCharge += fee;
 
-        await this.walletRepository.creditWalletPendingBalance(
-          {
-            ownerType: WalletOwnerType.business,
-            businessId: vendor.businessId.toString(),
-          },
-          vendorFee,
-          generatePaymentReference(payload),
-          LedgerCategory.order_payment,
-        );
+          const vendorFee = vendorSubtotal - fee;
+
+          const payload = {
+            userId: vendor.businessId.toString(),
+            orderId,
+          };
+
+          await this.walletRepository.creditWalletPendingBalance(
+            {
+              ownerType: WalletOwnerType.business,
+              businessId: vendor.businessId.toString(),
+            },
+            vendorFee,
+            generatePaymentReference(payload),
+            LedgerCategory.order_payment,
+          );
+        }
       }
 
       await this.walletRepository.creditWalletPendingBalance(
@@ -412,7 +425,7 @@ export class PaymentsService {
   }
 
   async verifyPayment(reference: string, user: JwtUser) {
-    // 1️⃣ CHECK DB FIRST (faster + avoids unnecessary provider calls)
+    // 1 CHECK DB FIRST (faster + avoids unnecessary provider calls)
     const transaction =
       await this.paymentsRepository.findPaymentTransactionByReference(
         reference,

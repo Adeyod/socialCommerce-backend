@@ -3,6 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Types } from 'mongoose';
+import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
 import { ProductsRepository } from '../products/repositories/product.repository';
 import { AddItemToCartDto } from './dtos/add-item.dto';
 import { CartRepository } from './repositories/cart.repository';
@@ -12,6 +14,7 @@ export class CartsService {
   constructor(
     private readonly cartRepository: CartRepository,
     private readonly productsRepository: ProductsRepository,
+    private readonly businessesRepository: BusinessesRepository,
   ) {}
 
   async getCart(userId: string) {
@@ -45,6 +48,30 @@ export class CartsService {
   async addItem(userId: string, addItemToCartDto: AddItemToCartDto) {
     const { productId, businessId, quantity } = addItemToCartDto;
 
+    const businessExist =
+      await this.businessesRepository.findBusinessByBusinessId(
+        new Types.ObjectId(businessId),
+      );
+
+    if (!businessExist) {
+      throw new NotFoundException({
+        message: 'Business that owns this product not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (
+      !businessExist.businessAddress ||
+      !businessExist.businessAddress.state ||
+      !businessExist.businessAddress.town
+    ) {
+      throw new BadRequestException({
+        message: 'This business does not have business address.',
+        status: 400,
+        success: false,
+      });
+    }
     const productExist = await this.productsRepository.findAProductByBusinessId(
       businessId,
       productId,
@@ -65,9 +92,17 @@ export class CartsService {
         status: 400,
       });
     }
+
+    const weight = productExist.weight || 1;
+
     const cart = await this.cartRepository.addItem(
       userId,
       productId,
+      productExist.name,
+      productExist.price,
+      businessExist.businessAddress.state,
+      businessExist.businessAddress?.town,
+      weight,
       businessId,
       quantity,
     );

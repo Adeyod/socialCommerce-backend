@@ -1,6 +1,31 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsArray, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+export class DeliveryRuleDto {
+  @ApiProperty({
+    example: 'Lagos',
+    description: 'State name for delivery pricing',
+  })
+  @IsString()
+  state!: string;
+
+  @ApiProperty({
+    example: 2000,
+    description: 'Delivery price for this state',
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  price!: number;
+}
 
 export class CreateProductDto {
   @ApiProperty({
@@ -9,6 +34,19 @@ export class CreateProductDto {
   })
   @IsString()
   name!: string;
+
+  @ApiProperty({
+    description: 'Delivery pricing rules per state',
+    example: [
+      { state: 'Lagos', price: 2000 },
+      { state: 'Abuja', price: 2500 },
+    ],
+  })
+  // @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DeliveryRuleDto)
+  deliveryRules!: DeliveryRuleDto[];
 
   @ApiPropertyOptional({
     description: 'This is more information about the product.',

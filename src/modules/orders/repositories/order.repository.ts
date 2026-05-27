@@ -85,6 +85,7 @@ export class OrderRepository {
 
     return orders;
   }
+
   async findOrdersByBusinessId(
     businessId: string,
     queryWithPaginationDto: QueryWithPaginationDto,
@@ -94,7 +95,7 @@ export class OrderRepository {
     const id = new Types.ObjectId(businessId);
 
     const matchStage: any = {
-      'vendorOrders.businessId': id,
+      'shipments.vendors.businessId': id,
     };
 
     if (searchParams) {
@@ -102,7 +103,7 @@ export class OrderRepository {
 
       matchStage.$or = [
         { deliveryAddress: { $regex: regex } },
-        { 'vendorOrders.items.name': { $regex: regex } },
+        { 'shipments.vendors.items.name': { $regex: regex } },
       ];
     }
 
@@ -110,6 +111,7 @@ export class OrderRepository {
 
     const pipeline: any[] = [
       { $match: matchStage },
+
       {
         $project: {
           customerId: 1,
@@ -118,51 +120,39 @@ export class OrderRepository {
           deliveryAddress: 1,
           status: 1,
           createdAt: 1,
-          vendorOrders: {
+
+          shipments: {
             $filter: {
-              input: '$vendorOrders',
-              as: 'v',
-              cond: { $eq: ['$$v.businessId', id] },
+              input: '$shipments',
+              as: 's',
+              cond: {
+                $in: [id, '$$s.vendors.businessId'],
+              },
             },
           },
         },
       },
+
       { $sort: { createdAt: -1 } },
       { $skip: skip },
       { $limit: limit },
     ];
 
-    const orders = await this.orderModel.aggregate(pipeline);
-
-    return orders;
+    return this.orderModel.aggregate(pipeline);
   }
 
-  // finding vendor orders
-  async findOrdersByVendorId(
-    vendorId: string,
-  ): Promise<OrderDocument[] | null> {
-    const id = new Types.ObjectId(vendorId);
-
-    const orders = await this.orderModel
-      .find({
-        'vendorOrders.vendorId': id,
-      })
-      .exec();
-
-    return orders;
-  }
-
-  async getVendorStats(businessId: string) {
+  async getBusinessStats(businessId: string) {
     const bizId = new Types.ObjectId(businessId);
 
     return this.orderModel.aggregate([
-      { $unwind: '$vendorOrders' },
-      { $unwind: '$vendorOrders.items' },
+      { $unwind: '$shipments' },
+      { $unwind: '$shipments.vendors' },
+      { $unwind: '$shipments.vendors.items' },
 
       {
         $match: {
-          'vendorOrders.businessId': bizId,
-          isPaid: true, // payment confirmed
+          'shipments.vendors.businessId': bizId,
+          isPaid: true,
         },
       },
 
@@ -175,8 +165,8 @@ export class OrderRepository {
           revenue: {
             $sum: {
               $multiply: [
-                '$vendorOrders.items.price',
-                '$vendorOrders.items.quantity',
+                '$shipments.vendors.items.price',
+                '$shipments.vendors.items.quantity',
               ],
             },
           },
@@ -222,29 +212,30 @@ export class OrderRepository {
     return updatedStatus;
   }
 
-  // Update vendor order status
-  async updateVendorOrderStatus(
+  // Update business order status
+  async updateBusinessOrderStatus(
     orderId: string,
-    vendorId: string,
+    businessId: string,
     status: VendorOrderStatus,
-  ): Promise<OrderDocument | null> {
-    const vendor = new Types.ObjectId(vendorId);
+  ) {
     const order = new Types.ObjectId(orderId);
+    const biz = new Types.ObjectId(businessId);
 
-    const updatedOrder = await this.orderModel.findOneAndUpdate(
+    return this.orderModel.findOneAndUpdate(
       {
         _id: order,
-        'vendorOrders.vendorId': vendor,
+        'shipments.vendors.businessId': biz,
       },
       {
         $set: {
-          'vendorOrders.$.status': status,
+          'shipments.$[].vendors.$[v].status': status,
         },
       },
-      { returnDocument: 'after' },
+      {
+        arrayFilters: [{ 'v.businessId': biz }],
+        returnDocument: 'after',
+      },
     );
-
-    return updatedOrder;
   }
 
   // Attach delivery
@@ -258,7 +249,7 @@ export class OrderRepository {
     const attachedDelivery = await this.orderModel.findByIdAndUpdate(
       order,
       {
-        $push: { deliveryIds: deliveryId },
+        $push: { deliveryIds: delivery },
       },
       { returnDocument: 'after' },
     );
@@ -325,7 +316,7 @@ export class OrderRepository {
     return {
       customerId: new Types.ObjectId(dto.customerId),
 
-      vendorOrders: dto.items,
+      shipments: dto.shipments,
       subtotal: dto.subtotal,
       deliveryFee: dto.deliveryFee,
       total: dto.total,

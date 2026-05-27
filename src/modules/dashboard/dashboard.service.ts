@@ -60,7 +60,7 @@ export class DashboardService {
     const businessId = business._id;
 
     const [orderData, productCount] = await Promise.all([
-      this.orderRepository.getVendorStats(businessId.toString()),
+      this.orderRepository.getBusinessStats(businessId.toString()),
       this.productsRepository.countByBusiness(businessId.toString()),
     ]);
 

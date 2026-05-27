@@ -23,6 +23,10 @@ export class ProductsRepository {
       url: string;
       publicUrl: string;
     }[];
+    deliveryRules: {
+      state: string;
+      price: number;
+    }[];
     businessId: string;
     inStock: boolean;
   }) {
@@ -35,6 +39,7 @@ export class ProductsRepository {
       stock: data.stock,
       category: data.category?.toLowerCase(),
       tags: data.tags,
+      deliveryRules: data.deliveryRules,
       sku: data.sku.toLowerCase(),
     }).save();
 

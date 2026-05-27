@@ -4,7 +4,7 @@ import { HydratedDocument, Types } from 'mongoose';
 export type OrderDocument = HydratedDocument<Order>;
 
 export enum DeliveryMode {
-  pickUpFromVendor = 'pickUpFromVendor',
+  // pickUpFromVendor = 'pickUpFromVendor',
   pickUpFromOurNearestOffice = 'pickUpFromOurNearestOffice',
   homeDelivery = 'homeDelivery',
 }
@@ -13,8 +13,7 @@ export enum OrderStatus {
   paid = 'paid',
   pending = 'pending',
   processing = 'processing',
-  ready_for_delivery = 'ready_for_delivery',
-  in_delivery = 'in_delivery',
+  in_transit = 'in_transit',
   completed = 'completed',
   cancelled = 'cancelled',
 }
@@ -22,13 +21,22 @@ export enum OrderStatus {
 export enum VendorOrderStatus {
   pending = 'pending',
   processing = 'processing',
-  ready = 'ready',
+  delivered_to_pickup_center = 'delivered_to_pickup_center',
 }
 
 export enum VendorItemOrderStatus {
   pending = 'pending',
   processing = 'processing',
-  ready = 'ready',
+  delivered_to_pickup_center = 'delivered_to_pickup_center',
+}
+
+export enum ShipmentStatus {
+  pending = 'pending', // waiting for vendors
+  collecting = 'collecting', // vendors sending to hub
+  in_transit = 'in_transit', // moving between hubs
+  arrived = 'arrived', // at destination hub
+  out_for_delivery = 'out_for_delivery',
+  delivered = 'delivered',
 }
 
 @Schema({ timestamps: true })
@@ -40,89 +48,125 @@ export class Order {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   customerId!: Types.ObjectId;
 
-  // MULTI-VENDOR STRUCTURE
+  @Prop()
+  pickupCenter?: string;
+
+  // DELIVERY LINK (can later support multiple)
+  @Prop({ type: [Types.ObjectId], ref: 'Delivery', default: [] })
+  deliveryIds!: Types.ObjectId[];
+
+  // SHIPMENTS (CORE LOGIC)
   @Prop({
     type: [
       {
-        businessId: {
+        _id: { type: Types.ObjectId, auto: true },
+
+        shipmentId: { type: String, required: true },
+
+        // HUBS
+        originPickupCenter: {
           type: Types.ObjectId,
-          ref: 'Business',
+          ref: 'PickupCenter',
           required: true,
         },
 
-        items: [
+        destinationPickupCenter: {
+          type: Types.ObjectId,
+          ref: 'PickupCenter',
+        },
+
+        deliveryMode: {
+          type: String,
+          enum: DeliveryMode,
+          required: true,
+        },
+
+        // VENDORS INSIDE SHIPMENT
+        vendors: [
           {
-            productId: {
+            _id: { type: Types.ObjectId, auto: true },
+
+            businessId: {
               type: Types.ObjectId,
-              ref: 'Product',
+              ref: 'Business',
               required: true,
             },
-            name: { type: String, required: true }, // snapshot
-            price: { type: Number, required: true }, // snapshot
-            quantity: { type: Number, required: true },
+
+            items: [
+              {
+                productId: {
+                  type: Types.ObjectId,
+                  ref: 'Product',
+                  required: true,
+                },
+                name: { type: String, required: true },
+                price: { type: Number, required: true },
+                quantity: { type: Number, required: true },
+
+                itemStatus: {
+                  type: String,
+                  enum: VendorItemOrderStatus,
+                  default: VendorItemOrderStatus.pending,
+                },
+              },
+            ],
+
+            subtotal: { type: Number, required: true },
+
+            status: {
+              type: String,
+              enum: VendorOrderStatus,
+              default: VendorOrderStatus.pending,
+            },
           },
         ],
 
         subtotal: { type: Number, required: true },
 
+        deliveryFee: { type: Number, default: 0 },
+
         status: {
           type: String,
-          enum: VendorOrderStatus,
-          default: VendorOrderStatus.pending,
+          enum: ShipmentStatus,
+          default: ShipmentStatus.pending,
         },
       },
     ],
     required: true,
   })
-  vendorOrders!: {
-    businessId: Types.ObjectId;
-    businessAddress: string;
-    items: {
-      productId: Types.ObjectId;
-      name: string;
-      price: number;
-      quantity: number;
-      itemStatus: VendorItemOrderStatus;
-    }[];
-    subtotal: number;
-    status: VendorOrderStatus;
-  }[];
+  shipments!: any[];
 
   // GLOBAL PRICING
   @Prop({ required: true })
   subtotal!: number;
 
   @Prop({ default: 0 })
-  deliveryFee!: number;
+  deliveryFee!: number; // sum of all shipments
 
   @Prop({ required: true })
   total!: number;
 
-  // Delivery
+  // DELIVERY DETAILS
+  @Prop({ required: true })
+  deliveryMode!: DeliveryMode;
+
   @Prop()
   deliveryAddress?: string;
 
-  @Prop({ required: true })
-  deliveryMode!: string;
-
   @Prop()
-  pickupCenter?: string;
+  destinationPickupCenter?: Types.ObjectId;
 
   @Prop({ required: true })
   contactPhone!: string;
 
-  // DELIVERY LINK (can later support multiple)
-  @Prop({ type: [Types.ObjectId], ref: 'Delivery', default: [] })
-  deliveryIds!: Types.ObjectId[];
-
-  // Payment
+  // PAYMENT
   @Prop({ default: false })
   isPaid!: boolean;
 
   @Prop()
   paidAt?: Date;
 
-  // ORDER STATUS (GLOBAL)
+  // ORDER STATUS
   @Prop({
     type: String,
     enum: OrderStatus,
