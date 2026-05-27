@@ -78,19 +78,6 @@ export class CreateProductDto {
   @Type(() => DeliveryRuleDto)
   deliveryRules!: DeliveryRuleDto[];
 
-  // @ApiProperty({
-  //   description: 'Delivery pricing rules per state',
-  //   type: [DeliveryRuleDto],
-  //   example: [
-  //     { state: 'Lagos', price: 2000 },
-  //     { state: 'Abuja', price: 2500 },
-  //   ],
-  // })
-  // @IsArray()
-  // @ValidateNested({ each: true })
-  // @Type(() => DeliveryRuleDto)
-  // deliveryRules!: DeliveryRuleDto[];
-
   @ApiPropertyOptional({
     description: 'This is more information about the product.',
     example: 'This is a nike product.',
