@@ -37,16 +37,59 @@ export class CreateProductDto {
 
   @ApiProperty({
     description: 'Delivery pricing rules per state',
+    type: [DeliveryRuleDto],
     example: [
       { state: 'Lagos', price: 2000 },
       { state: 'Abuja', price: 2500 },
     ],
   })
-  // @IsOptional()
+  @Transform(({ value }) => {
+    if (!value) return [];
+
+    // Case 1: already parsed (rare)
+    if (Array.isArray(value) && typeof value[0] === 'object') {
+      return value;
+    }
+
+    // Case 2: array of JSON strings
+    if (Array.isArray(value) && typeof value[0] === 'string') {
+      return value.map((v) => {
+        try {
+          return JSON.parse(v);
+        } catch {
+          return v;
+        }
+      });
+    }
+
+    // Case 3: single JSON string
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return [];
+      }
+    }
+
+    return value;
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => DeliveryRuleDto)
   deliveryRules!: DeliveryRuleDto[];
+
+  // @ApiProperty({
+  //   description: 'Delivery pricing rules per state',
+  //   type: [DeliveryRuleDto],
+  //   example: [
+  //     { state: 'Lagos', price: 2000 },
+  //     { state: 'Abuja', price: 2500 },
+  //   ],
+  // })
+  // @IsArray()
+  // @ValidateNested({ each: true })
+  // @Type(() => DeliveryRuleDto)
+  // deliveryRules!: DeliveryRuleDto[];
 
   @ApiPropertyOptional({
     description: 'This is more information about the product.',

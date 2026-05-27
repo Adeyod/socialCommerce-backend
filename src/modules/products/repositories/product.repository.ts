@@ -30,6 +30,17 @@ export class ProductsRepository {
     businessId: string;
     inStock: boolean;
   }) {
+    const rules = data.deliveryRules.map((r) => {
+      const res = {
+        state: r.state.toLowerCase(),
+        price: r.price,
+      };
+
+      return res;
+    });
+
+    console.log('rules:', rules);
+
     const newProduct = await new this.productModel({
       name: data.name.toLowerCase(),
       businessId: new Types.ObjectId(data.businessId),
@@ -39,7 +50,7 @@ export class ProductsRepository {
       stock: data.stock,
       category: data.category?.toLowerCase(),
       tags: data.tags,
-      deliveryRules: data.deliveryRules,
+      deliveryRules: rules,
       sku: data.sku.toLowerCase(),
     }).save();
 

@@ -75,6 +75,16 @@ export class ProductsController {
             type: 'string',
           },
         },
+        deliveryRules: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              state: { type: 'string', example: 'Lagos' },
+              price: { type: 'number', example: 2000 },
+            },
+          },
+        },
         description: { type: 'string' },
       },
     },
@@ -115,6 +125,9 @@ export class ProductsController {
   ) {
     console.log('createProductDto:', createProductDto);
     console.log('files:', files);
+    console.log('RAW BODY:', createProductDto);
+    console.log('RAW deliveryRules:', createProductDto.deliveryRules);
+    console.log('TYPE:', typeof createProductDto.deliveryRules);
     const response = await this.productsService.createProduct(
       businessId,
       user,
