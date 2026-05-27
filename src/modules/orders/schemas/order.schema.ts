@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { Shipment } from '../types/order.types';
 
 export type OrderDocument = HydratedDocument<Order>;
 
@@ -134,7 +135,7 @@ export class Order {
     ],
     required: true,
   })
-  shipments!: any[];
+  shipments!: Shipment[];
 
   // GLOBAL PRICING
   @Prop({ required: true })
