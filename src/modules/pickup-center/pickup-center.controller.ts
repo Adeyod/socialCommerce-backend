@@ -57,6 +57,41 @@ export class PickupCenterController {
     return response;
   }
 
+  @Get('get-all-pickup-states')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.admin, Role.user)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Pick up center states fetched successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Pick up center states fetching',
+    description:
+      'This is the endpoint for fetching all states with atleast one pick up center.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pick up center states fetched successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request. Unable to fetch states with pick up centers.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests. Rate limit exceeded',
+  })
+  async getStatesThatHasPickupCenters() {
+    const centers =
+      await this.pickupCenterService.getStatesThatHasPickupCenters();
+
+    return centers;
+  }
+
   @Get('get-all-pickup-centers')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.admin, Role.user)
@@ -192,6 +227,47 @@ export class PickupCenterController {
     return centers;
   }
 
+  @Patch('update-pickup-center-to-state-main/:pickupCenterId/:state')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.admin, Role.user)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Pick up center updated successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update Pick up center to state main pickup center',
+    description:
+      'This is the endpoint for updating a pick up center to state main pickup center.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pick up center updated successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad request. Unable to update pick up center to state main pickup center.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests. Rate limit exceeded',
+  })
+  async updatePickupCenterToStateMainPickupCenter(
+    @Param('pickupCenterId') pickupCenterId: string,
+    @Param('state') state: string,
+  ) {
+    const center =
+      await this.pickupCenterService.updatePickupCenterToStateMainPickupCenter(
+        pickupCenterId,
+        state,
+      );
+
+    return center;
+  }
   @Patch('update-pickup-center/:pickupCenterId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.admin, Role.user)
@@ -221,7 +297,7 @@ export class PickupCenterController {
   })
   async updatePickupCenterById(
     @Param('pickupCenterId') pickupCenterId: string,
-    dto: UpdatePickupCenterDto,
+    @Body() dto: UpdatePickupCenterDto,
   ) {
     const centers = await this.pickupCenterService.updatePickupCenterById(
       pickupCenterId,

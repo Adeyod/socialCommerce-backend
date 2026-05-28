@@ -40,6 +40,32 @@ export enum ShipmentStatus {
   delivered = 'delivered',
 }
 
+export class DeliveryAddress {
+  @Prop()
+  street?: string; // Ikeja
+
+  @Prop()
+  state?: string; // optional: "Lagos"
+
+  @Prop()
+  town?: string; // optional: "Lagos"
+
+  @Prop()
+  country?: string; // optional: "Nigeria"
+
+  @Prop()
+  code?: string; // ikeja-lagos
+
+  @Prop()
+  centerLat?: number;
+
+  @Prop()
+  centerLng?: number;
+
+  @Prop()
+  radiusKm?: number; // e.g. 5km coverage
+}
+
 @Schema({ timestamps: true })
 export class Order {
   @Prop({ unique: true, required: true })
@@ -152,7 +178,7 @@ export class Order {
   deliveryMode!: DeliveryMode;
 
   @Prop()
-  deliveryAddress?: string;
+  deliveryAddress?: DeliveryAddress;
 
   @Prop()
   destinationPickupCenter?: Types.ObjectId;
@@ -174,6 +200,9 @@ export class Order {
     default: OrderStatus.pending,
   })
   status!: OrderStatus;
+
+  @Prop({ default: 0 })
+  collectionFee!: number;
 
   @Prop()
   notes?: string;

@@ -32,6 +32,7 @@ import { UsersModule } from './modules/users/users.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { PickupCenterModule } from './modules/pickup-center/pickup-center.module';
+import { CollectionModule } from './modules/collection/collection.module';
 
 @Module({
   imports: [
@@ -128,6 +129,7 @@ import { PickupCenterModule } from './modules/pickup-center/pickup-center.module
     DashboardModule,
     WalletModule,
     PickupCenterModule,
+    CollectionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

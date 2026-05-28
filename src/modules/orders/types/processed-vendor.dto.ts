@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { BusinessAddress } from '../../businesses/schemas/business.schema';
 import { CreateVendorOrderDto } from '../dtos/create-order.dto';
 import {
+  DeliveryAddress,
   DeliveryMode,
   OrderStatus,
   ShipmentStatus,
@@ -35,7 +36,7 @@ export type ShipmentDto = {
   deliveryMode: DeliveryMode;
   vendors: VendorObject[];
   subtotal: number;
-  deliveryFee: number;
+  // deliveryFee: number;
   status: ShipmentStatus;
 };
 
@@ -49,7 +50,7 @@ export type ProcessedOrderData = {
   total: number;
 
   deliveryMode: DeliveryMode;
-  deliveryAddress?: string;
+  deliveryAddress: DeliveryAddress;
   destinationPickupCenter?: string;
 
   contactPhone: string;

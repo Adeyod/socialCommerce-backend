@@ -67,7 +67,7 @@ export class ProductsRepository {
     return productCount;
   }
 
-  async findById(id: string) {
+  async findById(id: string): Promise<ProductDocument | null> {
     const productId = new Types.ObjectId(id);
 
     const product = await this.productModel

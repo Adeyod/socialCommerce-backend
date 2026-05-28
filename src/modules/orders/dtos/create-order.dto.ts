@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsNumber,
@@ -41,6 +41,24 @@ export class VendorOrderItemDto {
   price!: number;
 }
 
+export class DeliveryAddressDto {
+  @ApiProperty()
+  @IsString()
+  street!: string;
+
+  @ApiProperty()
+  @IsString()
+  state!: string;
+
+  @ApiProperty()
+  @IsString()
+  town!: string;
+
+  @ApiProperty()
+  @IsString()
+  country?: string;
+}
+
 export class CreateVendorOrderDto {
   @ApiProperty()
   @IsString()
@@ -62,65 +80,6 @@ export class CreateVendorOrderDto {
   status?: VendorOrderStatus;
 }
 
-// export class CreateOrderDto {
-//   @ApiProperty({
-//     description: 'This is the ID of the cart of the buyer.',
-//   })
-//   @IsString()
-//   cartId!: string;
-
-//   @ApiProperty({
-//     description: 'This is the ID of the buyer.',
-//   })
-//   @IsString()
-//   customerId!: string;
-
-//   @ApiProperty({ type: [CreateOrderItemDto] })
-//   @IsArray()
-//   @ValidateNested({ each: true })
-//   @Type(() => CreateOrderItemDto)
-//   items!: CreateOrderItemDto[];
-
-//   @ApiProperty({
-//     description: 'This is the delivery fee for rider.',
-//   })
-//   @IsNumber()
-//   deliveryFee!: number;
-
-//   @ApiProperty({
-//     description:
-//       'This is the address that the customer want the products to be delivered to.',
-//   })
-//   @Transform(({ value }) => value?.toString().trim())
-//   @IsNotEmpty()
-//   @IsString()
-//   deliveryAddress!: string;
-
-//   @ApiProperty({
-//     description:
-//       'This is a unique number per request. This is locked to the order so that even if user click the create order button twice, we wont be processing the order twice.',
-//   })
-//   @IsString()
-//   idempotencyKey!: string;
-
-//   @ApiProperty({ description: 'This si the phone number of the customer' })
-//   @IsString()
-//   contactPhone!: string;
-
-//   @ApiProperty({
-//     description: 'This refer to the mode of receiving the purchased products.',
-//     example: DeliveryMode.pickUpFromOurNearestOffice,
-//   })
-//   @IsString()
-//   deliveryMode!: DeliveryMode;
-
-//   @ApiPropertyOptional({
-//     description: 'This is one of our offices closest to the buyer address.',
-//     example: 'Adebayo Office',
-//   })
-//   @IsString()
-//   pickupCenter?: string;
-// }
 export class CreateOrderDto {
   @ApiProperty({
     description: 'Cart ID of the buyer',
@@ -146,13 +105,11 @@ export class CreateOrderDto {
   @IsNumber()
   deliveryFee!: number;
 
-  @ApiPropertyOptional({
-    description: 'Delivery address (required for home delivery)',
+  @ApiProperty({
+    description: 'Delivery address compulsory',
   })
-  @Transform(({ value }) => value?.toString().trim())
-  @IsOptional()
   @IsString()
-  deliveryAddress?: string;
+  deliveryAddress!: DeliveryAddressDto;
 
   @ApiProperty({
     description: 'Unique idempotency key',

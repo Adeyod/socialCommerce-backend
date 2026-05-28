@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BusinessesModule } from '../businesses/businesses.module';
 import { CartsModule } from '../carts/carts.module';
+import { CollectionModule } from '../collection/collection.module';
 import { DeliveryMarketplaceModule } from '../delivery-marketplace/delivery-marketplace.module';
 import { DeliveryModule } from '../delivery/delivery.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -23,6 +24,7 @@ import { Order, OrderSchema } from './schemas/order.schema';
     NotificationsModule,
     BusinessesModule,
     CartsModule,
+    CollectionModule,
     forwardRef(() => PaymentsModule),
   ],
   controllers: [OrdersController],

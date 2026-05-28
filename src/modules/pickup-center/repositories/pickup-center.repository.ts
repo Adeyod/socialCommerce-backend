@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PickupCenterCreationDto } from '../dtos/pickup-center.dto';
+import { UpdatePickupCenterDto } from '../dtos/update-pickup-center.dto';
 import {
   PickupCenter,
   PickupCenterDocument,
@@ -18,11 +19,11 @@ export class PickupCenterRepository {
     dto: PickupCenterCreationDto,
   ): Promise<PickupCenterDocument> {
     const center = await new this.pickupCenterModel({
-      name: dto.name,
-      state: dto.state,
-      town: dto.town,
-      address: dto.address,
-      phone: dto.phone,
+      name: dto.name.trim().toLowerCase(),
+      state: dto.state.trim().toLowerCase(),
+      town: dto.town.trim().toLowerCase(),
+      address: dto.address.trim().toLowerCase(),
+      phone: dto.phone.trim(),
     }).save();
 
     return center;
@@ -38,6 +39,32 @@ export class PickupCenterRepository {
     return centers;
   }
 
+  async getStatesThatHasPickupCenters(): Promise<PickupCenterDocument[]> {
+    const response = await this.pickupCenterModel.aggregate([
+      {
+        $match: { isActive: true },
+      },
+      {
+        $group: {
+          _id: '$state',
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          state: '$_id',
+          count: 1,
+        },
+      },
+      {
+        $sort: { state: 1 },
+      },
+    ]);
+
+    return response;
+  }
+
   async getPickupCenterById(
     pickupCenterId: string,
   ): Promise<PickupCenterDocument | null> {
@@ -48,22 +75,50 @@ export class PickupCenterRepository {
     return center;
   }
 
+  async updatePickupCenterToStateMainPickupCenter(
+    pickupCenterId: string,
+    state: string,
+  ): Promise<PickupCenterDocument | null> {
+    const id = new Types.ObjectId(pickupCenterId);
+
+    const response = await this.pickupCenterModel.findOneAndUpdate(
+      { _id: id, state: state.trim().toLowerCase() },
+      { isMainHub: true },
+      { returnDocument: 'after' },
+    );
+
+    return response;
+  }
+
   async getStateMainPickupCenterByState(
     state: string,
   ): Promise<PickupCenterDocument | null> {
     const center = await this.pickupCenterModel.findOne({
-      state: new RegExp(`^${state}$`, 'i'),
+      state: new RegExp(`^${state.trim().toLowerCase()}$`, 'i'),
       isActive: true,
       isMainHub: true,
     });
 
     return center;
   }
-  async getPickupCenterByState(
+  async getPickupCentersByState(
     state: string,
+  ): Promise<PickupCenterDocument[] | null> {
+    const center = await this.pickupCenterModel.find({
+      state: new RegExp(`^${state.trim().toLowerCase()}$`, 'i'),
+      isActive: true,
+    });
+
+    return center;
+  }
+  async getPickupCenterByName(
+    dto: PickupCenterCreationDto,
   ): Promise<PickupCenterDocument | null> {
     const center = await this.pickupCenterModel.findOne({
-      state: new RegExp(`^${state}$`, 'i'),
+      name: new RegExp(`^${dto.name.trim().toLowerCase()}$`, 'i'),
+      state: new RegExp(`^${dto.state.trim().toLowerCase()}$`, 'i'),
+      town: new RegExp(`^${dto.town.trim().toLowerCase()}$`, 'i'),
+      phone: new RegExp(`^${dto.phone.trim()}$`, 'i'),
       isActive: true,
     });
 
@@ -72,14 +127,24 @@ export class PickupCenterRepository {
 
   async updatePickupCenterById(
     pickupCenterId: string,
-    updateData: Partial<PickupCenter>,
+    updateData: UpdatePickupCenterDto,
   ): Promise<PickupCenterDocument | null> {
     const id = new Types.ObjectId(pickupCenterId);
 
+    const data = Object.entries(updateData).reduce((acc, [key, value]) => {
+      if (value !== undefined && value !== '') {
+        acc[key] =
+          typeof value === 'string' ? value.trim().toLowerCase() : value;
+      }
+      return acc;
+    }, {} as any);
+
     const updated = await this.pickupCenterModel.findByIdAndUpdate(
       id,
-      updateData,
-      { returnDocument: 'after' },
+      { $set: data },
+      {
+        returnDocument: 'after',
+      },
     );
 
     return updated;
@@ -103,7 +168,7 @@ export class PickupCenterRepository {
   ): Promise<PickupCenterDocument[]> {
     const centers = await this.pickupCenterModel
       .find({
-        state: new RegExp(`^${state}$`, 'i'),
+        state: new RegExp(`^${state.trim().toLowerCase()}$`, 'i'),
         isActive: true,
       })
       .limit(5);

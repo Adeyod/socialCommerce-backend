@@ -8,24 +8,7 @@ export class UpdatePickupCenterDto {
   })
   @IsOptional()
   @IsString()
-  name!: string;
-
-  @ApiPropertyOptional({
-    description: 'This is the state that the pickup center is located.',
-    example: 'Ekiti State',
-  })
-  @IsOptional()
-  @IsString()
-  state!: string;
-
-  @ApiPropertyOptional({
-    description:
-      'This is the name of the town that the pickup center is located.',
-    example: 'Ado-Ekiti',
-  })
-  @IsOptional()
-  @IsString()
-  town!: string;
+  name?: string;
 
   @ApiPropertyOptional({
     description: 'This is the address of the pickup center.',
@@ -33,7 +16,7 @@ export class UpdatePickupCenterDto {
   })
   @IsOptional()
   @IsString()
-  address!: string;
+  address?: string;
 
   @ApiPropertyOptional({
     description: 'This is the phone number of the pickup center.',

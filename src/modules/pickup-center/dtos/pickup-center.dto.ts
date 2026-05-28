@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
+import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
 
 export class PickupCenterCreationDto {
   @ApiProperty({
@@ -11,10 +12,10 @@ export class PickupCenterCreationDto {
 
   @ApiProperty({
     description: 'This is the state that the pickup center is located.',
-    example: 'Ekiti State',
+    example: NigeriaState.AKWA_IBOM,
   })
   @IsString()
-  state!: string;
+  state!: NigeriaState;
 
   @ApiProperty({
     description:
