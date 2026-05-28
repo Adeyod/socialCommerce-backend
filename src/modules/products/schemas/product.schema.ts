@@ -18,7 +18,7 @@ export class Product {
   @Prop({ required: true, min: 0 })
   price!: number;
 
-  @Prop({ required: true, min: 0 })
+  @Prop({ min: 0, default: 1 })
   weight?: number;
 
   // Product images (Cloudinary / S3 URLs)

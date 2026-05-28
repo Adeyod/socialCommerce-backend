@@ -76,15 +76,21 @@ export class ProductsController {
           },
         },
         deliveryRules: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              state: { type: 'string', example: 'Lagos' },
-              price: { type: 'number', example: 2000 },
-            },
-          },
+          type: 'string',
+          description: 'JSON stringified array of delivery rules',
+          example:
+            '[{"state":"Lagos","price":2000},{"state":"Abuja","price":2500}]',
         },
+        // deliveryRules: {
+        //   type: 'array',
+        //   items: {
+        //     type: 'object',
+        //     properties: {
+        //       state: { type: 'string', example: 'Lagos' },
+        //       price: { type: 'number', example: 2000 },
+        //     },
+        //   },
+        // },
         description: { type: 'string' },
       },
     },
@@ -117,17 +123,98 @@ export class ProductsController {
       },
     }),
   )
+  // async createProduct(
+  //   @Param('businessId') businessId: string,
+  //   @UploadedFiles() files: Express.Multer.File[],
+  //   @Body() createProductDto: CreateProductDto,
+  //   @GetCurrentUser() user: JwtUser,
+  // ) {
+  //   console.log('createProductDto:', createProductDto);
+  //   console.log('files:', files);
+  //   console.log('RAW BODY:', createProductDto);
+  //   console.log('RAW deliveryRules:', createProductDto.deliveryRules);
+  //   console.log('TYPE:', typeof createProductDto.deliveryRules);
+  //   const response = await this.productsService.createProduct(
+  //     businessId,
+  //     user,
+  //     createProductDto,
+  //     files,
+  //   );
+
+  //   return response;
+  // }
   async createProduct(
     @Param('businessId') businessId: string,
     @UploadedFiles() files: Express.Multer.File[],
     @Body() createProductDto: CreateProductDto,
     @GetCurrentUser() user: JwtUser,
   ) {
-    console.log('createProductDto:', createProductDto);
-    console.log('files:', files);
-    console.log('RAW BODY:', createProductDto);
-    console.log('RAW deliveryRules:', createProductDto.deliveryRules);
-    console.log('TYPE:', typeof createProductDto.deliveryRules);
+    const rawRules = createProductDto.deliveryRules;
+
+    console.log('rawRules directly from request:', rawRules);
+
+    let parsedRules: any[] = [];
+
+    if (rawRules) {
+      // Case A: Swagger split the JSON array by its commas into an array of broken fragments
+      if (Array.isArray(rawRules) && typeof rawRules[0] === 'string') {
+        try {
+          // Re-join the components back with commas to reconstruct a whole JSON string
+          const reconstructedString = rawRules.join(',');
+
+          // It might now look like: '{\r\n  "state": "Osun","price": 4000\r\n},{\r\n  "state": "Lagos","price": 10000\r\n}'
+          // If it doesn't have outer array brackets [ ], wrap it up so it's a valid JSON array
+          let validJsonString = reconstructedString.trim();
+          if (!validJsonString.startsWith('[')) {
+            validJsonString = `[${validJsonString}]`;
+          }
+
+          parsedRules = JSON.parse(validJsonString);
+        } catch (e) {
+          // Fallback: Try parsing individual chunks if Swagger sent multiple independent complete JSON objects
+          parsedRules = rawRules
+            .map((item) => {
+              try {
+                return JSON.parse(item);
+              } catch {
+                return null;
+              }
+            })
+            .filter((v) => v !== null);
+        }
+      }
+      // Case B: Already an object structure
+      else if (Array.isArray(rawRules) && typeof rawRules[0] === 'object') {
+        parsedRules = rawRules;
+      }
+      // Case C: Single string payload
+      else if (typeof rawRules === 'string') {
+        try {
+          parsedRules = JSON.parse(rawRules);
+        } catch {
+          parsedRules = [];
+        }
+      }
+    }
+
+    // Assign the successfully reconstructed array back to the DTO
+    createProductDto.deliveryRules = Array.isArray(parsedRules)
+      ? parsedRules
+      : [];
+
+    // Ensure type numbers match up
+    createProductDto.deliveryRules = createProductDto.deliveryRules.map(
+      (rule: any) => ({
+        state: String(rule.state || ''),
+        price: Number(rule.price || 0),
+      }),
+    );
+
+    console.log(
+      'FINAL RECONSTRUCTED DELIVERY RULES:',
+      createProductDto.deliveryRules,
+    );
+
     const response = await this.productsService.createProduct(
       businessId,
       user,
