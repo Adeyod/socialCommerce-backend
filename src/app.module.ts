@@ -33,6 +33,7 @@ import { VendorModule } from './modules/vendor/vendor.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { PickupCenterModule } from './modules/pickup-center/pickup-center.module';
 import { CollectionModule } from './modules/collection/collection.module';
+import { BusinessShippingRateModule } from './modules/business-shipping-rate/business-shipping-rate.module';
 
 @Module({
   imports: [
@@ -130,6 +131,7 @@ import { CollectionModule } from './modules/collection/collection.module';
     WalletModule,
     PickupCenterModule,
     CollectionModule,
+    BusinessShippingRateModule,
   ],
   controllers: [AppController],
   providers: [AppService],
