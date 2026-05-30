@@ -5,7 +5,9 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseFloatPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -62,6 +64,8 @@ export class BusinessShippingRateController {
         user,
         dto,
       );
+
+    return response;
   }
 
   @Get(
@@ -93,7 +97,7 @@ export class BusinessShippingRateController {
   async getBusinessShippingPricePerState(
     @Param('businessId') businessId: string,
     @Param('destinationState') destinationState: string,
-    @Body() weight: number,
+    @Query('weight', ParseFloatPipe) weight: number,
   ) {
     const response =
       await this.businessShippingRateService.getBusinessShippingPricePerState(

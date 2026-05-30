@@ -4,7 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
 import { CreateBusinessShippingRateDto } from './dtos/business-shipping-rate.dto';
 import { BusinessShippingRateRepository } from './repositories/business-shipping-rate.repository';
 
@@ -12,12 +14,47 @@ import { BusinessShippingRateRepository } from './repositories/business-shipping
 export class BusinessShippingRateService {
   constructor(
     private readonly businessShippingRateRepository: BusinessShippingRateRepository,
+    private readonly businessesRepository: BusinessesRepository,
   ) {}
 
   async createBusinessShippingRate(
     user: JwtUser,
     dto: CreateBusinessShippingRateDto,
   ) {
+    const businessExist =
+      await this.businessesRepository.findBusinessByBusinessId(
+        new Types.ObjectId(dto.businessId),
+      );
+
+    if (!businessExist) {
+      throw new NotFoundException({
+        message: 'Business not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (
+      !businessExist.businessAddress ||
+      !businessExist.businessAddress.state
+    ) {
+      throw new NotFoundException({
+        message: 'Business has no address recorded yet.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (
+      businessExist.businessAddress.state.trim().toLowerCase() !==
+      dto.originState.trim().toLowerCase()
+    ) {
+      throw new ConflictException({
+        message: 'Invalid origin state for this business.',
+        success: false,
+        status: 409,
+      });
+    }
     const businessShippingRateExist =
       await this.businessShippingRateRepository.findBusinessShippingRate(
         dto.businessId,
@@ -92,7 +129,7 @@ export class BusinessShippingRateService {
     }
 
     const match = destination.weightRanges.find(
-      (w) => weight <= w.min && weight <= w.max,
+      (w) => weight >= w.min && weight <= w.max,
     );
 
     if (!match?.price) {

@@ -563,7 +563,7 @@ export class OrdersService {
       });
     }
 
-    // ETCH BUSINESSES
+    // FETCH BUSINESSES
     const businessIds = items.map((v) => v.businessId);
     const businesses =
       await this.businessesRepository.findBusinessesByIds(businessIds);
@@ -692,6 +692,14 @@ export class OrdersService {
     let lastMileFee = 0;
 
     if (deliveryMode === DeliveryMode.homeDelivery) {
+      /**
+       Get the last mile delivery here.
+       get the address of the buyer.
+       get the nearest bus stop that the buyer selected here
+       use nearest bus stop to get the price of the platform for the bus stop
+       *  */
+
+      //  de
       lastMileFee = 1000;
     }
 
