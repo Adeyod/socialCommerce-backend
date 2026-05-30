@@ -19,7 +19,7 @@ export class Product {
   price!: number;
 
   @Prop({ min: 0, default: 1 })
-  weight?: number;
+  weight!: number;
 
   // Product images (Cloudinary / S3 URLs)
   @Prop({
@@ -75,20 +75,6 @@ export class Product {
   variants!: {
     name: string;
     options: string[];
-  }[];
-
-  @Prop({
-    type: [
-      {
-        state: { type: String, required: true, trim: true },
-        price: { type: Number, required: true, min: 0 },
-      },
-    ],
-    default: [],
-  })
-  deliveryRules!: {
-    state: string;
-    price: number;
   }[];
 
   // Product visibility(If this is true is when we show product to buyers.)

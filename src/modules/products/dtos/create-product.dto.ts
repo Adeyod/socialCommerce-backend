@@ -217,16 +217,12 @@ export class DeliveryRuleDto {
 }
 
 export class CreateProductDto {
+  @ApiProperty({
+    description: 'This is the name of the product.',
+    example: 'Sneakers',
+  })
   @IsString()
   name!: string;
-
-  @ApiProperty({
-    description: 'Delivery pricing rules per state (JSON string or array)',
-    type: String,
-    example: '[{"state": "Lagos", "price": 2000}]',
-  })
-  @IsOptional() // We will parse and validate this manually in the controller below
-  deliveryRules!: any;
 
   // @ApiProperty({
   //   description: 'Delivery pricing rules per state (JSON stringified array)',
@@ -284,6 +280,11 @@ export class CreateProductDto {
   @IsNumber()
   @Min(1)
   stock!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  weight!: number;
 
   @IsOptional()
   @IsString()

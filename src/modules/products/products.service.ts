@@ -9,6 +9,7 @@ import { CloudinaryService } from '../../common/infrastructure/cloudinary/cloudi
 import { CloudinaryResponse } from '../../common/infrastructure/cloudinary/cloudinary.types';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { buildSmartPatch } from '../../common/utils/helper';
+import { BusinessShippingRateRepository } from '../business-shipping-rate/repositories/business-shipping-rate.repository';
 import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { UpdateProductDto } from './dtos/update-product.dto';
@@ -20,6 +21,7 @@ export class ProductsService {
     private readonly productsRepository: ProductsRepository,
     private readonly cloudinaryService: CloudinaryService,
     private readonly businessesRepository: BusinessesRepository,
+    private readonly businessShippingRateRepository: BusinessShippingRateRepository,
   ) {}
 
   async createProduct(
@@ -91,9 +93,19 @@ export class ProductsService {
       });
     }
 
+    const businessShipping =
+      await this.businessShippingRateRepository.findBusinessShippingRate(
+        product.businessId.toString(),
+      );
+
+    const response = {
+      product,
+      shipping: businessShipping,
+    };
+
     return {
       message: 'Product fetched successfully.',
-      data: product,
+      data: response,
     };
   }
 
@@ -111,9 +123,19 @@ export class ProductsService {
       });
     }
 
+    const businessShipping =
+      await this.businessShippingRateRepository.findBusinessShippingRate(
+        product.businessId.toString(),
+      );
+
+    const response = {
+      product,
+      shipping: businessShipping,
+    };
+
     return {
       message: 'Product fetched successfully.',
-      data: product,
+      data: response,
     };
   }
   async getProductsByBusinessId(
@@ -133,9 +155,19 @@ export class ProductsService {
       });
     }
 
+    const businessShipping =
+      await this.businessShippingRateRepository.findBusinessShippingRate(
+        businessId,
+      );
+
+    const response = {
+      product,
+      shipping: businessShipping,
+    };
+
     return {
       message: 'Products fetched successfully.',
-      data: product,
+      data: response,
     };
   }
 

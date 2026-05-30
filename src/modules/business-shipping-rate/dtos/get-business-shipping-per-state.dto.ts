@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import {
   IsMongoId,
   IsNumber,
@@ -30,8 +29,7 @@ export class GetBusinessShippingRatePerStateDto {
   @IsString()
   destinationState!: NigeriaState;
 
-  @ApiProperty({ type: WeightDto })
+  @ApiProperty({ type: Number })
   @ValidateNested({ each: true })
-  @Type(() => WeightDto)
-  weightRanges!: WeightDto;
+  weight!: number;
 }

@@ -1,10 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { BusinessShippingRateRepository } from '../business-shipping-rate/repositories/business-shipping-rate.repository';
 import { ProductsRepository } from '../products/repositories/product.repository';
 import { GetBuyerProductsDto } from './dtos/get-buyer-products.dto';
 
 @Injectable()
 export class BuyersService {
-  constructor(private readonly productsRepository: ProductsRepository) {}
+  constructor(
+    private readonly productsRepository: ProductsRepository,
+    private readonly businessShippingRateRepository: BusinessShippingRateRepository,
+  ) {}
 
   async getBuyerProducts(getBuyerProductsDto: GetBuyerProductsDto) {
     const { feed = 'recommended', page = 1, limit = 10 } = getBuyerProductsDto;
@@ -20,7 +24,25 @@ export class BuyersService {
   }
 
   async getBuyerProductDetails(productId: string) {
-    const response = await this.productsRepository.findById(productId);
+    const product = await this.productsRepository.findById(productId);
+
+    if (!product) {
+      throw new NotFoundException({
+        message: 'Product not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const businessShipping =
+      await this.businessShippingRateRepository.findBusinessShippingRate(
+        product.businessId.toString(),
+      );
+
+    const response = {
+      product,
+      shipping: businessShipping,
+    };
 
     return response;
   }

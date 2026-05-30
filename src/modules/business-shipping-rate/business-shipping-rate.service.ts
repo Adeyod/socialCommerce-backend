@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { CreateBusinessShippingRateDto } from './dtos/business-shipping-rate.dto';
-import { WeightDto } from './dtos/get-business-shipping-per-state.dto';
 import { BusinessShippingRateRepository } from './repositories/business-shipping-rate.repository';
 
 @Injectable()
@@ -46,10 +45,26 @@ export class BusinessShippingRateService {
     return response;
   }
 
+  async getBusinessShippingPrice(businessId: string) {
+    const rates =
+      await this.businessShippingRateRepository.findBusinessShippingRate(
+        businessId,
+      );
+
+    if (!rates) {
+      throw new NotFoundException({
+        message: 'Business shipping rate document not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return rates;
+  }
   async getBusinessShippingPricePerState(
     businessId: string,
     destinationState: string,
-    weight: WeightDto,
+    weight: number,
   ) {
     const rates =
       await this.businessShippingRateRepository.findBusinessShippingRate(
@@ -77,7 +92,7 @@ export class BusinessShippingRateService {
     }
 
     const match = destination.weightRanges.find(
-      (w) => w.min === weight.min && w.max === weight.max,
+      (w) => weight <= w.min && weight <= w.max,
     );
 
     if (!match?.price) {

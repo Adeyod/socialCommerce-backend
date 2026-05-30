@@ -21,7 +21,6 @@ import type { JwtUser } from '../../common/types/jwt-user.type';
 import { Role } from '../users/schemas/user.schema';
 import { BusinessShippingRateService } from './business-shipping-rate.service';
 import { CreateBusinessShippingRateDto } from './dtos/business-shipping-rate.dto';
-import { GetBusinessShippingRatePerStateDto } from './dtos/get-business-shipping-per-state.dto';
 
 @Controller('business-shipping-rate')
 export class BusinessShippingRateController {
@@ -70,7 +69,7 @@ export class BusinessShippingRateController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.user)
-  @Permissions(Permission.create_business_shipping_rate)
+  @Permissions(Permission.view_business_shipping_rate)
   @ApiBearerAuth('JWT-auth')
   @SuccessMessage('Business shipping rate fetched successfully.')
   @HttpCode(HttpStatus.CREATED)
@@ -93,13 +92,46 @@ export class BusinessShippingRateController {
   })
   async getBusinessShippingPricePerState(
     @Param('businessId') businessId: string,
-    @Body() dto: GetBusinessShippingRatePerStateDto,
+    @Param('destinationState') destinationState: string,
+    @Body() weight: number,
   ) {
     const response =
       await this.businessShippingRateService.getBusinessShippingPricePerState(
         businessId,
-        dto.destinationState,
-        dto.weightRanges,
+        destinationState,
+        weight,
+      );
+
+    return response;
+  }
+  @Get('get-business-shipping-rate-all-states/:businessId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.user)
+  @Permissions(Permission.view_business_shipping_rate)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Business shipping rate fetched successfully.')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Get business shipping rate.',
+    description:
+      'This is the endpoint for getting the shipping rate that a business is charging for a state with weight range.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Business Shipping rates fetched successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Unable to fetch business shipping rates.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async getBusinessShippingPrice(@Param('businessId') businessId: string) {
+    const response =
+      await this.businessShippingRateService.getBusinessShippingPrice(
+        businessId,
       );
 
     return response;

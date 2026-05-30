@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { BusinessShippingRateModule } from '../business-shipping-rate/business-shipping-rate.module';
 import { BusinessesModule } from '../businesses/businesses.module';
 import { CartsModule } from '../carts/carts.module';
 import { CollectionModule } from '../collection/collection.module';
@@ -25,6 +26,7 @@ import { Order, OrderSchema } from './schemas/order.schema';
     BusinessesModule,
     CartsModule,
     CollectionModule,
+    BusinessShippingRateModule,
     forwardRef(() => PaymentsModule),
   ],
   controllers: [OrdersController],

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CloudinaryModule } from '../../common/infrastructure/cloudinary/cloudinary.module';
+import { BusinessShippingRateModule } from '../business-shipping-rate/business-shipping-rate.module';
 import { BusinessesModule } from '../businesses/businesses.module';
 import { StaffAccessControlModule } from '../staff-access-control/staff-access-control.module';
 import { ProductsController } from './products.controller';
@@ -14,6 +15,7 @@ import { Product, ProductSchema } from './schemas/product.schema';
     CloudinaryModule,
     BusinessesModule,
     StaffAccessControlModule,
+    BusinessShippingRateModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService, ProductsRepository],

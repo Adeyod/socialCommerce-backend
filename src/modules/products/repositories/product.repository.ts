@@ -19,28 +19,14 @@ export class ProductsRepository {
     tags?: string[];
     price: number;
     stock: number;
+    weight: number;
     media: {
       url: string;
       publicUrl: string;
     }[];
-    deliveryRules: {
-      state: string;
-      price: number;
-    }[];
     businessId: string;
     inStock: boolean;
   }) {
-    const rules = data.deliveryRules.map((r) => {
-      const res = {
-        state: r.state.toLowerCase(),
-        price: r.price,
-      };
-
-      return res;
-    });
-
-    console.log('rules:', rules);
-
     const newProduct = await new this.productModel({
       name: data.name.toLowerCase(),
       businessId: new Types.ObjectId(data.businessId),
@@ -48,9 +34,9 @@ export class ProductsRepository {
       price: data.price,
       media: data.media,
       stock: data.stock,
+      weight: data.weight,
       category: data.category?.toLowerCase(),
       tags: data.tags,
-      deliveryRules: rules,
       sku: data.sku.toLowerCase(),
     }).save();
 
