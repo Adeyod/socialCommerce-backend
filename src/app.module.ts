@@ -34,6 +34,7 @@ import { WalletModule } from './modules/wallet/wallet.module';
 import { PickupCenterModule } from './modules/pickup-center/pickup-center.module';
 import { CollectionModule } from './modules/collection/collection.module';
 import { BusinessShippingRateModule } from './modules/business-shipping-rate/business-shipping-rate.module';
+import { HomeDeliveryModule } from './modules/home-delivery/home-delivery.module';
 
 @Module({
   imports: [
@@ -132,6 +133,7 @@ import { BusinessShippingRateModule } from './modules/business-shipping-rate/bus
     PickupCenterModule,
     CollectionModule,
     BusinessShippingRateModule,
+    HomeDeliveryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

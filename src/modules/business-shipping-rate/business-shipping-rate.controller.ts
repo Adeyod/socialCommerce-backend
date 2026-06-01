@@ -16,10 +16,12 @@ import { Permissions } from '../../common/decorators/permissions.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { SuccessMessage } from '../../common/decorators/success-message.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
+import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { Permission } from '../../common/enums/permissions.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtUser } from '../../common/types/jwt-user.type';
+import { NigeriaState } from '../collection/schemas/collection-fee.schema';
 import { Role } from '../users/schemas/user.schema';
 import { BusinessShippingRateService } from './business-shipping-rate.service';
 import { CreateBusinessShippingRateDto } from './dtos/business-shipping-rate.dto';
@@ -69,11 +71,52 @@ export class BusinessShippingRateController {
   }
 
   @Get(
+    'get-business-shipping-document-per-buyer-state/:businessId/:destinationState',
+  )
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.user)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage(
+    'Business shipping rates to buyer state fetched successfully.',
+  )
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Get business shipping rates to buyer state.',
+    description:
+      'This is the endpoint for getting the shipping rates that a business is charging to buyer state.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Business Shipping rates to buyer state fetched successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Unable to fetch business shipping rates to buyer state.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async getBusinessShippingRatesToBuyerState(
+    @Param('businessId') businessId: string,
+    @Param('destinationState') destinationState: NigeriaState,
+    @GetCurrentUser() user: JwtUser,
+  ) {
+    const response =
+      await this.businessShippingRateService.getBusinessShippingRatesToBuyerState(
+        businessId,
+        destinationState,
+        user,
+      );
+
+    return response;
+  }
+
+  @Get(
     'get-business-shipping-rate-per-destination-state/:businessId/:destinationState',
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.user)
-  @Permissions(Permission.view_business_shipping_rate)
   @ApiBearerAuth('JWT-auth')
   @SuccessMessage('Business shipping rate fetched successfully.')
   @HttpCode(HttpStatus.CREATED)
@@ -96,7 +139,7 @@ export class BusinessShippingRateController {
   })
   async getBusinessShippingPricePerState(
     @Param('businessId') businessId: string,
-    @Param('destinationState') destinationState: string,
+    @Param('destinationState') destinationState: NigeriaState,
     @Query('weight', ParseFloatPipe) weight: number,
   ) {
     const response =
@@ -111,7 +154,6 @@ export class BusinessShippingRateController {
   @Get('get-business-shipping-rate-all-states/:businessId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.user)
-  @Permissions(Permission.view_business_shipping_rate)
   @ApiBearerAuth('JWT-auth')
   @SuccessMessage('Business shipping rate fetched successfully.')
   @HttpCode(HttpStatus.CREATED)
@@ -132,10 +174,14 @@ export class BusinessShippingRateController {
     status: 500,
     description: 'Internal server error',
   })
-  async getBusinessShippingPrice(@Param('businessId') businessId: string) {
+  async findBusinessShippingRateForAllStates(
+    @Param('businessId') businessId: string,
+    @Query() queryWithPaginationDto: QueryWithPaginationDto,
+  ) {
     const response =
-      await this.businessShippingRateService.getBusinessShippingPrice(
+      await this.businessShippingRateService.findBusinessShippingRateForAllStates(
         businessId,
+        queryWithPaginationDto,
       );
 
     return response;

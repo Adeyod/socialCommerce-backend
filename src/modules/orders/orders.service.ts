@@ -436,7 +436,7 @@ export class OrdersService {
       });
     }
 
-    const buyerState = deliveryAddress.state?.toLowerCase();
+    const buyerState = deliveryAddress.state;
 
     if (!buyerState) {
       throw new BadRequestException({

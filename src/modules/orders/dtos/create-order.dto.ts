@@ -7,6 +7,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
 import { DeliveryMode, VendorOrderStatus } from '../schemas/order.schema';
 
 export class CreateOrderItemDto {
@@ -48,7 +49,7 @@ export class DeliveryAddressDto {
 
   @ApiProperty()
   @IsString()
-  state!: string;
+  state!: NigeriaState;
 
   @ApiProperty()
   @IsString()

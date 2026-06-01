@@ -93,19 +93,9 @@ export class ProductsService {
       });
     }
 
-    const businessShipping =
-      await this.businessShippingRateRepository.findBusinessShippingRate(
-        product.businessId.toString(),
-      );
-
-    const response = {
-      product,
-      shipping: businessShipping,
-    };
-
     return {
       message: 'Product fetched successfully.',
-      data: response,
+      data: product,
     };
   }
 
@@ -123,19 +113,9 @@ export class ProductsService {
       });
     }
 
-    const businessShipping =
-      await this.businessShippingRateRepository.findBusinessShippingRate(
-        product.businessId.toString(),
-      );
-
-    const response = {
-      product,
-      shipping: businessShipping,
-    };
-
     return {
       message: 'Product fetched successfully.',
-      data: response,
+      data: product,
     };
   }
   async getProductsByBusinessId(
@@ -155,19 +135,9 @@ export class ProductsService {
       });
     }
 
-    const businessShipping =
-      await this.businessShippingRateRepository.findBusinessShippingRate(
-        businessId,
-      );
-
-    const response = {
-      product,
-      shipping: businessShipping,
-    };
-
     return {
       message: 'Products fetched successfully.',
-      data: response,
+      data: product,
     };
   }
 

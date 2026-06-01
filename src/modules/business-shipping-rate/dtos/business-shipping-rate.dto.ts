@@ -1,10 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsEnum,
   IsMongoId,
   IsNumber,
-  IsString,
+  IsOptional,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -16,10 +17,14 @@ export class WeightRangeDto {
   @Min(0)
   min!: number;
 
-  @ApiProperty({ example: 5 })
+  @ApiPropertyOptional({
+    example: 5,
+    description: 'Leave empty for open-ended range (e.g. 101+)',
+  })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  max!: number;
+  max?: number;
 
   @ApiProperty({ example: 2000 })
   @IsNumber()
@@ -27,30 +32,22 @@ export class WeightRangeDto {
   price!: number;
 }
 
-class DestinationPriceDto {
-  @ApiProperty({ example: NigeriaState.ABUJA })
-  @IsString()
-  destinationState!: string;
+export class CreateBusinessShippingRateDto {
+  @ApiProperty()
+  @IsMongoId()
+  businessId!: string;
+
+  @ApiProperty({ enum: NigeriaState, example: NigeriaState.ABIA })
+  @IsEnum(NigeriaState)
+  originState!: NigeriaState;
+
+  @ApiProperty({ enum: NigeriaState, example: NigeriaState.ABUJA })
+  @IsEnum(NigeriaState)
+  destinationState!: NigeriaState;
 
   @ApiProperty({ type: [WeightRangeDto] })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => WeightRangeDto)
   weightRanges!: WeightRangeDto[];
-}
-
-export class CreateBusinessShippingRateDto {
-  @ApiProperty()
-  @IsMongoId()
-  businessId!: string;
-
-  @ApiProperty({ example: NigeriaState.ABIA })
-  @IsString()
-  originState!: NigeriaState;
-
-  @ApiProperty({ type: [DestinationPriceDto] })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => DestinationPriceDto)
-  priceBreakdown!: DestinationPriceDto[];
 }

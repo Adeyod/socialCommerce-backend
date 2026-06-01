@@ -34,16 +34,6 @@ export class BuyersService {
       });
     }
 
-    const businessShipping =
-      await this.businessShippingRateRepository.findBusinessShippingRate(
-        product.businessId.toString(),
-      );
-
-    const response = {
-      product,
-      shipping: businessShipping,
-    };
-
-    return response;
+    return product;
   }
 }
