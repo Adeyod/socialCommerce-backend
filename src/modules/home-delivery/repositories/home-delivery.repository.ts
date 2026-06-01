@@ -19,11 +19,13 @@ export class HomeDeliveryRepository {
   async createHomeDeliveryFee(
     dto: CreateHomeDeliveryFeeDto,
   ): Promise<HomeDeliveryFeeDocument | null> {
-    const response = await new this.homeDeliveryModel({
-      state: dto.state.trim().toLowerCase(),
-      town: dto.town.trim().toLowerCase(),
-      nearestBusStop: dto.nearestBusStop.trim().toLowerCase(),
+    const id = new Types.ObjectId(dto.pickupCenterId);
 
+    const response = await new this.homeDeliveryModel({
+      buyerState: dto.buyerState,
+      buyerTown: dto.buyerTown.trim().toLowerCase(),
+      nearestBusStop: dto.nearestBusStop.trim().toLowerCase(),
+      pickupCenterId: id,
       weightRanges: dto.weightRanges.map((w) => ({
         min: w.min,
         max: w.max,
@@ -36,16 +38,18 @@ export class HomeDeliveryRepository {
 
   async findHomeDeliveryFeeUsingPickupIdStateAndNearestBusStop(
     pickupCenterId: string,
-    state: NigeriaState,
+    buyerState: NigeriaState,
     nearestBusStop: string,
   ): Promise<HomeDeliveryFeeDocument | null> {
     const id = new Types.ObjectId(pickupCenterId);
 
-    const response = await this.homeDeliveryModel.findOne({
-      pickupCenterId: id,
-      state: state.trim().toLowerCase(),
-      nearestBusStop: nearestBusStop.trim().toLowerCase(),
-    });
+    const response = await this.homeDeliveryModel
+      .findOne({
+        pickupCenterId: id,
+        buyerState,
+        nearestBusStop: nearestBusStop.trim().toLowerCase(),
+      })
+      .lean();
 
     return response;
   }
@@ -62,8 +66,8 @@ export class HomeDeliveryRepository {
 
       query = query.where({
         $or: [
-          { state: { $regex: regex } },
-          { town: { $regex: regex } },
+          { buyerState: { $regex: regex } },
+          { buyerTown: { $regex: regex } },
           { nearestBusStop: { $regex: regex } },
         ],
       });
@@ -90,5 +94,21 @@ export class HomeDeliveryRepository {
     const fees = await query.sort({ createdAt: -1 }).exec();
 
     return fees;
+  }
+
+  async getHomeDeliveryFeesToBuyerNearestBusStop(
+    pickupCenterId: string,
+    buyerTown: string,
+    nearestBusStop: string,
+  ) {
+    const id = new Types.ObjectId(pickupCenterId);
+
+    const rates = await this.homeDeliveryModel.findOne({
+      pickupCenterId: id,
+      buyerTown,
+      nearestBusStop,
+    });
+
+    return rates;
   }
 }

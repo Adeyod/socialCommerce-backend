@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Query,
   UseGuards,
@@ -79,14 +80,14 @@ export class HomeDeliveryController {
   })
   async calculateHomeDeliveryFee(
     @Query('pickupCenterId') pickupCenterId: string,
-    @Query('state') state: NigeriaState,
+    @Query('buyerState') buyerState: NigeriaState,
     @Query('nearestBusStop') nearestBusStop: string,
     @Query('weight') weight: number,
   ) {
     const response =
-      await this.homeDeliveryService.findHomeDeliveryFeeUsingPickupIdStatWeighteAndNearestBusStop(
+      await this.homeDeliveryService.findHomeDeliveryFeeUsingPickupIdStateWeightAndNearestBusStop(
         pickupCenterId,
-        state,
+        buyerState,
         nearestBusStop,
         weight,
       );
@@ -123,6 +124,45 @@ export class HomeDeliveryController {
     const response = await this.homeDeliveryService.getAllHomeDeliveryFees(
       queryWithPaginationDto,
     );
+
+    return response;
+  }
+
+  @Get('get-home-delivery-rates-to-buyer-bus-stop/:pickupCenterId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.admin)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Home delivery fees fetched successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get all home delivery fees.',
+    description:
+      'This is the endpoint for fetching all home delivery fees on the platform.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Home delivery fees fetched successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request. Unable to fetch home delivery fees.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async getHomeDeliveryFeesToBuyerNearestBusStop(
+    @Param('pickupCenterId') pickupCenterId: string,
+    @Query('buyerTown') buyerTown: string,
+    @Query('nearestBusStop') nearestBusStop: string,
+  ) {
+    const response =
+      await this.homeDeliveryService.getHomeDeliveryFeesToBuyerNearestBusStop(
+        pickupCenterId,
+        buyerTown,
+        nearestBusStop,
+      );
 
     return response;
   }

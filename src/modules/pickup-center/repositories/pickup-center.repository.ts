@@ -20,7 +20,7 @@ export class PickupCenterRepository {
   ): Promise<PickupCenterDocument> {
     const center = await new this.pickupCenterModel({
       name: dto.name.trim().toLowerCase(),
-      state: dto.state.trim().toLowerCase(),
+      state: dto.state,
       town: dto.town.trim().toLowerCase(),
       address: dto.address.trim().toLowerCase(),
       phone: dto.phone.trim(),
