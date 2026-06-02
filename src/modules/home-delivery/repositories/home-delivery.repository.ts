@@ -36,6 +36,19 @@ export class HomeDeliveryRepository {
     return response;
   }
 
+  async findHomeDeliveryFeeUsingStateAndNearestBusStop(
+    buyerState: NigeriaState,
+    nearestBusStop: string,
+  ): Promise<HomeDeliveryFeeDocument | null> {
+    const response = await this.homeDeliveryModel
+      .findOne({
+        buyerState,
+        nearestBusStop: nearestBusStop.trim().toLowerCase(),
+      })
+      .lean();
+
+    return response;
+  }
   async findHomeDeliveryFeeUsingPickupIdStateAndNearestBusStop(
     pickupCenterId: string,
     buyerState: NigeriaState,

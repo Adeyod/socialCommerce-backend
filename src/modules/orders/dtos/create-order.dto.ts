@@ -137,4 +137,11 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   pickupCenter?: string;
+
+  @ApiPropertyOptional({
+    description: 'Nearest bus stop',
+  })
+  @IsOptional()
+  @IsString()
+  nearestBusStop?: string;
 }

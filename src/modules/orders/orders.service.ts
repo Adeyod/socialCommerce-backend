@@ -12,6 +12,7 @@ import { CartRepository } from '../carts/repositories/cart.repository';
 import { CollectionFeeRepository } from '../collection/repositories/collection-fee.repository';
 import { DeliveryMarketplaceRepository } from '../delivery-marketplace/repositories/delivery-marketplace.repository';
 import { DeliveryRepository } from '../delivery/repositories/delivery.repository';
+import { HomeDeliveryService } from '../home-delivery/home-delivery.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PaymentsRepository } from '../payments/repositories/payment.repository';
@@ -45,6 +46,7 @@ export class OrdersService {
     private readonly notificationsService: NotificationsService,
     private readonly paymentsRepository: PaymentsRepository,
     private readonly businessesRepository: BusinessesRepository,
+    private readonly homeDeliveryService: HomeDeliveryService,
     private readonly collectionFeeRepository: CollectionFeeRepository,
   ) {}
 
@@ -414,6 +416,7 @@ export class OrdersService {
       cartId,
       deliveryMode,
       pickupCenter,
+      nearestBusStop,
     } = createOrderDto;
 
     // AUTH CHECK
@@ -571,6 +574,7 @@ export class OrdersService {
     const businessMap = new Map(businesses.map((b) => [b._id.toString(), b]));
 
     let globalSubtotal = 0;
+    let globalTotalWeight = 0;
     let productSurchargeTotal = 0;
     const interStateGroups = new Set<string>();
 
@@ -642,9 +646,12 @@ export class OrdersService {
       vendorGroup.subtotal += itemTotal;
 
       // AGGREGATE WEIGHT
-      vendorGroup.totalWeight += product?.weight * item.quantity;
+      const itemWeight = product?.weight * item.quantity;
+
+      vendorGroup.totalWeight += itemWeight;
 
       globalSubtotal += itemTotal;
+      globalTotalWeight += itemWeight;
     }
 
     // SHIPPING (PER VENDOR)
@@ -692,6 +699,13 @@ export class OrdersService {
     let lastMileFee = 0;
 
     if (deliveryMode === DeliveryMode.homeDelivery) {
+      if (!nearestBusStop) {
+        throw new BadRequestException({
+          message: 'Nearest bus stop is required to proceed.',
+          success: false,
+          status: 400,
+        });
+      }
       /**
        Get the last mile delivery here.
        get the address of the buyer.
@@ -700,7 +714,13 @@ export class OrdersService {
        *  */
 
       //  de
-      lastMileFee = 1000;
+      const result =
+        await this.homeDeliveryService.findHomeDeliveryFeeUsingWeightStateAndNearestBusStop(
+          deliveryAddress.state,
+          nearestBusStop,
+          globalTotalWeight,
+        );
+      lastMileFee = result;
     }
 
     // TOTAL

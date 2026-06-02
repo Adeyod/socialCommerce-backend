@@ -124,6 +124,40 @@ export class HomeDeliveryService {
     return match.price;
   }
 
+  async findHomeDeliveryFeeUsingWeightStateAndNearestBusStop(
+    buyerState: NigeriaState,
+    nearestBusStop: string,
+    weight: number,
+  ) {
+    const fee =
+      await this.homeDeliveryRepository.findHomeDeliveryFeeUsingStateAndNearestBusStop(
+        buyerState,
+        nearestBusStop.trim().toLowerCase(),
+      );
+
+    if (!fee) {
+      throw new NotFoundException({
+        message: `Home delivery fee not found for ${nearestBusStop} in ${buyerState} state.`,
+        success: false,
+        status: 409,
+      });
+    }
+
+    const match = fee.weightRanges.find((w) =>
+      this.isInRange(weight, w.min, w.max),
+    );
+
+    if (!match) {
+      throw new NotFoundException({
+        message: 'No fee for this weight range.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return match.price;
+  }
+
   async getAllHomeDeliveryFees(queryWithPaginationDto: QueryWithPaginationDto) {
     const response = await this.homeDeliveryRepository.getAllHomeDeliveryFees(
       queryWithPaginationDto,
