@@ -590,6 +590,22 @@ export class ProductsRepository {
         },
       },
       { $unwind: '$business' },
+      {
+        $lookup: {
+          from: 'businessshippingrates',
+          let: { businessId: '$businessId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$businessId', '$$businessId'],
+                },
+              },
+            },
+          ],
+          as: 'shippingRates',
+        },
+      },
 
       // fairness factor
       {
@@ -657,11 +673,34 @@ export class ProductsRepository {
                 averageRating: 1,
                 reviewCount: 1,
                 media: 1,
+                weight: 1,
                 createdAt: 1,
 
                 business: {
                   id: '$business._id',
                   name: '$business.name',
+                },
+                shippingRates: {
+                  $map: {
+                    input: '$shippingRates',
+                    as: 'rate',
+                    in: {
+                      originState: '$$rate.originState',
+                      destinationState: '$$rate.destinationState',
+
+                      weightRanges: {
+                        $map: {
+                          input: '$$rate.weightRanges',
+                          as: 'wr',
+                          in: {
+                            min: '$$wr.min',
+                            max: '$$wr.max',
+                            price: '$$wr.price',
+                          },
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },

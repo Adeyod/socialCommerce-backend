@@ -706,14 +706,7 @@ export class OrdersService {
           status: 400,
         });
       }
-      /**
-       Get the last mile delivery here.
-       get the address of the buyer.
-       get the nearest bus stop that the buyer selected here
-       use nearest bus stop to get the price of the platform for the bus stop
-       *  */
 
-      //  de
       const result =
         await this.homeDeliveryService.findHomeDeliveryFeeUsingWeightStateAndNearestBusStop(
           deliveryAddress.state,
