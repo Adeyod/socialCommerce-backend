@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Types } from 'mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { CloudinaryService } from '../../common/infrastructure/cloudinary/cloudinary.service';
 import { CloudinaryResponse } from '../../common/infrastructure/cloudinary/cloudinary.types';
@@ -11,6 +13,7 @@ import { JwtUser } from '../../common/types/jwt-user.type';
 import { buildSmartPatch } from '../../common/utils/helper';
 import { BusinessShippingRateRepository } from '../business-shipping-rate/repositories/business-shipping-rate.repository';
 import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
+import { InventoryRepository } from '../inventory/repositories/inventory.repository';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { UpdateProductDto } from './dtos/update-product.dto';
 import { ProductsRepository } from './repositories/product.repository';
@@ -21,7 +24,11 @@ export class ProductsService {
     private readonly productsRepository: ProductsRepository,
     private readonly cloudinaryService: CloudinaryService,
     private readonly businessesRepository: BusinessesRepository,
+    private readonly inventoryRepository: InventoryRepository,
     private readonly businessShippingRateRepository: BusinessShippingRateRepository,
+
+    @InjectConnection()
+    private readonly connection: Connection,
   ) {}
 
   async createProduct(
@@ -66,20 +73,58 @@ export class ProductsService {
       'Social-Commerce',
     );
 
-    const data = {
-      ...createProductDto,
-      media: uploadMedias,
-      businessId: businessExist._id.toString(),
-      inStock: (createProductDto.stock ?? 0) > 0,
-      sku: this.generateSku(),
-    };
-    const product = await this.productsRepository.createProduct(data);
+    const session = await this.connection.startSession();
+    session.startTransaction();
 
-    console.log('product:', product);
-    return {
-      message: 'Product created successfully.',
-      data: product,
-    };
+    try {
+      const data = {
+        ...createProductDto,
+        media: uploadMedias,
+        businessId: businessExist._id.toString(),
+        inStock: (createProductDto.stock ?? 0) > 0,
+        sku: this.generateSku(),
+      };
+      const product = await this.productsRepository.createProduct(data);
+
+      if (!product) {
+        throw new BadRequestException({
+          message: 'Unable to create product.',
+          success: false,
+          status: 400,
+        });
+      }
+
+      const inventory = await this.inventoryRepository.createInventory(
+        businessId,
+        product._id.toString(),
+        createProductDto.stock,
+        session,
+      );
+
+      if (!inventory) {
+        throw new BadRequestException({
+          message: 'Unable to create inventory when creating product.',
+          success: false,
+          status: 400,
+        });
+      }
+
+      console.log('product:', product);
+      return {
+        message: 'Product created successfully.',
+        data: product,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+
+      const payload = uploadMedias.map((img) => img.publicUrl);
+
+      await this.cloudinaryService.deleteMultiple(payload); // important
+
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 
   async getProductByProductId(productId: string) {

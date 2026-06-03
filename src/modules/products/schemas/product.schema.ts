@@ -48,6 +48,9 @@ export class Product {
   @Prop({ default: 0, min: 0 })
   stock!: number;
 
+  @Prop({ default: 0, min: 0 })
+  reservedQuantity!: number;
+
   @Prop({ default: true })
   inStock!: boolean;
 

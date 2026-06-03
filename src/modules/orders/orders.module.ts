@@ -7,6 +7,7 @@ import { CollectionModule } from '../collection/collection.module';
 import { DeliveryMarketplaceModule } from '../delivery-marketplace/delivery-marketplace.module';
 import { DeliveryModule } from '../delivery/delivery.module';
 import { HomeDeliveryModule } from '../home-delivery/home-delivery.module';
+import { InventoryModule } from '../inventory/inventory.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { ProductsModule } from '../products/products.module';
@@ -29,6 +30,7 @@ import { Order, OrderSchema } from './schemas/order.schema';
     CollectionModule,
     BusinessShippingRateModule,
     HomeDeliveryModule,
+    InventoryModule,
     forwardRef(() => PaymentsModule),
   ],
   controllers: [OrdersController],

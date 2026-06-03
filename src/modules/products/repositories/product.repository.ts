@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../../common/dto/query-with-pagination';
 import { Product, ProductDocument } from '../schemas/product.schema';
 
@@ -11,6 +15,38 @@ export class ProductsRepository {
     private productModel: Model<ProductDocument>,
   ) {}
 
+  async reserveStock(
+    productId: string,
+    quantity: number,
+    session?: ClientSession,
+  ) {
+    const result = await this.productModel.updateOne(
+      {
+        _id: new Types.ObjectId(productId),
+
+        // AVAILABLE STOCK CHECK (ATOMIC)
+        $expr: {
+          $gte: [{ $subtract: ['$stock', '$reservedQuantity'] }, quantity],
+        },
+      },
+      {
+        $inc: {
+          reservedStock: quantity,
+        },
+      },
+      { session },
+    );
+
+    if (result.modifiedCount === 0) {
+      throw new BadRequestException({
+        message: `Insufficient stock for product ${productId}`,
+        success: false,
+        status: 400,
+      });
+    }
+
+    return result;
+  }
   async createProduct(data: {
     name: string;
     description?: string;
@@ -157,6 +193,23 @@ export class ProductsRepository {
     });
 
     return updatedProduct;
+  }
+
+  async productUpdateForInventory(
+    productId: string,
+    quantity: number,
+    session?: ClientSession,
+  ) {
+    const response = await this.productModel.updateOne(
+      { _id: new Types.ObjectId(productId) },
+      {
+        $inc: { stock: quantity },
+        $set: { inStock: true },
+      },
+      { session },
+    );
+
+    return response;
   }
 
   async deleteProduct(productId: string) {

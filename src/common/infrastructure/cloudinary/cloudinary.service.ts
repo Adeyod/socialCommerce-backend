@@ -78,7 +78,7 @@ export class CloudinaryService implements OnModuleInit {
     return await cloudinary.uploader.destroy(publicId);
   }
 
-  private async deleteMultiple(publicIds: string[]) {
+  async deleteMultiple(publicIds: string[]) {
     const deletions = publicIds.map((id) => cloudinary.uploader.destroy(id));
     return Promise.all(deletions);
   }

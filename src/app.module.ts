@@ -10,17 +10,22 @@ import configuration from './config/configuration';
 import { MailModule } from './mail/mail.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BusinessShippingRateModule } from './modules/business-shipping-rate/business-shipping-rate.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
 import { BuyersModule } from './modules/buyers/buyers.module';
 import { CartsModule } from './modules/carts/carts.module';
+import { CollectionModule } from './modules/collection/collection.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DeliveryMarketplaceModule } from './modules/delivery-marketplace/delivery-marketplace.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
 import { DiscountsModule } from './modules/discounts/discounts.module';
+import { HomeDeliveryModule } from './modules/home-delivery/home-delivery.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PartnersModule } from './modules/partners/partners.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { PickupCenterModule } from './modules/pickup-center/pickup-center.module';
 import { ProductsModule } from './modules/products/products.module';
 import { PromotersModule } from './modules/promoters/promoters.module';
 import { RefreshTokensModule } from './modules/refresh-tokens/refresh-tokens.module';
@@ -31,10 +36,6 @@ import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { WalletModule } from './modules/wallet/wallet.module';
-import { PickupCenterModule } from './modules/pickup-center/pickup-center.module';
-import { CollectionModule } from './modules/collection/collection.module';
-import { BusinessShippingRateModule } from './modules/business-shipping-rate/business-shipping-rate.module';
-import { HomeDeliveryModule } from './modules/home-delivery/home-delivery.module';
 
 @Module({
   imports: [
@@ -95,7 +96,7 @@ import { HomeDeliveryModule } from './modules/home-delivery/home-delivery.module
           };
         }
 
-        console.log('⚠️ Using default Redis localhost:6379');
+        console.log('Using default Redis localhost:6379');
         return {
           redis: {
             host: '127.0.0.1',
@@ -134,6 +135,7 @@ import { HomeDeliveryModule } from './modules/home-delivery/home-delivery.module
     CollectionModule,
     BusinessShippingRateModule,
     HomeDeliveryModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

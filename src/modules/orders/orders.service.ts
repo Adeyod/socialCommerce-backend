@@ -4,6 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { BusinessShippingRateService } from '../business-shipping-rate/business-shipping-rate.service';
@@ -13,6 +15,7 @@ import { CollectionFeeRepository } from '../collection/repositories/collection-f
 import { DeliveryMarketplaceRepository } from '../delivery-marketplace/repositories/delivery-marketplace.repository';
 import { DeliveryRepository } from '../delivery/repositories/delivery.repository';
 import { HomeDeliveryService } from '../home-delivery/home-delivery.service';
+import { InventoryRepository } from '../inventory/repositories/inventory.repository';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PaymentsRepository } from '../payments/repositories/payment.repository';
@@ -47,7 +50,9 @@ export class OrdersService {
     private readonly paymentsRepository: PaymentsRepository,
     private readonly businessesRepository: BusinessesRepository,
     private readonly homeDeliveryService: HomeDeliveryService,
+    private readonly inventoryRepository: InventoryRepository,
     private readonly collectionFeeRepository: CollectionFeeRepository,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   // async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
@@ -580,200 +585,226 @@ export class OrdersService {
 
     const vendorMap = new Map<string, any>();
 
+    const session = await this.connection.startSession();
+    session.startTransaction();
     // PROCESS ITEMS (NO SHIPPING HERE)
-    for (const item of items) {
-      const product = await this.productsRepository.findById(item.productId);
 
-      if (!product) {
-        throw new NotFoundException({
-          message: `Product not found: ${item.productId}`,
-          success: false,
-          status: 404,
+    try {
+      for (const item of items) {
+        const product = await this.productsRepository.findById(item.productId);
+
+        if (!product) {
+          throw new NotFoundException({
+            message: `Product not found: ${item.productId}`,
+            success: false,
+            status: 404,
+          });
+        }
+
+        if (!product.inStock) {
+          throw new NotFoundException({
+            message: `Product ${product.name} is out of stock`,
+            success: false,
+            status: 404,
+          });
+        }
+
+        const availableStock = product.stock - product.reservedQuantity;
+
+        if (availableStock < item.quantity) {
+          throw new BadRequestException({
+            message: `Only ${availableStock} ${product.name} left.`,
+            success: false,
+            status: 400,
+          });
+        }
+
+        await this.productsRepository.reserveStock(
+          item.productId,
+          item.quantity,
+          session,
+        );
+
+        await this.inventoryRepository.reserveStock(
+          item.productId,
+          item.quantity,
+          session,
+        );
+
+        const business = businessMap.get(item.businessId);
+
+        if (!business?.businessAddress?.state) {
+          throw new NotFoundException({
+            message: `Business address not found.`,
+            status: 404,
+            success: false,
+          });
+        }
+
+        const productState = business.businessAddress.state.toLowerCase();
+
+        const itemTotal = product.price * item.quantity;
+
+        if (!vendorMap.has(item.businessId)) {
+          vendorMap.set(item.businessId, {
+            businessId: item.businessId,
+            items: [],
+            subtotal: 0,
+            totalWeight: 0,
+            state: productState,
+            status: VendorOrderStatus.pending,
+          });
+        }
+
+        const vendorGroup = vendorMap.get(item.businessId);
+
+        vendorGroup.items.push({
+          productId: product._id,
+          name: product.name,
+          price: product.price,
+          quantity: item.quantity,
+          itemStatus: VendorItemOrderStatus.pending,
         });
+
+        vendorGroup.subtotal += itemTotal;
+
+        // AGGREGATE WEIGHT
+        const itemWeight = product?.weight * item.quantity;
+
+        vendorGroup.totalWeight += itemWeight;
+
+        globalSubtotal += itemTotal;
+        globalTotalWeight += itemWeight;
       }
 
-      if (!product.inStock) {
-        throw new NotFoundException({
-          message: `Product ${product.name} is out of stock`,
-          success: false,
-          status: 404,
-        });
+      // SHIPPING (PER VENDOR)
+      for (const vendor of vendorMap.values()) {
+        const isInterState = vendor.state !== buyerState;
+
+        if (isInterState) {
+          const shippingFee =
+            await this.businessShippingRateService.getBusinessShippingPricePerState(
+              vendor.businessId.toString(),
+              buyerState,
+              vendor.totalWeight,
+            );
+
+          if (!shippingFee) {
+            throw new NotFoundException(
+              `Shipping fee not configured for business ${vendor.businessId}`,
+            );
+          }
+
+          vendor.subtotal += shippingFee;
+          productSurchargeTotal += shippingFee;
+
+          interStateGroups.add(vendor.state);
+        }
       }
 
-      if (product.stock < item.quantity) {
-        throw new BadRequestException({
-          message: `Only ${product.stock} ${product.name} left.`,
-          success: false,
-          status: 400,
-        });
-      }
+      // COLLECTION FEE
+      let collectionFee = 0;
 
-      const business = businessMap.get(item.businessId);
-
-      if (!business?.businessAddress?.state) {
-        throw new NotFoundException({
-          message: `Business address not found.`,
-          status: 404,
-          success: false,
-        });
-      }
-
-      const productState = business.businessAddress.state.toLowerCase();
-
-      const itemTotal = product.price * item.quantity;
-
-      if (!vendorMap.has(item.businessId)) {
-        vendorMap.set(item.businessId, {
-          businessId: item.businessId,
-          items: [],
-          subtotal: 0,
-          totalWeight: 0,
-          state: productState,
-          status: VendorOrderStatus.pending,
-        });
-      }
-
-      const vendorGroup = vendorMap.get(item.businessId);
-
-      vendorGroup.items.push({
-        productId: product._id,
-        name: product.name,
-        price: product.price,
-        quantity: item.quantity,
-        itemStatus: VendorItemOrderStatus.pending,
-      });
-
-      vendorGroup.subtotal += itemTotal;
-
-      // AGGREGATE WEIGHT
-      const itemWeight = product?.weight * item.quantity;
-
-      vendorGroup.totalWeight += itemWeight;
-
-      globalSubtotal += itemTotal;
-      globalTotalWeight += itemWeight;
-    }
-
-    // SHIPPING (PER VENDOR)
-    for (const vendor of vendorMap.values()) {
-      const isInterState = vendor.state !== buyerState;
-
-      if (isInterState) {
-        const shippingFee =
-          await this.businessShippingRateService.getBusinessShippingPricePerState(
-            vendor.businessId.toString(),
+      if (interStateGroups.size > 0) {
+        const feeConfig =
+          await this.collectionFeeRepository.findCollectionFeeByState(
             buyerState,
-            vendor.totalWeight,
           );
 
-        if (!shippingFee) {
+        if (!feeConfig) {
           throw new NotFoundException(
-            `Shipping fee not configured for business ${vendor.businessId}`,
+            `Collection fee not set for ${buyerState}`,
           );
         }
 
-        vendor.subtotal += shippingFee;
-        productSurchargeTotal += shippingFee;
-
-        interStateGroups.add(vendor.state);
-      }
-    }
-
-    // COLLECTION FEE
-    let collectionFee = 0;
-
-    if (interStateGroups.size > 0) {
-      const feeConfig =
-        await this.collectionFeeRepository.findCollectionFeeByState(buyerState);
-
-      if (!feeConfig) {
-        throw new NotFoundException(`Collection fee not set for ${buyerState}`);
+        collectionFee =
+          feeConfig.baseFee +
+          feeConfig.additionalFee * (interStateGroups.size - 1);
       }
 
-      collectionFee =
-        feeConfig.baseFee +
-        feeConfig.additionalFee * (interStateGroups.size - 1);
-    }
+      // LAST-MILE DELIVERY
+      let lastMileFee = 0;
 
-    // LAST-MILE DELIVERY
-    let lastMileFee = 0;
+      if (deliveryMode === DeliveryMode.homeDelivery) {
+        if (!nearestBusStop) {
+          throw new BadRequestException({
+            message: 'Nearest bus stop is required to proceed.',
+            success: false,
+            status: 400,
+          });
+        }
 
-    if (deliveryMode === DeliveryMode.homeDelivery) {
-      if (!nearestBusStop) {
-        throw new BadRequestException({
-          message: 'Nearest bus stop is required to proceed.',
-          success: false,
-          status: 400,
-        });
+        const result =
+          await this.homeDeliveryService.findHomeDeliveryFeeUsingWeightStateAndNearestBusStop(
+            deliveryAddress.state,
+            nearestBusStop,
+            globalTotalWeight,
+          );
+        lastMileFee = result;
       }
 
-      const result =
-        await this.homeDeliveryService.findHomeDeliveryFeeUsingWeightStateAndNearestBusStop(
-          deliveryAddress.state,
-          nearestBusStop,
-          globalTotalWeight,
-        );
-      lastMileFee = result;
+      // TOTAL
+      const total =
+        globalSubtotal + productSurchargeTotal + collectionFee + lastMileFee;
+
+      const vendors: VendorObject[] = Array.from(vendorMap.values());
+
+      // SHIPMENT
+      const shipment = {
+        shipmentId: crypto.randomUUID(),
+        originPickupCenter: process.env.EKITI_PICKUP_CENTER_ID || '',
+        destinationPickupCenter:
+          deliveryMode === DeliveryMode.pickUpFromOurNearestOffice
+            ? pickupCenter
+            : undefined,
+        deliveryMode,
+        vendors,
+        subtotal: globalSubtotal,
+        status: ShipmentStatus.pending,
+      };
+
+      // ORDER PAYLOAD
+      const payload = {
+        cartId,
+        customerId,
+        shipments: [shipment],
+        subtotal: globalSubtotal,
+        productSurchargeTotal,
+        collectionFee,
+        deliveryFee: lastMileFee,
+        total,
+        deliveryMode,
+        deliveryAddress,
+        destinationPickupCenter: pickupCenter,
+        contactPhone,
+        isPaid: false,
+        status: OrderStatus.pending,
+        idempotencyKey,
+      };
+      // CREATE ORDER
+      const order = await this.orderRepository.createOrder(payload, session);
+
+      if (!order) {
+        throw new BadRequestException('Order creation failed');
+      }
+
+      // PAYMENT
+      const paymentIntent = await this.paymentsService.createPaymentIntent(
+        PaymentProvider.PAYSTACK,
+        user,
+        order._id.toString(),
+        total,
+      );
+
+      return {
+        order,
+        paymentIntent,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
     }
-
-    // TOTAL
-    const total =
-      globalSubtotal + productSurchargeTotal + collectionFee + lastMileFee;
-
-    const vendors: VendorObject[] = Array.from(vendorMap.values());
-
-    // SHIPMENT
-    const shipment = {
-      shipmentId: crypto.randomUUID(),
-      originPickupCenter: process.env.EKITI_PICKUP_CENTER_ID || '',
-      destinationPickupCenter:
-        deliveryMode === DeliveryMode.pickUpFromOurNearestOffice
-          ? pickupCenter
-          : undefined,
-      deliveryMode,
-      vendors,
-      subtotal: globalSubtotal,
-      status: ShipmentStatus.pending,
-    };
-
-    // ORDER PAYLOAD
-    const payload = {
-      cartId,
-      customerId,
-      shipments: [shipment],
-      subtotal: globalSubtotal,
-      productSurchargeTotal,
-      collectionFee,
-      deliveryFee: lastMileFee,
-      total,
-      deliveryMode,
-      deliveryAddress,
-      destinationPickupCenter: pickupCenter,
-      contactPhone,
-      isPaid: false,
-      status: OrderStatus.pending,
-      idempotencyKey,
-    };
-
-    // CREATE ORDER
-    const order = await this.orderRepository.createOrder(payload);
-
-    if (!order) {
-      throw new BadRequestException('Order creation failed');
-    }
-
-    // PAYMENT
-    const paymentIntent = await this.paymentsService.createPaymentIntent(
-      PaymentProvider.PAYSTACK,
-      user,
-      order._id.toString(),
-      total,
-    );
-
-    return {
-      order,
-      paymentIntent,
-    };
   }
 
   async getCustomerOrderDetails(
