@@ -55,6 +55,7 @@ export class PaymentsController {
     @Param('provider') provider: PaymentProvider,
     @Param('orderId') orderId: string,
     @Body() amount: number,
+    @Body() paymentBreakdown: any,
     @GetCurrentUser() user: JwtUser,
   ) {
     return await this.paymentsService.createPaymentIntent(
@@ -62,6 +63,7 @@ export class PaymentsController {
       user,
       orderId,
       amount,
+      paymentBreakdown,
     );
   }
 

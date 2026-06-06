@@ -10,6 +10,7 @@ import { HomeDeliveryModule } from '../home-delivery/home-delivery.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { PickupCenterModule } from '../pickup-center/pickup-center.module';
 import { ProductsModule } from '../products/products.module';
 import { StaffAccessControlModule } from '../staff-access-control/staff-access-control.module';
 import { OrdersController } from './orders.controller';
@@ -31,6 +32,7 @@ import { Order, OrderSchema } from './schemas/order.schema';
     BusinessShippingRateModule,
     HomeDeliveryModule,
     InventoryModule,
+    PickupCenterModule,
     forwardRef(() => PaymentsModule),
   ],
   controllers: [OrdersController],

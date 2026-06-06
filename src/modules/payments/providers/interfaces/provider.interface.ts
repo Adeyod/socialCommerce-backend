@@ -6,6 +6,7 @@ export interface PaymentInitializationPayload {
   reference: string;
   userId: string;
   orderId: string;
+  paymentBreakdown: any;
 }
 
 export interface PaymentProviderResponse {

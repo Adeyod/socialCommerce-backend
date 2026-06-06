@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { NigeriaState } from '../collection/schemas/collection-fee.schema';
 import { PickupCenterCreationDto } from './dtos/pickup-center.dto';
 import { UpdatePickupCenterDto } from './dtos/update-pickup-center.dto';
 import { PickupCenterRepository } from './repositories/pickup-center.repository';
@@ -66,7 +67,7 @@ export class PickupCenterService {
 
     return centers;
   }
-  async getStateMainPickupCenterByState(state: string) {
+  async getStateMainPickupCenterByState(state: NigeriaState) {
     const centers =
       await this.pickupCenterRepository.getStateMainPickupCenterByState(state);
 
@@ -80,7 +81,7 @@ export class PickupCenterService {
 
     return centers;
   }
-  async getPickupCenterByState(state: string) {
+  async getPickupCenterByState(state: NigeriaState) {
     const centers =
       await this.pickupCenterRepository.getPickupCentersByState(state);
 
@@ -131,7 +132,7 @@ export class PickupCenterService {
 
     return center;
   }
-  async findClosestPickupCenters(state: string) {
+  async findClosestPickupCenters(state: NigeriaState) {
     const centers =
       await this.pickupCenterRepository.findClosestPickupCenters(state);
 
@@ -163,7 +164,7 @@ export class PickupCenterService {
 
   async updatePickupCenterToStateMainPickupCenter(
     pickupCenterId: string,
-    state: string,
+    state: NigeriaState,
   ) {
     const pickupCenterExist =
       await this.pickupCenterRepository.getPickupCenterById(pickupCenterId);

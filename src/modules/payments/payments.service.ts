@@ -15,6 +15,7 @@ import {
   platformComm,
 } from '../../common/utils/helper';
 import { CartRepository } from '../carts/repositories/cart.repository';
+import { InventoryRepository } from '../inventory/repositories/inventory.repository';
 import { OrderRepository } from '../orders/repositories/order.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { Role } from '../users/schemas/user.schema';
@@ -40,6 +41,7 @@ export class PaymentsService {
     private usersRepository: UsersRepository,
     private orderRepository: OrderRepository,
     private walletRepository: WalletRepository,
+    private inventoryRepository: InventoryRepository,
   ) {
     this.providerMap = {
       [PaymentProvider.PAYSTACK]: this.paystackService,
@@ -52,6 +54,7 @@ export class PaymentsService {
     user: JwtUser,
     order: string,
     amount: number,
+    paymentBreakdown: any,
   ) {
     const findUser = await this.usersRepository.findById(user.sub);
 
@@ -110,6 +113,7 @@ export class PaymentsService {
       provider,
       orderId,
       amount,
+      paymentBreakdown,
     );
 
     if (!createIntent) {
@@ -136,6 +140,7 @@ export class PaymentsService {
       reference: createIntent.reference,
       userId: findUser._id.toString(),
       orderId: createIntent.orderId.toString(),
+      paymentBreakdown,
     });
 
     const updateIntent = await this.paymentsRepository.updateIntentWithAuthUrl(
@@ -366,6 +371,17 @@ export class PaymentsService {
 
           // calculate vendor revenue from items
           for (const item of vendor.items) {
+            // const productInventory = await this.inventoryRepository.findInventoryByProductId(item.productId)
+
+            // if(!productInventory) {
+            //   throw new NotFoundException({
+            //     message: 'Product inventory document not found.',
+            //     success: false,
+            //     status: 404
+            //   })
+            // }
+
+            // productInventory.
             vendorSubtotal += item.price * item.quantity;
           }
 

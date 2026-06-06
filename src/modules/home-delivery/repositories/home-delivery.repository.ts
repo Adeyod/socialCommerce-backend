@@ -67,6 +67,14 @@ export class HomeDeliveryRepository {
     return response;
   }
 
+  async getllAllDeliveryFeesForAStateByState(state: NigeriaState) {
+    const response = await this.homeDeliveryModel.find({
+      buyerState: state,
+    });
+
+    return response;
+  }
+
   async getAllHomeDeliveryFees(queryWithPaginationDto: QueryWithPaginationDto) {
     const { page = 1, limit = 10, searchParams } = queryWithPaginationDto;
 

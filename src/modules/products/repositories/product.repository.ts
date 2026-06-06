@@ -15,6 +15,13 @@ export class ProductsRepository {
     private productModel: Model<ProductDocument>,
   ) {}
 
+  async findByIds(ids: string[]) {
+    const products = await this.productModel.find({
+      _id: { $in: ids },
+    });
+
+    return products;
+  }
   async reserveStock(
     productId: string,
     quantity: number,

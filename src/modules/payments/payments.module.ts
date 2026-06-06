@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CartsModule } from '../carts/carts.module';
+import { InventoryModule } from '../inventory/inventory.module';
 import { OrdersModule } from '../orders/orders.module';
 import { UsersModule } from '../users/users.module';
 import { WalletModule } from '../wallet/wallet.module';
@@ -23,6 +24,7 @@ console.log([
     UsersModule,
     CartsModule,
     WalletModule,
+    InventoryModule,
     forwardRef(() => OrdersModule),
   ],
   controllers: [PaymentsController],

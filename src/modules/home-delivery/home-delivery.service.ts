@@ -166,6 +166,15 @@ export class HomeDeliveryService {
     return response;
   }
 
+  async getllAllDeliveryFeesForAStateByState(state: NigeriaState) {
+    const response =
+      await this.homeDeliveryRepository.getllAllDeliveryFeesForAStateByState(
+        state,
+      );
+
+    return response;
+  }
+
   async getHomeDeliveryFeesToBuyerNearestBusStop(
     pickupCenterId: string,
     buyerTown: string,

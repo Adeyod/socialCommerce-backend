@@ -17,6 +17,13 @@ export class InventoryRepository {
     private readonly inventoryLogModel: Model<InventoryLogDocument>,
   ) {}
 
+  async findInventoryByProductId(productId: string) {
+    const response = await this.inventoryModel.findOne({
+      productId: new Types.ObjectId(productId),
+    });
+
+    return response;
+  }
   async findInventory(productId: string, businessId: string) {
     const response = await this.inventoryModel.findOne({
       productId: new Types.ObjectId(productId),

@@ -166,4 +166,38 @@ export class HomeDeliveryController {
 
     return response;
   }
+  @Get('get-state-delivery-rates-to-nearest-bus-stops/:state')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.admin, Role.user)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Home delivery fees fetched successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get all state home delivery fees.',
+    description:
+      'This is the endpoint for fetching all home delivery fees for all nearest bus stops in a state.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Home delivery fees fetched successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request. Unable to fetch home delivery fees.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async getllAllDeliveryFeesForAStateByState(
+    @Param('state') state: NigeriaState,
+  ) {
+    const response =
+      await this.homeDeliveryService.getllAllDeliveryFeesForAStateByState(
+        state,
+      );
+
+    return response;
+  }
 }

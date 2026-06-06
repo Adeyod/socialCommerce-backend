@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
@@ -24,6 +25,25 @@ export class CreateOrderItemDto {
   businessId!: string;
 }
 
+export class DeliveryAddressDto {
+  @ApiProperty()
+  @IsString()
+  street!: string;
+
+  @ApiProperty()
+  @IsString()
+  state!: NigeriaState;
+
+  @ApiProperty()
+  @IsString()
+  town!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  country?: string;
+}
+
 export class VendorOrderItemDto {
   @ApiProperty()
   @IsString()
@@ -40,24 +60,10 @@ export class VendorOrderItemDto {
   @ApiProperty()
   @IsNumber()
   price!: number;
-}
-
-export class DeliveryAddressDto {
-  @ApiProperty()
-  @IsString()
-  street!: string;
 
   @ApiProperty()
-  @IsString()
-  state!: NigeriaState;
-
-  @ApiProperty()
-  @IsString()
-  town!: string;
-
-  @ApiProperty()
-  @IsString()
-  country?: string;
+  @IsNumber()
+  weight!: number;
 }
 
 export class CreateVendorOrderDto {
@@ -74,6 +80,20 @@ export class CreateVendorOrderDto {
   @ApiProperty()
   @IsNumber()
   subtotal!: number;
+
+  @ApiPropertyOptional({
+    description: 'Total weight of all items from this vendor',
+  })
+  @IsOptional()
+  @IsNumber()
+  totalWeight?: number;
+
+  @ApiPropertyOptional({
+    description: 'Shipping fee from vendor to pickup center',
+  })
+  @IsOptional()
+  @IsNumber()
+  shippingFee?: number;
 
   @ApiProperty({ default: VendorOrderStatus.pending })
   @IsOptional()
@@ -94,23 +114,11 @@ export class CreateOrderDto {
   @IsString()
   customerId!: string;
 
-  @ApiProperty({ type: [CreateOrderItemDto] })
+  @ApiProperty({ type: [CreateVendorOrderDto] })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateOrderItemDto)
-  items!: CreateOrderItemDto[];
-
-  @ApiProperty({
-    description: 'Total delivery fee',
-  })
-  @IsNumber()
-  deliveryFee!: number;
-
-  @ApiProperty({
-    description: 'Delivery address compulsory',
-  })
-  @IsString()
-  deliveryAddress!: DeliveryAddressDto;
+  @Type(() => CreateVendorOrderDto)
+  vendorOrders!: CreateVendorOrderDto[];
 
   @ApiProperty({
     description: 'Unique idempotency key',
@@ -131,12 +139,41 @@ export class CreateOrderDto {
   @IsString()
   deliveryMode!: DeliveryMode;
 
+  @ValidateIf((o) => o.deliveryMode === DeliveryMode.pickUpFromOurNearestOffice)
   @ApiPropertyOptional({
     description: 'Pickup center ID (required if pickup selected)',
   })
-  @IsOptional()
   @IsString()
   pickupCenter?: string;
+
+  @ApiProperty({
+    description: 'Total delivery fee',
+  })
+  @IsOptional()
+  @IsNumber()
+  subTotalSummation!: number;
+
+  @ApiProperty({
+    description: 'Total delivery fee',
+  })
+  @IsOptional()
+  @IsNumber()
+  shippingFeeSummation!: number;
+
+  @ApiPropertyOptional({
+    description: 'Total delivery fee',
+  })
+  @IsOptional()
+  @IsNumber()
+  deliveryFee?: number;
+
+  @ValidateIf((o) => o.deliveryMode === DeliveryMode.homeDelivery)
+  @ApiPropertyOptional({
+    description: 'Delivery address compulsory',
+  })
+  @ValidateNested()
+  @Type(() => DeliveryAddressDto)
+  deliveryAddress?: DeliveryAddressDto;
 
   @ApiPropertyOptional({
     description: 'Nearest bus stop',

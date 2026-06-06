@@ -30,6 +30,7 @@ export class PaymentsRepository {
     provider: PaymentProvider,
     orderId: Types.ObjectId,
     amount: number,
+    paymentBreakdown: any,
   ) {
     console.log('orderId:', orderId);
     console.log('amount:', amount);

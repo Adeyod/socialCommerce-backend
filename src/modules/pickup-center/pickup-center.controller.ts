@@ -15,6 +15,7 @@ import { SuccessMessage } from '../../common/decorators/success-message.decorato
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { NigeriaState } from '../collection/schemas/collection-fee.schema';
 import { Role } from '../users/schemas/user.schema';
 import { PickupCenterCreationDto } from './dtos/pickup-center.dto';
 import { UpdatePickupCenterDto } from './dtos/update-pickup-center.dto';
@@ -186,7 +187,7 @@ export class PickupCenterController {
     status: 429,
     description: 'Too many requests. Rate limit exceeded',
   })
-  async getStateMainPickupCenterByState(@Param('state') state: string) {
+  async getStateMainPickupCenterByState(@Param('state') state: NigeriaState) {
     const centers =
       await this.pickupCenterService.getStateMainPickupCenterByState(state);
 
@@ -220,7 +221,7 @@ export class PickupCenterController {
     status: 429,
     description: 'Too many requests. Rate limit exceeded',
   })
-  async getPickupCenterByState(@Param('state') state: string) {
+  async getPickupCenterByState(@Param('state') state: NigeriaState) {
     const centers =
       await this.pickupCenterService.getPickupCenterByState(state);
 
@@ -258,7 +259,7 @@ export class PickupCenterController {
   })
   async updatePickupCenterToStateMainPickupCenter(
     @Param('pickupCenterId') pickupCenterId: string,
-    @Param('state') state: string,
+    @Param('state') state: NigeriaState,
   ) {
     const center =
       await this.pickupCenterService.updatePickupCenterToStateMainPickupCenter(
@@ -371,7 +372,7 @@ export class PickupCenterController {
     status: 429,
     description: 'Too many requests. Rate limit exceeded',
   })
-  async findClosestPickupCenters(@Param('state') state: string) {
+  async findClosestPickupCenters(@Param('state') state: NigeriaState) {
     const centers =
       await this.pickupCenterService.findClosestPickupCenters(state);
 

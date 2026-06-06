@@ -36,7 +36,6 @@ export type ShipmentDto = {
   deliveryMode: DeliveryMode;
   vendors: VendorObject[];
   subtotal: number;
-  // deliveryFee: number;
   status: ShipmentStatus;
 };
 
@@ -48,9 +47,11 @@ export type ProcessedOrderData = {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  shippingFeeTotal: number;
+  collectionFee: number;
 
   deliveryMode: DeliveryMode;
-  deliveryAddress: DeliveryAddress;
+  deliveryAddress?: DeliveryAddress;
   destinationPickupCenter?: string;
 
   contactPhone: string;

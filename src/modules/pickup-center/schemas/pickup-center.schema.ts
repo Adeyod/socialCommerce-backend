@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
 
 export type PickupCenterDocument = HydratedDocument<PickupCenter>;
 
@@ -9,7 +10,7 @@ export class PickupCenter {
   name!: string;
 
   @Prop({ required: true })
-  state!: string;
+  state!: NigeriaState;
 
   @Prop()
   town?: string;

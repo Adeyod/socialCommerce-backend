@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
 import { PickupCenterCreationDto } from '../dtos/pickup-center.dto';
 import { UpdatePickupCenterDto } from '../dtos/update-pickup-center.dto';
 import {
@@ -77,12 +78,12 @@ export class PickupCenterRepository {
 
   async updatePickupCenterToStateMainPickupCenter(
     pickupCenterId: string,
-    state: string,
-  ): Promise<PickupCenterDocument | null> {
+    state: NigeriaState,
+  ) {
     const id = new Types.ObjectId(pickupCenterId);
 
     const response = await this.pickupCenterModel.findOneAndUpdate(
-      { _id: id, state: state.trim().toLowerCase() },
+      { _id: id, state: state },
       { isMainHub: true },
       { returnDocument: 'after' },
     );
@@ -91,10 +92,10 @@ export class PickupCenterRepository {
   }
 
   async getStateMainPickupCenterByState(
-    state: string,
+    state: NigeriaState,
   ): Promise<PickupCenterDocument | null> {
     const center = await this.pickupCenterModel.findOne({
-      state: new RegExp(`^${state.trim().toLowerCase()}$`, 'i'),
+      state,
       isActive: true,
       isMainHub: true,
     });
@@ -102,10 +103,10 @@ export class PickupCenterRepository {
     return center;
   }
   async getPickupCentersByState(
-    state: string,
+    state: NigeriaState,
   ): Promise<PickupCenterDocument[] | null> {
     const center = await this.pickupCenterModel.find({
-      state: new RegExp(`^${state.trim().toLowerCase()}$`, 'i'),
+      state,
       isActive: true,
     });
 
@@ -164,11 +165,11 @@ export class PickupCenterRepository {
   }
 
   async findClosestPickupCenters(
-    state: string,
+    state: NigeriaState,
   ): Promise<PickupCenterDocument[]> {
     const centers = await this.pickupCenterModel
       .find({
-        state: new RegExp(`^${state.trim().toLowerCase()}$`, 'i'),
+        state,
         isActive: true,
       })
       .limit(5);
