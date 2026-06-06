@@ -7,6 +7,7 @@ import {
 import { CreateCollectionFeeDto } from './dtos/create-collection-fee.dto';
 import { UpdateCollectionFeeDto } from './dtos/update-collection-fee.dto';
 import { CollectionFeeRepository } from './repositories/collection-fee.repository';
+import { NigeriaState } from './schemas/collection-fee.schema';
 
 @Injectable()
 export class CollectionService {
@@ -15,7 +16,7 @@ export class CollectionService {
   async createCollectionFee(createCollectionFeeDto: CreateCollectionFeeDto) {
     const stateFeeExist =
       await this.collectionRepository.findCollectionFeeByState(
-        createCollectionFeeDto.state.trim().toLowerCase(),
+        createCollectionFeeDto.state,
       );
 
     if (stateFeeExist) {
@@ -117,7 +118,7 @@ export class CollectionService {
 
     return fee;
   }
-  async findCollectionFeeByState(state: string) {
+  async findCollectionFeeByState(state: NigeriaState) {
     const fee = await this.collectionRepository.findCollectionFeeByState(state);
 
     if (!fee) {

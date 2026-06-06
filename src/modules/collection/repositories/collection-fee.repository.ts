@@ -6,6 +6,7 @@ import { UpdateCollectionFeeDto } from '../dtos/update-collection-fee.dto';
 import {
   CollectionFee,
   CollectionFeeDocument,
+  NigeriaState,
 } from '../schemas/collection-fee.schema';
 
 @Injectable()
@@ -52,10 +53,10 @@ export class CollectionFeeRepository {
     return fee;
   }
   async findCollectionFeeByState(
-    state: string,
+    state: NigeriaState,
   ): Promise<CollectionFeeDocument | null> {
     const fee = await this.collectionFeeModel.findOne({
-      state: state.trim().toLowerCase(),
+      state: state,
       isActive: true,
     });
 

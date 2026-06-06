@@ -19,6 +19,7 @@ import { Role } from '../users/schemas/user.schema';
 import { CollectionService } from './collection.service';
 import { CreateCollectionFeeDto } from './dtos/create-collection-fee.dto';
 import { UpdateCollectionFeeDto } from './dtos/update-collection-fee.dto';
+import { NigeriaState } from './schemas/collection-fee.schema';
 
 @Controller('collection')
 export class CollectionController {
@@ -182,7 +183,7 @@ export class CollectionController {
     status: 500,
     description: 'Internal server error',
   })
-  async findCollectionFeeByState(@Param('state') state: string) {
+  async findCollectionFeeByState(@Param('state') state: NigeriaState) {
     const response =
       await this.collectionService.findCollectionFeeByState(state);
 

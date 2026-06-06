@@ -47,7 +47,7 @@ export type CollectionFeeDocument = HydratedDocument<CollectionFee>;
 @Schema({ timestamps: true })
 export class CollectionFee {
   @Prop({ required: true, unique: true, trim: true, toLowerCase: true })
-  state!: string;
+  state!: NigeriaState;
 
   @Prop({ required: true })
   baseFee!: number;
