@@ -10,7 +10,7 @@ import { AppModule } from './app.module';
 import { MongoExceptionFilter } from './common/filters/mongo-exception.filter';
 import { GlobalResponseInterceptor } from './common/interceptor/global-response.interceptor';
 import { FormDataNormalizePipe } from './common/pipes/formdata-normalize.pipe';
-import { BusinessesRepository } from './modules/businesses/repositories/businesses.repository';
+import { InventoryRepository } from './modules/inventory/repositories/inventory.repository';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -33,10 +33,13 @@ async function bootstrap() {
   //   centerLng: 6.3364,
   //   radiusKm: 10,
   // };
-  // const businessId = '6a072f6fb400c151391f195b';
 
-  const repo = app.get(BusinessesRepository);
-  // await repo.addBusinessAddress(businessId, addressData);
+  // const businessId = '6a072f6fb400c151391f195b';
+  // const productId = '6a1e898866e0167cb4059eb7';
+  // const quantity = 4;
+
+  const repo = app.get(InventoryRepository);
+  // await repo.createInventory(businessId, productId, quantity);
 
   // Create Bull Board
   const { addQueue, removeQueue, replaceQueues } = createBullBoard({

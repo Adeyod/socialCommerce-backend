@@ -106,29 +106,68 @@ export class InventoryRepository {
     return response;
   }
 
+  // async reserveStock(
+  //   productId: string,
+  //   quantity: number,
+  //   session?: ClientSession,
+  // ) {
+  //   const result = await this.inventoryModel.updateOne(
+  //     {
+  //       productId: new Types.ObjectId(productId),
+
+  //       $expr: {
+  //         $gte: [
+  //           {
+  //             $subtract: ['$stock', { $ifNull: ['$reservedQuantity', 0] }],
+  //           },
+  //           quantity,
+  //         ],
+  //       },
+  //     },
+  //     {
+  //       $inc: {
+  //         reservedQuantity: quantity,
+  //       },
+  //     },
+  //     { session },
+  //   );
+
+  //   if (result.modifiedCount === 0) {
+  //     throw new BadRequestException({
+  //       message: `Insufficient stock for product ${productId}`,
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   return result;
+  // }
+
   async reserveStock(
     productId: string,
     quantity: number,
     session?: ClientSession,
   ) {
+    console.log('productId:', productId);
+
     const result = await this.inventoryModel.updateOne(
       {
-        _id: new Types.ObjectId(productId),
-
-        // AVAILABLE STOCK CHECK (ATOMIC)
-        $expr: {
-          $gte: [{ $subtract: ['$quantity', '$reservedQuantity'] }, quantity],
-        },
+        productId: new Types.ObjectId(productId),
+        quantity: { $gte: quantity },
       },
       {
         $inc: {
-          reservedStock: quantity,
+          quantity: -quantity,
+          reservedQuantity: quantity,
         },
       },
       { session },
     );
 
-    if (result.modifiedCount === 0) {
+    console.log('result:', result);
+    console.log('result.matchedCount:', result.matchedCount);
+
+    if (result.matchedCount === 0) {
       throw new BadRequestException({
         message: `Insufficient stock for product ${productId}`,
         success: false,

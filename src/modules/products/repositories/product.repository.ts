@@ -27,23 +27,32 @@ export class ProductsRepository {
     quantity: number,
     session?: ClientSession,
   ) {
+    console.log('productId:', productId);
+    console.log('quantity:', quantity);
+
     const result = await this.productModel.updateOne(
       {
         _id: new Types.ObjectId(productId),
 
-        // AVAILABLE STOCK CHECK (ATOMIC)
         $expr: {
-          $gte: [{ $subtract: ['$stock', '$reservedQuantity'] }, quantity],
+          $gte: [
+            {
+              $subtract: ['$stock', { $ifNull: ['$reservedQuantity', 0] }],
+            },
+            quantity,
+          ],
         },
       },
       {
         $inc: {
-          reservedStock: quantity,
+          reservedQuantity: quantity,
         },
       },
       { session },
     );
 
+    console.log('result:', result);
+    console.log('result.modifiedCount:', result.modifiedCount);
     if (result.modifiedCount === 0) {
       throw new BadRequestException({
         message: `Insufficient stock for product ${productId}`,

@@ -1161,6 +1161,8 @@ return {
           );
         }
 
+        console.log('businessState:', businessState);
+
         const vendorGroup: VendorGroup = {
           businessId: vendor.businessId,
           items: [],
@@ -1172,12 +1174,15 @@ return {
 
         for (const item of vendor.items) {
           const product = productMap.get(item.productId.toString());
+          console.log('product:', product);
 
           if (!product) {
             throw new NotFoundException(`Product not found: ${item.productId}`);
           }
 
           const availableStock = product.stock - product.reservedQuantity;
+          console.log('availableStock:', availableStock);
+          console.log('item.quantity:', item.quantity);
 
           if (availableStock < item.quantity) {
             throw new BadRequestException(
@@ -1185,13 +1190,13 @@ return {
             );
           }
 
-          await this.productsRepository.reserveStock(
+          const reserved = await this.productsRepository.reserveStock(
             item.productId,
             item.quantity,
             session,
           );
 
-          await this.inventoryRepository.reserveStock(
+          const inventoryReserve = await this.inventoryRepository.reserveStock(
             item.productId,
             item.quantity,
             session,
@@ -1218,30 +1223,38 @@ return {
         const isInterState =
           vendorGroup.originState !== buyerState.toLowerCase();
 
-        if (isInterState) {
-          const shippingFee =
-            await this.businessShippingRateService.getBusinessShippingPricePerState(
-              vendor.businessId,
-              buyerState,
-              vendorGroup.totalWeight,
-            );
+        console.log('isInterState:', isInterState);
+        // if (isInterState) {
+        const shippingFee =
+          await this.businessShippingRateService.getBusinessShippingPricePerState(
+            vendor.businessId,
+            buyerState,
+            vendorGroup.totalWeight,
+          );
 
-          vendorGroup.shippingFee = shippingFee;
-          shippingFeeTotal += shippingFee;
-          interStateGroups.add(vendorGroup.originState);
-        }
+        console.log('shippingFee:', shippingFee);
+        vendorGroup.shippingFee = shippingFee;
+        shippingFeeTotal += shippingFee;
+        interStateGroups.add(vendorGroup.originState);
+        // }
 
         vendorMap.set(vendor.businessId, vendorGroup);
       }
+      console.log('globalSubtotal:', globalSubtotal);
+      console.log('subTotalSummation:', subTotalSummation);
 
       // VALIDATE FRONTEND TOTALS
       if (subTotalSummation && subTotalSummation !== globalSubtotal) {
         throw new BadRequestException('Subtotal mismatch');
       }
 
+      console.log('shippingFeeTotal:', shippingFeeTotal);
+      console.log('shippingFeeSummation:', shippingFeeSummation);
+
       if (shippingFeeSummation && shippingFeeSummation !== shippingFeeTotal) {
         throw new BadRequestException('Shipping mismatch');
       }
+      console.log('pass 2');
 
       // COLLECTION FEE
       if (interStateGroups.size > 0) {
@@ -1281,10 +1294,12 @@ return {
             nearestBusStop,
             globalTotalWeight,
           );
+        console.log('lastMileFee:', lastMileFee);
       }
 
       const total =
         globalSubtotal + shippingFeeTotal + collectionFee + lastMileFee;
+      console.log('total:', total);
 
       const vendors = Array.from(vendorMap.values());
 
@@ -1310,6 +1325,7 @@ return {
             ? pickupCenter
             : null,
       };
+      console.log('paymentBreakdown:', paymentBreakdown);
 
       let resolvedPickupCenter: string;
 
@@ -1336,6 +1352,7 @@ return {
 
         status: ShipmentStatus.pending,
       };
+      console.log('shipment:', shipment);
 
       const order = await this.orderRepository.createOrder(
         {
