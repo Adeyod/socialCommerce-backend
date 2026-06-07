@@ -9,7 +9,10 @@ import {
   OrderStatus,
   VendorOrderStatus,
 } from '../schemas/order.schema';
-import { ProcessedOrderData } from '../types/processed-vendor.dto';
+import {
+  ProcessedOrderData,
+  ProcessedOrderDataObjectId,
+} from '../types/processed-vendor.dto';
 
 @Injectable()
 export class OrderRepository {
@@ -314,10 +317,14 @@ export class OrderRepository {
     return orderSummarry;
   }
 
-  private toOrderPayload(dto: ProcessedOrderData) {
-    return {
+  private toOrderPayload(dto: ProcessedOrderData): ProcessedOrderDataObjectId {
+    const response = {
+      cartId: dto.cartId,
+      shippingFeeTotal: dto.shippingFeeTotal,
+      collectionFee: dto.collectionFee,
+      destinationPickupCenter: dto.destinationPickupCenter,
       customerId: new Types.ObjectId(dto.customerId),
-
+      deliveryMode: dto.deliveryMode,
       shipments: dto.shipments,
       subtotal: dto.subtotal,
       deliveryFee: dto.deliveryFee,
@@ -326,6 +333,9 @@ export class OrderRepository {
       contactPhone: dto.contactPhone,
       idempotencyKey: dto.idempotencyKey,
       isPaid: dto.isPaid ?? false,
+      status: dto.status,
     };
+    console.log('toOrderPayload response:', response);
+    return response;
   }
 }

@@ -39,6 +39,29 @@ export type ShipmentDto = {
   status: ShipmentStatus;
 };
 
+export type ProcessedOrderDataObjectId = {
+  cartId: string;
+  customerId: Types.ObjectId;
+
+  shipments: ShipmentDto[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  shippingFeeTotal: number;
+  collectionFee: number;
+
+  deliveryMode: DeliveryMode;
+  deliveryAddress?: DeliveryAddress;
+  destinationPickupCenter?: string;
+
+  contactPhone: string;
+
+  isPaid: boolean;
+  status: OrderStatus;
+
+  idempotencyKey: string;
+};
+
 export type ProcessedOrderData = {
   cartId: string;
   customerId: string;

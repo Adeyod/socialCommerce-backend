@@ -165,6 +165,9 @@ export class Order {
 
   // GLOBAL PRICING
   @Prop({ required: true })
+  shippingFeeTotal!: number;
+
+  @Prop({ required: true })
   subtotal!: number;
 
   @Prop({ default: 0 })
