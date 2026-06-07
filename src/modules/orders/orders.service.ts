@@ -21,6 +21,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PaymentsRepository } from '../payments/repositories/payment.repository';
 import { PaymentProvider } from '../payments/schemas/payment.schema';
+import { PaymentBreakdown } from '../payments/types/payment-breakdown.type';
 import { PickupCenterRepository } from '../pickup-center/repositories/pickup-center.repository';
 import { ProductsRepository } from '../products/repositories/product.repository';
 import { Role } from '../users/schemas/user.schema';
@@ -1224,7 +1225,6 @@ return {
           vendorGroup.originState !== buyerState.toLowerCase();
 
         console.log('isInterState:', isInterState);
-        // if (isInterState) {
         const shippingFee =
           await this.businessShippingRateService.getBusinessShippingPricePerState(
             vendor.businessId,
@@ -1235,8 +1235,9 @@ return {
         console.log('shippingFee:', shippingFee);
         vendorGroup.shippingFee = shippingFee;
         shippingFeeTotal += shippingFee;
-        interStateGroups.add(vendorGroup.originState);
-        // }
+        if (isInterState) {
+          interStateGroups.add(vendorGroup.originState);
+        }
 
         vendorMap.set(vendor.businessId, vendorGroup);
       }
@@ -1306,7 +1307,7 @@ return {
       // =========================
       // 💰 PAYMENT BREAKDOWN
       // =========================
-      const paymentBreakdown = {
+      const paymentBreakdown: PaymentBreakdown = {
         vendors: vendors.map((v) => ({
           businessId: v.businessId,
           productTotal: v.subtotal,
@@ -1319,9 +1320,12 @@ return {
         },
         deliveryMode,
         deliveryAddress:
-          deliveryMode === DeliveryMode.homeDelivery ? deliveryAddress : null,
+          deliveryMode === DeliveryMode.homeDelivery && deliveryAddress
+            ? deliveryAddress
+            : null,
         pickupCenter:
-          deliveryMode === DeliveryMode.pickUpFromOurNearestOffice
+          deliveryMode === DeliveryMode.pickUpFromOurNearestOffice &&
+          pickupCenter
             ? pickupCenter
             : null,
       };
@@ -1386,7 +1390,7 @@ return {
       }
 
       // =========================
-      // 🔥 SEND METADATA TO PAYSTACK
+      // SEND METADATA TO PAYSTACK
       // =========================
       const paymentIntent = await this.paymentsService.createPaymentIntent(
         PaymentProvider.PAYSTACK,
