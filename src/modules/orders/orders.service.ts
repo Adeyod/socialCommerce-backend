@@ -1066,7 +1066,7 @@ return {
       shippingFeeSummation,
     } = createOrderDto;
 
-    console.log('createOrderDto:', createOrderDto);
+    console.log('incoming service createOrderDto:', createOrderDto);
 
     if (user.sub.toString() !== customerId) {
       throw new BadRequestException('Invalid user mismatch');
@@ -1358,7 +1358,7 @@ return {
 
         status: ShipmentStatus.pending,
       };
-      console.log('shipment:', shipment);
+      console.log('deliveryMode:', deliveryMode);
 
       const order = await this.orderRepository.createOrder(
         {

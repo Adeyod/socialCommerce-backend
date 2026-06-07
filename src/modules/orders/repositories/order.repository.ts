@@ -22,6 +22,7 @@ export class OrderRepository {
     createOrderDto: ProcessedOrderData,
     session?: ClientSession,
   ): Promise<OrderDocument | null> {
+    console.log('order repository:', createOrderDto);
     const order = new this.orderModel(this.toOrderPayload(createOrderDto));
     await order.save({ session });
 
