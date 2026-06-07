@@ -1066,6 +1066,8 @@ return {
       shippingFeeSummation,
     } = createOrderDto;
 
+    console.log('createOrderDto:', createOrderDto);
+
     if (user.sub.toString() !== customerId) {
       throw new BadRequestException('Invalid user mismatch');
     }
