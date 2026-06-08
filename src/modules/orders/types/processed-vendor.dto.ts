@@ -31,8 +31,8 @@ export type VendorObject = {
 
 export type ShipmentDto = {
   shipmentId: string;
-  originPickupCenter: string;
-  destinationPickupCenter?: string;
+  // originPickupCenter: string;
+  // destinationPickupCenter?: string;
   deliveryMode: DeliveryMode;
   vendors: VendorObject[];
   subtotal: number;
@@ -52,7 +52,7 @@ export type ProcessedOrderDataObjectId = {
 
   deliveryMode: DeliveryMode;
   deliveryAddress?: DeliveryAddress;
-  destinationPickupCenter?: string;
+  destinationPickupCenter?: string | null;
 
   contactPhone: string;
 
@@ -75,7 +75,7 @@ export type ProcessedOrderData = {
 
   deliveryMode: DeliveryMode;
   deliveryAddress?: DeliveryAddress;
-  destinationPickupCenter?: string;
+  destinationPickupCenter?: string | null;
 
   contactPhone: string;
 

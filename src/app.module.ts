@@ -37,6 +37,7 @@ import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { WalletModule } from './modules/wallet/wallet.module';
+import { CampaignModule } from './modules/campaign/campaign.module';
 
 @Module({
   imports: [
@@ -137,6 +138,7 @@ import { WalletModule } from './modules/wallet/wallet.module';
     BusinessShippingRateModule,
     HomeDeliveryModule,
     InventoryModule,
+    CampaignModule,
   ],
   controllers: [AppController],
   providers: [AppService],

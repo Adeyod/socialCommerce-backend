@@ -1381,11 +1381,6 @@ return {
 
       const shipment: ShipmentDto = {
         shipmentId: new Types.ObjectId().toString(),
-        originPickupCenter: resolvedPickupCenter,
-        destinationPickupCenter:
-          deliveryMode === DeliveryMode.pickUpFromOurNearestOffice
-            ? pickupCenter
-            : undefined,
         deliveryMode,
         vendors,
         subtotal: globalSubtotal,
@@ -1408,6 +1403,10 @@ return {
             deliveryMode === DeliveryMode.homeDelivery
               ? deliveryAddress
               : undefined,
+          destinationPickupCenter:
+            deliveryMode === DeliveryMode.pickUpFromOurNearestOffice
+              ? pickupCenter
+              : null,
           contactPhone,
           isPaid: false,
           deliveryMode,
