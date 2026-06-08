@@ -1319,7 +1319,7 @@ return {
 
         if (!deliveryFee || deliveryFee === 0) {
           throw new BadRequestException({
-            message: 'State logistic fee is required.',
+            message: 'Delivery fee is required.',
             success: false,
             status: 400,
           });
