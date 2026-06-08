@@ -1060,10 +1060,12 @@ return {
       idempotencyKey,
       cartId,
       deliveryMode,
+      deliveryFee,
       pickupCenter,
       nearestBusStop,
       subTotalSummation,
       shippingFeeSummation,
+      interStatePickupFee,
     } = createOrderDto;
 
     console.log('incoming service createOrderDto:', createOrderDto);
@@ -1277,6 +1279,22 @@ return {
         collectionFee =
           feeConfig.baseFee +
           feeConfig.additionalFee * (interStateGroups.size - 1);
+
+        if (!interStatePickupFee || interStatePickupFee === 0) {
+          throw new BadRequestException({
+            message: 'State logistic fee is required.',
+            success: false,
+            status: 400,
+          });
+        }
+
+        if (collectionFee !== interStatePickupFee) {
+          throw new BadRequestException({
+            message: 'State logistic fee mis-match',
+            success: false,
+            status: 400,
+          });
+        }
       }
 
       // LAST MILE
@@ -1298,6 +1316,22 @@ return {
             globalTotalWeight,
           );
         console.log('lastMileFee:', lastMileFee);
+
+        if (!deliveryFee || deliveryFee === 0) {
+          throw new BadRequestException({
+            message: 'State logistic fee is required.',
+            success: false,
+            status: 400,
+          });
+        }
+
+        if (lastMileFee !== deliveryFee) {
+          throw new BadRequestException({
+            message: 'Home delivery fee mis-match',
+            success: false,
+            status: 400,
+          });
+        }
       }
 
       const total =

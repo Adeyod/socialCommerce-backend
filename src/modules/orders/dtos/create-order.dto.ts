@@ -167,6 +167,14 @@ export class CreateOrderDto {
   @IsNumber()
   deliveryFee?: number;
 
+  @ApiPropertyOptional({
+    description:
+      'This is the money that our main state pick up center is going to use to collect goods coming from another state.',
+  })
+  @IsOptional()
+  @IsNumber()
+  interStatePickupFee?: number;
+
   @ValidateIf((o) => o.deliveryMode === DeliveryMode.homeDelivery)
   @ApiPropertyOptional({
     description: 'Delivery address compulsory',

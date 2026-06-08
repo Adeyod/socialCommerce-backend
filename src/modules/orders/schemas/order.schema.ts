@@ -94,7 +94,6 @@ export class Order {
         originPickupCenter: {
           type: Types.ObjectId,
           ref: 'PickupCenter',
-          required: false,
         },
 
         destinationPickupCenter: {
