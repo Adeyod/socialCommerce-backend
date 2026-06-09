@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BusinessesModule } from '../businesses/businesses.module';
 
@@ -33,8 +33,9 @@ import { StaffService } from './staff/staff.service';
       { name: Role.name, schema: RoleSchema },
       { name: Invitation.name, schema: InvitationSchema },
     ]),
-    BusinessesModule,
-    UsersModule,
+
+    forwardRef(() => UsersModule),
+    forwardRef(() => BusinessesModule),
   ],
   providers: [
     StaffPermissionService,

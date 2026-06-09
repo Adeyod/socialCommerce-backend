@@ -30,6 +30,15 @@ export class BusinessesRepository {
 
     return business;
   }
+  async findBusinessOwnerByBusinessId(
+    businessId: Types.ObjectId,
+  ): Promise<BusinessDocument | null> {
+    const business = await this.businessModel
+      .findById(businessId)
+      .select('ownerId');
+
+    return business;
+  }
 
   async findBusinessesByIds(
     businessIds: string[],
@@ -77,7 +86,7 @@ export class BusinessesRepository {
     const updatedBusiness = await this.businessModel.findByIdAndUpdate(
       id,
       {
-        $set: { businessAddress: addressData },
+        $set: { businessAddress: addressData, isVerified: true },
       },
       {
         returnDocument: 'after',

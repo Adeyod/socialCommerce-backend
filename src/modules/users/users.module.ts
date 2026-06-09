@@ -10,8 +10,8 @@ import { UsersService } from './users.service';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    forwardRef(() => BusinessesModule),
     forwardRef(() => PartnersModule),
-    BusinessesModule,
   ],
   controllers: [UsersController],
   providers: [UsersService, UsersRepository],

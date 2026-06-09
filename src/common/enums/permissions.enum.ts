@@ -12,6 +12,8 @@ export enum Permission {
   view_business_shipping_rate = 'view_business_shipping_rate',
   update_business_shipping_rate = 'update_business_shipping_rate',
 
+  add_business_address = 'add_business_address',
+
   add_stock = 'add_stock',
   adjust_stock = 'adjust_stock',
 

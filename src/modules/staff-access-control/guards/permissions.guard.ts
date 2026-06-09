@@ -52,6 +52,16 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
+    const userId = user._id || user.sub;
+
+    if (!userId) {
+      throw new ForbiddenException({
+        message: 'Invalid user payload',
+        success: false,
+        status: 403,
+      });
+    }
+
     // Resolve businessId safely
     const rawBusinessId = request.params.businessId;
 
@@ -77,30 +87,20 @@ export class PermissionsGuard implements CanActivate {
       });
     }
 
-    // BUSINESS OWNER (bypass staff system)
-    if (user.businessId?.toString() === businessId.toString()) {
-      // const staffContext =
-      //   await this.staffPermissionService.getStaffPermissions(
-      //     user._id.toString(),
-      //     businessId.toString(),
-      //   );
+    const access = await this.staffPermissionService.getUserBusinessAccess(
+      userId,
+      businessId,
+    );
 
-      // treat owner as SUPER STAFF (all permissions)
+    if (access.isOwner) {
       request.staffContext = {
-        // ...staffContext,
-        permissions: Object.values(Permission),
+        permissions: access.permissions,
       };
 
       return true;
     }
 
-    // STAFF PERMISSION CHECK
-    const staffContext = await this.staffPermissionService.getStaffPermissions(
-      user._id.toString(),
-      businessId.toString(),
-    );
-
-    if (!staffContext) {
+    if (!access.permissions.length) {
       throw new ForbiddenException({
         message: 'Not a business staff',
         success: false,
@@ -108,13 +108,9 @@ export class PermissionsGuard implements CanActivate {
       });
     }
 
-    request.staffContext = staffContext;
+    request.staffContext = access;
 
-    // const hasAccess = requiredPermissions.every((permission) =>
-    //   staffContext.permissions.includes(permission),
-    // );
-
-    const permissionSet = new Set(staffContext.permissions);
+    const permissionSet = new Set(access.permissions);
 
     const hasAccess = requiredPermissions.every((permission) =>
       permissionSet.has(permission),

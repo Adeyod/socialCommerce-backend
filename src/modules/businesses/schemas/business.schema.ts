@@ -9,10 +9,10 @@ export class BusinessAddress {
   street!: string; // Ikeja
 
   @Prop()
-  state?: string; // optional: "Lagos"
+  state!: string; // optional: "Lagos"
 
   @Prop()
-  town?: string; // optional: "Lagos"
+  town!: string; // optional: "Lagos"
 
   @Prop()
   country?: string; // optional: "Nigeria"
