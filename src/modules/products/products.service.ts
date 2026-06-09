@@ -39,7 +39,8 @@ export class ProductsService {
   ) {
     const id = new Types.ObjectId(businessId);
 
-    console.log('createProductDto:', createProductDto);
+    console.log('Files in service:', files);
+    console.log('createProductDto in service:', createProductDto);
 
     const businessExist =
       await this.businessesRepository.findBusinessByBusinessId(id);
@@ -121,6 +122,7 @@ export class ProductsService {
 
       await this.cloudinaryService.deleteMultiple(payload); // important
 
+      console.log('catched error:', error);
       throw error;
     } finally {
       session.endSession();

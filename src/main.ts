@@ -10,7 +10,7 @@ import { AppModule } from './app.module';
 import { MongoExceptionFilter } from './common/filters/mongo-exception.filter';
 import { GlobalResponseInterceptor } from './common/interceptor/global-response.interceptor';
 import { FormDataNormalizePipe } from './common/pipes/formdata-normalize.pipe';
-import { InventoryRepository } from './modules/inventory/repositories/inventory.repository';
+import { BusinessesRepository } from './modules/businesses/repositories/businesses.repository';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -25,20 +25,21 @@ async function bootstrap() {
   serverAdapter.setBasePath('/admin/queues');
 
   // const addressData = {
-  //   street: 'No 22 Ajilosin',
-  //   state: 'Ekiti',
+  //   street: 'No 45 Ojota Park',
+  //   state: 'Lagos',
   //   country: 'Nigeria',
-  //   code: 'Ado-Ekiti',
-  //   centerLat: 10.3016,
-  //   centerLng: 6.3364,
+  //   code: 'Ojota',
+  //   centerLat: 4.3203,
+  //   centerLng: 1.3364,
   //   radiusKm: 10,
   // };
 
-  // const businessId = '6a072f6fb400c151391f195b';
+  // const businessId = '6a27ea488cdda362e629ffdb';
   // const productId = '6a1e898866e0167cb4059eb7';
   // const quantity = 4;
 
-  const repo = app.get(InventoryRepository);
+  const repo = app.get(BusinessesRepository);
+  // await repo.addBusinessAddress(businessId, addressData);
   // await repo.createInventory(businessId, productId, quantity);
 
   // Create Bull Board

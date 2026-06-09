@@ -134,6 +134,9 @@ export class ProductsController {
     @Body() createProductDto: CreateProductDto,
     @GetCurrentUser() user: JwtUser,
   ) {
+    console.log('Files in controller:', files);
+    console.log('createProductDto in controller:', createProductDto);
+
     const response = await this.productsService.createProduct(
       businessId,
       user,
