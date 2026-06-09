@@ -108,26 +108,6 @@ export class ProductsController {
       },
     }),
   )
-  // async createProduct(
-  //   @Param('businessId') businessId: string,
-  //   @UploadedFiles() files: Express.Multer.File[],
-  //   @Body() createProductDto: CreateProductDto,
-  //   @GetCurrentUser() user: JwtUser,
-  // ) {
-  //   console.log('createProductDto:', createProductDto);
-  //   console.log('files:', files);
-  //   console.log('RAW BODY:', createProductDto);
-  //   console.log('RAW deliveryRules:', createProductDto.deliveryRules);
-  //   console.log('TYPE:', typeof createProductDto.deliveryRules);
-  //   const response = await this.productsService.createProduct(
-  //     businessId,
-  //     user,
-  //     createProductDto,
-  //     files,
-  //   );
-
-  //   return response;
-  // }
   async createProduct(
     @Param('businessId') businessId: string,
     @UploadedFiles() files: Express.Multer.File[],
