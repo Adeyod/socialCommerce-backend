@@ -55,6 +55,8 @@ export class PermissionsGuard implements CanActivate {
     // Resolve businessId safely
     const rawBusinessId = request.params.businessId;
 
+    console.log('rawBusinessId:', rawBusinessId);
+
     if (!rawBusinessId) {
       throw new ForbiddenException({
         message: 'Business ID is required.',
