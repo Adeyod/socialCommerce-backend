@@ -29,6 +29,16 @@ export class PermissionsGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
+    console.log('user inside permission:', user);
+
+    if (user === undefined) {
+      throw new ForbiddenException({
+        message: 'Authentication missing.',
+        success: false,
+        status: 403,
+      });
+    }
+
     if (!user) {
       throw new ForbiddenException({
         message: 'User not authenticated',
