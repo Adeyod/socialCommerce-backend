@@ -9,6 +9,7 @@ import {
   PaymentProvider,
   PaymentStatus,
 } from '../schemas/payment.schema';
+import { PaymentBreakdown } from '../types/payment-breakdown.type';
 
 type PaymentHandlerInput = {
   reference: string;
@@ -30,7 +31,7 @@ export class PaymentsRepository {
     provider: PaymentProvider,
     orderId: Types.ObjectId,
     amount: number,
-    paymentBreakdown: any,
+    paymentBreakdown: PaymentBreakdown,
   ) {
     console.log('orderId:', orderId);
     console.log('amount:', amount);
@@ -49,6 +50,11 @@ export class PaymentsRepository {
       amount,
       reference,
       provider,
+      deliveryMode: paymentBreakdown.deliveryMode,
+      deliveryAddress: paymentBreakdown.deliveryAddress,
+      vendorsPaymentBreakdown: paymentBreakdown.vendors,
+      collectionFee: paymentBreakdown.platformFees.collectionFee,
+      deliveryFee: paymentBreakdown.platformFees.deliveryFee,
     }).save();
 
     console.log('newPayment:', newPayment);

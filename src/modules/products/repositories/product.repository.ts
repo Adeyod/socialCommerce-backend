@@ -796,4 +796,205 @@ export class ProductsRepository {
       },
     };
   }
+
+  // async getBuyerProducts(params: any) {
+  //   const {
+  //     searchParams,
+  //     buyerState,
+  //     category,
+  //     minPrice,
+  //     maxPrice,
+  //     page = 1,
+  //     limit = 10,
+  //     sort,
+  //   } = params;
+
+  //   const match: any = {
+  //     isActive: true,
+  //     isDeleted: false,
+  //   };
+
+  //   // Search (name + category)
+  //   if (searchParams) {
+  //     const regex = new RegExp(searchParams, 'i');
+
+  //     match.$or = [
+  //       { name: { $regex: regex } },
+  //       { category: { $regex: regex } },
+  //       { tags: { $in: [regex] } },
+  //     ];
+  //   }
+
+  //   // Category filter
+  //   if (category) {
+  //     match.category = category;
+  //   }
+
+  //   // Price filter
+  //   if (minPrice || maxPrice) {
+  //     match.price = {};
+  //     if (minPrice) match.price.$gte = Number(minPrice);
+  //     if (maxPrice) match.price.$lte = Number(maxPrice);
+  //   }
+
+  //   const skip = (Number(page) - 1) * Number(limit);
+
+  //   // BASE PIPELINE
+  //   const basePipeline: any[] = [
+  //     { $match: match },
+
+  //     // Join Business (vendor equivalent)
+  //     {
+  //       $lookup: {
+  //         from: 'businesses',
+  //         localField: 'businessId',
+  //         foreignField: '_id',
+  //         as: 'business',
+  //       },
+  //     },
+  //     { $unwind: '$business' },
+  //     {
+  //       $lookup: {
+  //         from: 'businessshippingrates',
+  //         let: { businessId: '$businessId' },
+  //         pipeline: [
+  //           {
+  //             $match: {
+  //               $expr: {
+  //                 $and: [
+  //                   { $eq: ['$businessId', '$$businessId'] },
+  //                   { $eq: ['$destinationState', buyerState] },
+  //                 ],
+  //               },
+  //             },
+  //           },
+  //           { $limit: 1 },
+  //         ],
+  //         as: 'shippingRates',
+  //       },
+  //     },
+
+  //     {
+  //       $match: {
+  //         shippingRates: { $ne: [] },
+  //       },
+  //     },
+
+  //     // fairness factor
+  //     {
+  //       $addFields: {
+  //         randomFactor: { $rand: {} },
+  //       },
+  //     },
+
+  //     // CLEAN SCORE (based only on your schema)
+  //     {
+  //       $addFields: {
+  //         score: {
+  //           $add: [
+  //             { $multiply: ['$averageRating', 40] },
+  //             { $multiply: ['$reviewCount', 0.5] },
+  //             { $cond: ['$inStock', 20, -100] },
+  //             { $multiply: ['$randomFactor', 10] },
+  //           ],
+  //         },
+  //       },
+  //     },
+  //   ];
+
+  //   // SORT LOGIC
+  //   let sortStage: any = { score: -1 };
+
+  //   switch (sort) {
+  //     case 'price':
+  //       sortStage = { price: 1 };
+  //       break;
+
+  //     case 'newest':
+  //       sortStage = { createdAt: -1 };
+  //       break;
+
+  //     case 'rating':
+  //       sortStage = { averageRating: -1 };
+  //       break;
+
+  //     default:
+  //       sortStage = { score: -1 };
+  //       break;
+  //   }
+
+  //   // FINAL PIPELINE WITH FACET (FIXES YOUR TOTAL ISSUE)
+  //   const result = await this.productModel.aggregate([
+  //     ...basePipeline,
+
+  //     {
+  //       $facet: {
+  //         data: [
+  //           { $sort: sortStage },
+  //           { $skip: skip },
+  //           { $limit: Number(limit) },
+
+  //           {
+  //             $project: {
+  //               id: '$_id',
+  //               name: 1,
+  //               description: 1,
+  //               category: 1,
+  //               price: 1,
+  //               stock: 1,
+  //               inStock: 1,
+  //               averageRating: 1,
+  //               reviewCount: 1,
+  //               media: 1,
+  //               weight: 1,
+  //               createdAt: 1,
+
+  //               business: {
+  //                 id: '$business._id',
+  //                 name: '$business.name',
+  //               },
+  //               shippingRates: {
+  //                 $map: {
+  //                   input: '$shippingRates',
+  //                   as: 'rate',
+  //                   in: {
+  //                     originState: '$$rate.originState',
+  //                     destinationState: '$$rate.destinationState',
+
+  //                     weightRanges: {
+  //                       $map: {
+  //                         input: '$$rate.weightRanges',
+  //                         as: 'wr',
+  //                         in: {
+  //                           min: '$$wr.min',
+  //                           max: '$$wr.max',
+  //                           price: '$$wr.price',
+  //                         },
+  //                       },
+  //                     },
+  //                   },
+  //                 },
+  //               },
+  //             },
+  //           },
+  //         ],
+
+  //         meta: [{ $count: 'total' }],
+  //       },
+  //     },
+  //   ]);
+
+  //   const data = result[0]?.data || [];
+  //   const total = result[0]?.meta?.[0]?.total || 0;
+
+  //   return {
+  //     data,
+  //     meta: {
+  //       total,
+  //       page: Number(page),
+  //       limit: Number(limit),
+  //       totalPages: Math.ceil(total / limit),
+  //     },
+  //   };
+  // }
 }

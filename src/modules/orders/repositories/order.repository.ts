@@ -325,7 +325,7 @@ export class OrderRepository {
       destinationPickupCenter: dto.destinationPickupCenter,
       customerId: new Types.ObjectId(dto.customerId),
       deliveryMode: dto.deliveryMode,
-      shipments: dto.shipments,
+      shipment: dto.shipment,
       subtotal: dto.subtotal,
       deliveryFee: dto.deliveryFee,
       total: dto.total,

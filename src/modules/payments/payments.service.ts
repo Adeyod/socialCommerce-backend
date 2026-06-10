@@ -27,6 +27,7 @@ import { IPaymentProvider } from './providers/interfaces/provider.interface';
 import { PaystackService } from './providers/paystack/paystack.service';
 import { PaymentsRepository } from './repositories/payment.repository';
 import { PaymentProvider, PaymentStatus } from './schemas/payment.schema';
+import { PaymentBreakdown } from './types/payment-breakdown.type';
 
 @Injectable()
 export class PaymentsService {
@@ -54,7 +55,7 @@ export class PaymentsService {
     user: JwtUser,
     order: string,
     amount: number,
-    paymentBreakdown: any,
+    paymentBreakdown: PaymentBreakdown,
   ) {
     const findUser = await this.usersRepository.findById(user.sub);
 
@@ -282,7 +283,7 @@ export class PaymentsService {
 
     const {
       reference,
-      metadata: { amount, userId, orderId },
+      metadata: { amount, userId, orderId, paymentBreakdown },
     } = providerResponse.data;
 
     const amt = Number(String(amount).replace(/,/g, ''));
@@ -364,49 +365,48 @@ export class PaymentsService {
       // ===============================
 
       let platformCharge: number = 0;
+      const shipment = order.shipment;
 
-      for (const shipment of order.shipments) {
-        for (const vendor of shipment.vendors) {
-          let vendorSubtotal = 0;
+      for (const vendor of shipment.vendors) {
+        let vendorSubtotal = 0;
 
-          // calculate vendor revenue from items
-          for (const item of vendor.items) {
-            // const productInventory = await this.inventoryRepository.findInventoryByProductId(item.productId)
+        // calculate vendor revenue from items
+        for (const item of vendor.items) {
+          // const productInventory = await this.inventoryRepository.findInventoryByProductId(item.productId)
 
-            // if(!productInventory) {
-            //   throw new NotFoundException({
-            //     message: 'Product inventory document not found.',
-            //     success: false,
-            //     status: 404
-            //   })
-            // }
+          // if(!productInventory) {
+          //   throw new NotFoundException({
+          //     message: 'Product inventory document not found.',
+          //     success: false,
+          //     status: 404
+          //   })
+          // }
 
-            // productInventory.
-            vendorSubtotal += item.price * item.quantity;
-          }
-
-          const platformCommission = platformComm; // e.g 0.05 or 0.1
-
-          const fee = platformCommission * vendorSubtotal;
-          platformCharge += fee;
-
-          const vendorFee = vendorSubtotal - fee;
-
-          const payload = {
-            userId: vendor.businessId.toString(),
-            orderId,
-          };
-
-          await this.walletRepository.creditWalletPendingBalance(
-            {
-              ownerType: WalletOwnerType.business,
-              businessId: vendor.businessId.toString(),
-            },
-            vendorFee,
-            generatePaymentReference(payload),
-            LedgerCategory.order_payment,
-          );
+          // productInventory.
+          vendorSubtotal += item.price * item.quantity;
         }
+
+        const platformCommission = platformComm; // e.g 0.05 or 0.1
+
+        const fee = platformCommission * vendorSubtotal;
+        platformCharge += fee;
+
+        const vendorFee = vendorSubtotal - fee;
+
+        const payload = {
+          userId: vendor.businessId.toString(),
+          orderId,
+        };
+
+        await this.walletRepository.creditWalletPendingBalance(
+          {
+            ownerType: WalletOwnerType.business,
+            businessId: vendor.businessId.toString(),
+          },
+          vendorFee,
+          generatePaymentReference(payload),
+          LedgerCategory.order_payment,
+        );
       }
 
       await this.walletRepository.creditWalletPendingBalance(

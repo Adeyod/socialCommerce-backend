@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { PaymentBreakdown } from '../../types/payment-breakdown.type';
 
 export interface PaymentInitializationPayload {
   email: string;
@@ -6,7 +7,7 @@ export interface PaymentInitializationPayload {
   reference: string;
   userId: string;
   orderId: string;
-  paymentBreakdown: any;
+  paymentBreakdown: PaymentBreakdown;
 }
 
 export interface PaymentProviderResponse {

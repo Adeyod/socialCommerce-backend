@@ -1,5 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import {
+  DeliveryAddress,
+  DeliveryMode,
+} from '../../orders/schemas/order.schema';
+import { PaymentVendorBreakdown } from '../types/payment-breakdown.type';
 
 export type PaymentDocument = Payment & Document;
 
@@ -64,6 +69,21 @@ export class Payment {
 
   @Prop({ default: null })
   paidAt!: Date;
+
+  @Prop()
+  deliveryMode!: DeliveryMode;
+
+  @Prop()
+  deliveryAddress?: DeliveryAddress;
+
+  @Prop()
+  vendorsPaymentBreakdown!: PaymentVendorBreakdown[];
+
+  @Prop({ default: 0 })
+  collectionFee!: number;
+
+  @Prop({ default: 0 })
+  deliveryFee!: number;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

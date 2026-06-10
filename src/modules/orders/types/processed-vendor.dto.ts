@@ -43,7 +43,7 @@ export type ProcessedOrderDataObjectId = {
   cartId: string;
   customerId: Types.ObjectId;
 
-  shipments: ShipmentDto[];
+  shipment: ShipmentDto;
   subtotal: number;
   deliveryFee: number;
   total: number;
@@ -66,7 +66,7 @@ export type ProcessedOrderData = {
   cartId: string;
   customerId: string;
 
-  shipments: ShipmentDto[];
+  shipment: ShipmentDto;
   subtotal: number;
   deliveryFee: number;
   total: number;

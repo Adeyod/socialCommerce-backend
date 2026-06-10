@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { Shipment } from '../types/order.types';
+import type { Shipment } from '../types/order.types';
 
 export type OrderDocument = HydratedDocument<Order>;
 
@@ -84,83 +84,82 @@ export class Order {
 
   // SHIPMENTS (CORE LOGIC)
   @Prop({
-    type: [
-      {
-        _id: { type: Types.ObjectId, auto: true },
+    type: {
+      _id: { type: Types.ObjectId, auto: true },
 
-        shipmentId: { type: String, required: true },
+      shipmentId: { type: String, required: true },
 
-        // HUBS
-        originPickupCenter: {
-          type: Types.ObjectId,
-          ref: 'PickupCenter',
-        },
-
-        destinationPickupCenter: {
-          type: Types.ObjectId,
-          ref: 'PickupCenter',
-        },
-
-        deliveryMode: {
-          type: String,
-          enum: DeliveryMode,
-          required: true,
-        },
-
-        // VENDORS INSIDE SHIPMENT
-        vendors: [
-          {
-            _id: { type: Types.ObjectId, auto: true },
-
-            businessId: {
-              type: Types.ObjectId,
-              ref: 'Business',
-              required: true,
-            },
-
-            items: [
-              {
-                productId: {
-                  type: Types.ObjectId,
-                  ref: 'Product',
-                  required: true,
-                },
-                name: { type: String, required: true },
-                price: { type: Number, required: true },
-                quantity: { type: Number, required: true },
-
-                itemStatus: {
-                  type: String,
-                  enum: VendorItemOrderStatus,
-                  default: VendorItemOrderStatus.pending,
-                },
-              },
-            ],
-
-            subtotal: { type: Number, required: true },
-
-            status: {
-              type: String,
-              enum: VendorOrderStatus,
-              default: VendorOrderStatus.pending,
-            },
-          },
-        ],
-
-        subtotal: { type: Number, required: true },
-
-        deliveryFee: { type: Number, default: 0 },
-
-        status: {
-          type: String,
-          enum: ShipmentStatus,
-          default: ShipmentStatus.pending,
-        },
+      // HUBS
+      originPickupCenter: {
+        type: Types.ObjectId,
+        ref: 'PickupCenter',
       },
-    ],
+
+      destinationPickupCenter: {
+        type: Types.ObjectId,
+        ref: 'PickupCenter',
+      },
+
+      deliveryMode: {
+        type: String,
+        enum: DeliveryMode,
+        required: true,
+      },
+
+      // VENDORS INSIDE SHIPMENT
+      vendors: [
+        {
+          _id: { type: Types.ObjectId, auto: true },
+
+          businessId: {
+            type: Types.ObjectId,
+            ref: 'Business',
+            required: true,
+          },
+
+          items: [
+            {
+              productId: {
+                type: Types.ObjectId,
+                ref: 'Product',
+                required: true,
+              },
+              name: { type: String, required: true },
+              price: { type: Number, required: true },
+              quantity: { type: Number, required: true },
+
+              itemStatus: {
+                type: String,
+                enum: VendorItemOrderStatus,
+                default: VendorItemOrderStatus.pending,
+              },
+            },
+          ],
+
+          subtotal: { type: Number, required: true },
+
+          status: {
+            type: String,
+            enum: VendorOrderStatus,
+            default: VendorOrderStatus.pending,
+          },
+        },
+      ],
+
+      subtotal: { type: Number, required: true },
+
+      deliveryFee: { type: Number, default: 0 },
+
+      status: {
+        type: String,
+        enum: ShipmentStatus,
+        default: ShipmentStatus.pending,
+      },
+    },
+
     required: true,
   })
-  shipments!: Shipment[];
+  shipment!: Shipment;
 
   // GLOBAL PRICING
   @Prop({ required: true })

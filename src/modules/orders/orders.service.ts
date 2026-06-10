@@ -897,13 +897,23 @@ async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
       });
     }
 
-    const shipment = order.shipments.find((s) =>
-      s.vendors.some((v) => v.businessId.toString() === businessId),
-    );
+    const shipment = order.shipment;
 
     if (!shipment) {
       throw new NotFoundException({
         message: 'Shipment containing this vendor not found.',
+        status: 404,
+        success: false,
+      });
+    }
+
+    const vendorExists = shipment.vendors.some(
+      (v) => v.businessId.toString() === businessId,
+    );
+
+    if (!vendorExists) {
+      throw new NotFoundException({
+        message: 'Shipment does not contain this vendor.',
         status: 404,
         success: false,
       });
@@ -1350,7 +1360,7 @@ return {
           shippingFee: v.shippingFee,
           total: v.subtotal + v.shippingFee,
         })),
-        platform: {
+        platformFees: {
           collectionFee,
           deliveryFee: lastMileFee,
         },
@@ -1393,7 +1403,7 @@ return {
         {
           cartId,
           customerId,
-          shipments: [shipment],
+          shipment: shipment,
           subtotal: globalSubtotal,
           shippingFeeTotal,
           collectionFee,

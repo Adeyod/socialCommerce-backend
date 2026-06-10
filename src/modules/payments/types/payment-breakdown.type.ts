@@ -17,7 +17,7 @@ export type PaymentPlatformBreakdown = {
 
 export type PaymentBreakdown = {
   vendors: PaymentVendorBreakdown[];
-  platform: PaymentPlatformBreakdown;
+  platformFees: PaymentPlatformBreakdown;
 
   deliveryMode: DeliveryMode;
 
