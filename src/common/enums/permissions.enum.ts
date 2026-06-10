@@ -8,6 +8,10 @@ export enum Permission {
   view_role = 'view_role',
   update_role = 'update_role',
 
+  create_campaign = 'create_campaign',
+  view_campaign = 'view_campaign',
+  update_campaign = 'update_campaign',
+
   create_business_shipping_rate = 'create_business_shipping_rate',
   view_business_shipping_rate = 'view_business_shipping_rate',
   update_business_shipping_rate = 'update_business_shipping_rate',

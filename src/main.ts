@@ -10,7 +10,7 @@ import { AppModule } from './app.module';
 import { MongoExceptionFilter } from './common/filters/mongo-exception.filter';
 import { GlobalResponseInterceptor } from './common/interceptor/global-response.interceptor';
 import { FormDataNormalizePipe } from './common/pipes/formdata-normalize.pipe';
-import { BusinessesRepository } from './modules/businesses/repositories/businesses.repository';
+import { InventoryRepository } from './modules/inventory/repositories/inventory.repository';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -35,10 +35,10 @@ async function bootstrap() {
   // };
 
   // const businessId = '6a2727a602164e3e56316342';
-  // const productId = '6a1e898866e0167cb4059eb7';
-  // const quantity = 4;
+  // const productId = '6a27fcbf5e60b18bce2137d6';
+  // const quantity = 12;
 
-  const repo = app.get(BusinessesRepository);
+  const repo = app.get(InventoryRepository);
   // await repo.addBusinessAddress(businessId, addressData);
   // await repo.createInventory(businessId, productId, quantity);
 

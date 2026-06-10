@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BusinessesModule } from '../businesses/businesses.module';
 import { ProductsModule } from '../products/products.module';
+import { StaffAccessControlModule } from '../staff-access-control/staff-access-control.module';
 import { CampaignController } from './campaign.controller';
 import { CampaignService } from './campaign.service';
 import { CampaignRepository } from './repositories/campaign.repository';
@@ -19,6 +20,7 @@ import {
     ]),
     BusinessesModule,
     ProductsModule,
+    StaffAccessControlModule,
   ],
   controllers: [CampaignController],
   providers: [CampaignService, CampaignRepository],

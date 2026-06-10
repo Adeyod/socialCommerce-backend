@@ -85,7 +85,10 @@ export class ProductsService {
         inStock: (createProductDto.stock ?? 0) > 0,
         sku: this.generateSku(),
       };
-      const product = await this.productsRepository.createProduct(data);
+      const product = await this.productsRepository.createProduct(
+        data,
+        session,
+      );
 
       if (!product) {
         throw new BadRequestException({
@@ -110,7 +113,7 @@ export class ProductsService {
         });
       }
 
-      console.log('product:', product);
+      await session.commitTransaction();
       return {
         message: 'Product created successfully.',
         data: product,

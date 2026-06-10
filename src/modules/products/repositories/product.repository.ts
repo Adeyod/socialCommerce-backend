@@ -63,22 +63,25 @@ export class ProductsRepository {
 
     return result;
   }
-  async createProduct(data: {
-    name: string;
-    description?: string;
-    sku: string;
-    category?: string;
-    tags?: string[];
-    price: number;
-    stock: number;
-    weight: number;
-    media: {
-      url: string;
-      publicUrl: string;
-    }[];
-    businessId: string;
-    inStock: boolean;
-  }) {
+  async createProduct(
+    data: {
+      name: string;
+      description?: string;
+      sku: string;
+      category?: string;
+      tags?: string[];
+      price: number;
+      stock: number;
+      weight: number;
+      media: {
+        url: string;
+        publicUrl: string;
+      }[];
+      businessId: string;
+      inStock: boolean;
+    },
+    session?: ClientSession,
+  ) {
     const newProduct = await new this.productModel({
       name: data.name.toLowerCase(),
       businessId: new Types.ObjectId(data.businessId),
@@ -90,7 +93,7 @@ export class ProductsRepository {
       category: data.category?.toLowerCase(),
       tags: data.tags,
       sku: data.sku.toLowerCase(),
-    }).save();
+    }).save({ session });
 
     return newProduct;
   }
