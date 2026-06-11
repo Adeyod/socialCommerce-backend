@@ -22,6 +22,7 @@ export type ShipmentVendor = {
   items: ShipmentItem[];
 
   subtotal: number;
+  shippingFee: number;
 
   status: VendorOrderStatus;
 };

@@ -26,6 +26,7 @@ export type VendorObject = {
   businessId: string;
   items: VendorItem[];
   subtotal: number;
+  shippingRate: number;
   status: VendorOrderStatus;
 };
 
@@ -52,7 +53,7 @@ export type ProcessedOrderDataObjectId = {
 
   deliveryMode: DeliveryMode;
   deliveryAddress?: DeliveryAddress;
-  destinationPickupCenter?: string | null;
+  destinationPickupCenter?: Types.ObjectId | null;
 
   contactPhone: string;
 

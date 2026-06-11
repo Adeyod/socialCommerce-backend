@@ -48,6 +48,9 @@ export class Notification {
 
   @Prop({ type: [Types.ObjectId], default: [] })
   readBy!: Types.ObjectId[];
+
+  @Prop({ type: Object })
+  metadata?: Record<string, any>;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);

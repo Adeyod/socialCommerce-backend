@@ -32,10 +32,13 @@ export class OrderRepository {
     return order;
   }
 
-  async findOrderByOrderId(orderId: string): Promise<OrderDocument | null> {
+  async findOrderByOrderId(
+    orderId: string,
+    session?: ClientSession,
+  ): Promise<OrderDocument | null> {
     const id = new Types.ObjectId(orderId);
     const order = await this.orderModel
-      .findById(id)
+      .findById(id, { session })
       .populate('customerId')
       .populate('vendors.vendorId')
       .populate('vendors.items.productId')
@@ -322,7 +325,9 @@ export class OrderRepository {
       cartId: dto.cartId,
       shippingFeeTotal: dto.shippingFeeTotal,
       collectionFee: dto.collectionFee,
-      destinationPickupCenter: dto.destinationPickupCenter,
+      destinationPickupCenter: dto.destinationPickupCenter
+        ? new Types.ObjectId(dto.destinationPickupCenter)
+        : null,
       customerId: new Types.ObjectId(dto.customerId),
       deliveryMode: dto.deliveryMode,
       shipment: dto.shipment,

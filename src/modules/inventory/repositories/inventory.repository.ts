@@ -17,10 +17,13 @@ export class InventoryRepository {
     private readonly inventoryLogModel: Model<InventoryLogDocument>,
   ) {}
 
-  async findInventoryByProductId(productId: string) {
-    const response = await this.inventoryModel.findOne({
-      productId: new Types.ObjectId(productId),
-    });
+  async findInventoryByProductId(productId: string, session?: ClientSession) {
+    const response = await this.inventoryModel.findOne(
+      {
+        productId: new Types.ObjectId(productId),
+      },
+      { session },
+    );
 
     return response;
   }

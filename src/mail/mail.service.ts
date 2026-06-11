@@ -1,6 +1,7 @@
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import type { Queue } from 'bull';
+import { ShipmentItem } from '../modules/orders/types/order.types';
 import { SendEmailJob } from './interface/mail.interface';
 
 @Injectable()
@@ -37,6 +38,21 @@ export class MailService {
       subject: 'Password Reset',
       templateName: 'password-reset.ejs',
       templateData: { first_name, token, app_name: this.app_name },
+    });
+  }
+
+  async sendVendorOrderPaid(
+    to: string,
+    title: string,
+    orderId: string,
+    businessName: string,
+    items: ShipmentItem[],
+  ) {
+    return this.sendMail({
+      to,
+      subject: title,
+      templateName: 'send-vendor-order-paid.ejs',
+      templateData: { businessName, orderId, items, app_name: this.app_name },
     });
   }
 }

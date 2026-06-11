@@ -2,7 +2,23 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { PartnerRole } from '../../partners/enums/partner-role.enum';
 
+export type PopulatedBusinessOwner = {
+  _id: Types.ObjectId;
+  businessName: string;
+  ownerId: {
+    email: string;
+    _id: Types.ObjectId;
+  };
+};
+
 export type BusinessDocument = HydratedDocument<Business>;
+
+export type BusinessWithOwner = Omit<BusinessDocument, 'ownerId'> & {
+  ownerId: {
+    _id: Types.ObjectId;
+    email: string;
+  };
+};
 
 export class BusinessAddress {
   @Prop({ required: true })

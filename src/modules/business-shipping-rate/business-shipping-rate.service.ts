@@ -127,7 +127,7 @@ export class BusinessShippingRateService {
     console.log('rates:', rates);
     if (!rates) {
       throw new NotFoundException({
-        message: 'Business shipping rate document not found.',
+        message: 'Business shipping rate document for buyer state not found.',
         success: false,
         status: 404,
       });

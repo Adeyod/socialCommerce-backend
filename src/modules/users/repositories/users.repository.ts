@@ -1,14 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
 
 @Injectable()
 export class UsersRepository {
   constructor(@InjectModel('User') private userModel: Model<UserDocument>) {}
 
-  async findById(id: Types.ObjectId): Promise<UserDocument | null> {
-    return this.userModel.findById(id);
+  async findById(
+    id: Types.ObjectId,
+    session?: ClientSession,
+  ): Promise<UserDocument | null> {
+    return this.userModel.findById(id, { session });
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {

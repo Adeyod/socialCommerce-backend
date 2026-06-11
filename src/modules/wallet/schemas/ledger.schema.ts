@@ -1,5 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { CallbackError, HydratedDocument, Types } from 'mongoose';
+import {
+  CallbackError,
+  HydratedDocument,
+  Schema as MongooseSchema,
+  Types,
+} from 'mongoose';
 
 export type LedgerDocument = HydratedDocument<Ledger>;
 
@@ -64,6 +69,9 @@ export class Ledger {
 
   @Prop()
   referralLevel?: number;
+
+  @Prop({ type: MongooseSchema.Types.Mixed })
+  metadata?: Record<string, any>;
 }
 
 export const LedgerSchema = SchemaFactory.createForClass(Ledger) as any;

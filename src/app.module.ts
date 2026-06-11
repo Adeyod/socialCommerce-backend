@@ -1,6 +1,7 @@
 import { BullModule } from '@nestjs/bull';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
 import Joi from 'joi';
 import { AppController } from './app.controller';
@@ -14,6 +15,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BusinessShippingRateModule } from './modules/business-shipping-rate/business-shipping-rate.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
 import { BuyersModule } from './modules/buyers/buyers.module';
+import { CampaignModule } from './modules/campaign/campaign.module';
 import { CartsModule } from './modules/carts/carts.module';
 import { CollectionModule } from './modules/collection/collection.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -37,7 +39,6 @@ import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { WalletModule } from './modules/wallet/wallet.module';
-import { CampaignModule } from './modules/campaign/campaign.module';
 
 @Module({
   imports: [
@@ -107,7 +108,7 @@ import { CampaignModule } from './modules/campaign/campaign.module';
         };
       },
     }),
-
+    EventEmitterModule.forRoot(),
     MailModule,
     AuthModule,
     TokensModule,

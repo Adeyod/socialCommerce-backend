@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import {
   Ledger,
   LedgerCategory,
@@ -29,6 +29,8 @@ export class WalletRepository {
     amount: number,
     referenceId: string,
     category: LedgerCategory,
+    metadata?: Record<string, any>,
+    session?: ClientSession,
   ) {
     const query =
       owner.ownerType === WalletOwnerType.user
@@ -43,12 +45,13 @@ export class WalletRepository {
       amount,
       referenceId,
       category,
-    }).save();
+      metadata,
+    }).save({ session });
 
     const newWalletBalance = await this.walletModel.updateOne(
       query,
       { $inc: { yetToBeClearedBalance: amount } },
-      { upsert: true },
+      { upsert: true, session },
     );
 
     console.log('newWalletBalance:', newWalletBalance);

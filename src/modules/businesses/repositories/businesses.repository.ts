@@ -3,7 +3,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PartnerRole } from '../../partners/enums/partner-role.enum';
 import { CreateBusinessDto } from '../dtos/create-business.dto';
-import { Business, BusinessDocument } from '../schemas/business.schema';
+import {
+  Business,
+  BusinessDocument,
+  PopulatedBusinessOwner,
+} from '../schemas/business.schema';
 
 @Injectable()
 export class BusinessesRepository {
@@ -36,6 +40,16 @@ export class BusinessesRepository {
     const business = await this.businessModel
       .findById(businessId)
       .select('ownerId');
+
+    return business;
+  }
+  async findBusinessOwnerDetailsByBusinessId(
+    businessId: Types.ObjectId,
+  ): Promise<PopulatedBusinessOwner | null> {
+    const business = await this.businessModel
+      .findById(businessId)
+      .populate<{ ownerId: { _id: Types.ObjectId; email: string } }>('ownerId')
+      .lean();
 
     return business;
   }

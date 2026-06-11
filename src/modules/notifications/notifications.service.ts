@@ -12,17 +12,17 @@ export class NotificationsService {
 
   async notifyBusinessOrderPaid(
     businessId: string,
-    productName: string,
-    quantity: number,
-    orderId: string,
+    title: string,
+    message: string,
+    type: NotificationType,
+    metadata: any,
   ) {
-    const plural = quantity > 1 ? 's' : '';
     const response = await this.notificationRepository.createNotification({
       businessId: businessId,
-      type: NotificationType.order_paid,
-      title: 'New Order Paid',
-      message: `A customer has paid for ${quantity} ${productName}${plural}. Please pack the order as quickly as possible and press the order packed button.`,
-      orderId,
+      type,
+      title,
+      message,
+      orderId: metadata.orderId,
     });
 
     return response;
