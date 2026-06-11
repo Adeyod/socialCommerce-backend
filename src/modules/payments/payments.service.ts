@@ -62,7 +62,9 @@ export class PaymentsService {
     amount: number,
     paymentBreakdown: PaymentBreakdown,
   ) {
-    const findUser = await this.usersRepository.findById(user.sub);
+    const findUser = await this.usersRepository.findUserByIdWithoutSession(
+      user.sub,
+    );
 
     if (!findUser) {
       throw new NotFoundException({

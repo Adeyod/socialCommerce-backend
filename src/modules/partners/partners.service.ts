@@ -29,7 +29,9 @@ export class PartnersService {
   ) {}
 
   async checkIfPartnerHasBusiness(user: JwtUser) {
-    const userExist = await this.usersRepository.findById(user.sub);
+    const userExist = await this.usersRepository.findUserByIdWithoutSession(
+      user.sub,
+    );
 
     if (!userExist) {
       throw new NotFoundException({

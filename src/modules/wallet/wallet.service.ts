@@ -31,7 +31,8 @@ export class WalletService {
 
     if (userId) {
       const uid = new Types.ObjectId(userId);
-      const userExist = await this.usersRepository.findById(uid);
+      const userExist =
+        await this.usersRepository.findUserByIdWithoutSession(uid);
 
       if (!userExist) {
         throw new NotFoundException({
@@ -98,7 +99,8 @@ export class WalletService {
 
     if (userId) {
       const uid = new Types.ObjectId(userId);
-      const userExist = await this.usersRepository.findById(uid);
+      const userExist =
+        await this.usersRepository.findUserByIdWithoutSession(uid);
 
       if (!userExist) {
         throw new NotFoundException({
@@ -167,7 +169,8 @@ export class WalletService {
 
     if (userId) {
       const uid = new Types.ObjectId(userId);
-      const userExist = await this.usersRepository.findById(uid);
+      const userExist =
+        await this.usersRepository.findUserByIdWithoutSession(uid);
 
       if (!userExist) {
         throw new NotFoundException({
@@ -252,7 +255,7 @@ export class WalletService {
   //     };
   //   } else if (userId) {
   //     const uid = new Types.ObjectId(userId);
-  //     const userExist = await this.usersRepository.findById(uid);
+  //     const userExist = await this.usersRepository.findUserByIdWithoutSession(uid);
 
   //     if (!userExist) {
   //       throw new NotFoundException({
@@ -312,7 +315,7 @@ export class WalletService {
     } else {
       const userId = user.sub.toString();
 
-      const userExist = await this.usersRepository.findById(
+      const userExist = await this.usersRepository.findUserByIdWithoutSession(
         new Types.ObjectId(userId),
       );
 

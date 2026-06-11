@@ -146,7 +146,7 @@ export class PaystackService implements IPaymentProvider {
     //         });
     //       }
 
-    //       const userExist = await this.usersRepository.findById(user);
+    //       const userExist = await this.usersRepository.findUserByIdWithoutSession(user);
     //       if (!userExist) {
     //         throw new NotFoundException({
     //           message: 'User not found.',
@@ -173,7 +173,7 @@ export class PaystackService implements IPaymentProvider {
     //             continue;
     //           }
 
-    //           const refUser = await this.usersRepository.findById(ref.userId);
+    //           const refUser = await this.usersRepository.findUserByIdWithoutSession(ref.userId);
 
     //           if (!refUser) {
     //             console.log(

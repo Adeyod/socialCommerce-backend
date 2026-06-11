@@ -7,6 +7,11 @@ import { User, UserDocument } from '../schemas/user.schema';
 export class UsersRepository {
   constructor(@InjectModel('User') private userModel: Model<UserDocument>) {}
 
+  async findUserByIdWithoutSession(
+    id: Types.ObjectId,
+  ): Promise<UserDocument | null> {
+    return this.userModel.findById(id);
+  }
   async findById(
     id: Types.ObjectId,
     session?: ClientSession,

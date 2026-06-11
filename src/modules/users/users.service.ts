@@ -18,7 +18,7 @@ export class UsersService {
     private businessesRepository: BusinessesRepository,
   ) {}
   async findUserById(id: Types.ObjectId): Promise<UserResponseDto> {
-    const user = await this.usersRepository.findById(id);
+    const user = await this.usersRepository.findUserByIdWithoutSession(id);
 
     if (!user) {
       throw new NotFoundException({
@@ -35,7 +35,7 @@ export class UsersService {
   }
 
   async findMeById(id: Types.ObjectId) {
-    const user = await this.usersRepository.findById(id);
+    const user = await this.usersRepository.findUserByIdWithoutSession(id);
 
     if (!user) {
       throw new NotFoundException({

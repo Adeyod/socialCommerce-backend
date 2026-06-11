@@ -105,7 +105,9 @@ export class AuthService {
       });
     }
 
-    const userExist = await this.usersRepository.findById(tokenExist.user);
+    const userExist = await this.usersRepository.findUserByIdWithoutSession(
+      tokenExist.user,
+    );
 
     if (!userExist) {
       throw new NotFoundException({
