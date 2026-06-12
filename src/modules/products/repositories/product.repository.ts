@@ -16,9 +16,22 @@ export class ProductsRepository {
   ) {}
 
   async findByIds(ids: string[]) {
+    const objectIds = ids.map((id) => new Types.ObjectId(id));
+
     const products = await this.productModel.find({
-      _id: { $in: ids },
+      _id: { $in: objectIds },
     });
+
+    return products;
+  }
+  async findManyByIds(ids: string[], session: ClientSession) {
+    const objectIds = ids.map((id) => new Types.ObjectId(id));
+
+    const products = await this.productModel
+      .find({
+        _id: { $in: objectIds },
+      })
+      .session(session);
 
     return products;
   }
@@ -108,6 +121,26 @@ export class ProductsRepository {
     return productCount;
   }
 
+  async findByIdAndSession(
+    id: string,
+    session: ClientSession,
+  ): Promise<ProductDocument | null> {
+    const productId = new Types.ObjectId(id);
+
+    const product = await this.productModel
+      .findOne({
+        _id: productId,
+        isDeleted: false,
+        isActive: true,
+      })
+      .session(session)
+      .populate({
+        path: 'businessId',
+        select: 'businessName businessAddress.state businessAddress.town',
+      });
+
+    return product;
+  }
   async findById(id: string): Promise<ProductDocument | null> {
     const productId = new Types.ObjectId(id);
 
@@ -256,6 +289,25 @@ export class ProductsRepository {
 
     console.log('response:', response);
     return response;
+  }
+
+  async decrementStockBulk(
+    updates: { productId: string; quantity: number }[],
+    session: ClientSession,
+  ) {
+    const ops = updates.map((item) => ({
+      updateOne: {
+        filter: { _id: new Types.ObjectId(item.productId) },
+        update: {
+          $inc: {
+            stock: -item.quantity,
+            reservedQuantity: -item.quantity,
+          },
+        },
+      },
+    }));
+
+    return this.productModel.bulkWrite(ops, { session });
   }
 
   // async getBuyerProducts(params: any) {

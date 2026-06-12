@@ -18,8 +18,13 @@ import {
 } from '../../common/utils/helper';
 import { CartRepository } from '../carts/repositories/cart.repository';
 import { InventoryRepository } from '../inventory/repositories/inventory.repository';
+import {
+  InventoryLogDocument,
+  InventoryLogType,
+} from '../inventory/schemas/inventory-log.schema';
 import { OrderRepository } from '../orders/repositories/order.repository';
 import { OrderStatus } from '../orders/schemas/order.schema';
+import { ProductsRepository } from '../products/repositories/product.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { Role } from '../users/schemas/user.schema';
 import { WalletRepository } from '../wallet/repositories/wallet.repository';
@@ -48,6 +53,7 @@ export class PaymentsService {
     private orderRepository: OrderRepository,
     private walletRepository: WalletRepository,
     private inventoryRepository: InventoryRepository,
+    private productsRepository: ProductsRepository,
   ) {
     this.providerMap = {
       [PaymentProvider.PAYSTACK]: this.paystackService,
@@ -158,6 +164,346 @@ export class PaymentsService {
     );
     return providerResponse;
   }
+  // async handleWebhook(provider: PaymentProvider, req: Request) {
+  //   const handler = this.providerMap[provider];
+
+  //   if (!handler) {
+  //     throw new BadRequestException({
+  //       message: 'Unsupported provider.',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   const providerResponse = await handler.handleWebhook(req);
+
+  //   if (providerResponse.event !== 'charge.success') {
+  //     return { message: 'Payment not successful.' };
+  //   }
+
+  //   const {
+  //     reference,
+  //     metadata: { amount, userId, orderId, paymentBreakdown },
+  //   } = providerResponse.data;
+
+  //   const amt = Number(String(amount).replace(/,/g, ''));
+
+  //   if (isNaN(amt)) {
+  //     throw new BadRequestException({
+  //       message: 'Invalid amount provided.',
+  //       status: 400,
+  //       success: false,
+  //     });
+  //   }
+
+  //   const userObjectId = new Types.ObjectId(userId);
+  //   const order = new Types.ObjectId(orderId);
+
+  //   const payment =
+  //     await this.paymentsRepository.getPaymentByRefUserIdAndOrderId(
+  //       userObjectId,
+  //       order,
+  //       reference,
+  //     );
+
+  //   if (!payment) {
+  //     throw new NotFoundException({
+  //       message: 'Payment document not found.',
+  //       status: 404,
+  //       success: false,
+  //     });
+  //   }
+
+  //   if (payment.verified) {
+  //     return { message: 'Payment already processed.' };
+  //   }
+
+  //   const verifyResponse = await handler.verifyPayment(reference);
+
+  //   if (verifyResponse.status !== 'success') {
+  //     return { message: 'Payment verification failed.' };
+  //   }
+
+  //   const session = await this.connection.startSession();
+  //   session.startTransaction();
+
+  //   try {
+  //     // 1. Update payment ONLY ONCE (single source of truth)
+  //     const updatedPayment =
+  //       await this.paymentsRepository.updatePaymentStatusUsingPaymentId(
+  //         payment._id,
+  //         PaymentStatus.successful,
+  //         session,
+  //       );
+
+  //     // 2. Fetch user inside transaction
+  //     const userExist = await this.usersRepository.findById(
+  //       userObjectId,
+  //       session,
+  //     );
+
+  //     if (!userExist) {
+  //       throw new NotFoundException({
+  //         message: 'User not found.',
+  //         success: false,
+  //         status: 404,
+  //       });
+  //     }
+
+  //     /**
+  //      * This is where i will credit wallet of sellers
+  //      */
+
+  //     const orderDoc = await this.orderRepository.findOrderByOrderId(
+  //       order.toString(),
+  //       session,
+  //     );
+
+  //     if (!orderDoc) {
+  //       throw new NotFoundException({
+  //         message: 'Order not found.',
+  //         success: false,
+  //         status: 404,
+  //       });
+  //     }
+
+  //     // ===============================
+  //     // VENDOR WALLET DISTRIBUTION
+  //     // ===============================
+
+  //     const shipment = orderDoc.shipment;
+
+  //     if (!shipment || !shipment.vendors.length) {
+  //       throw new BadRequestException({
+  //         message: 'Invalid shipment data.',
+  //         success: false,
+  //         status: 400,
+  //       });
+  //     }
+
+  //     let platformCharge: number = 0;
+
+  //     for (const vendor of shipment.vendors) {
+  //       let computedSubtotal = 0;
+  //       const breakdown: LedgerBreakdownType[] = [];
+
+  //       // calculate vendor revenue from items
+  //       for (const item of vendor.items) {
+  //         const productInventory =
+  //           await this.inventoryRepository.findInventoryByProductId(
+  //             item.productId.toString(),
+  //             session,
+  //           );
+
+  //         if (!productInventory) {
+  //           throw new NotFoundException({
+  //             message: 'Product inventory document not found.',
+  //             success: false,
+  //             status: 404,
+  //           });
+  //         }
+
+  //         // productInventory.
+
+  //         const itemTotal = item.price * item.quantity;
+
+  //         const commission = platformComm * itemTotal;
+  //         const net = itemTotal - commission;
+
+  //         computedSubtotal += itemTotal;
+
+  //         breakdown.push({
+  //           productId: item.productId,
+  //           name: item.name,
+  //           unitPrice: item.price,
+  //           quantity: item.quantity,
+  //           total: itemTotal + vendor.shippingFee,
+  //           commission,
+  //           shippingFee: vendor.shippingFee,
+  //           netAmount: net,
+  //         });
+  //       }
+
+  //       if (computedSubtotal !== vendor.subtotal) {
+  //         throw new BadRequestException({
+  //           message: 'Vendor subtotal mismatch.',
+  //           success: false,
+  //           status: 400,
+  //         });
+  //       }
+
+  //       const vendorNetTotal = breakdown.reduce(
+  //         (sum, item) => sum + item.netAmount,
+  //         0,
+  //       );
+
+  //       const vendorCommissionTotal = breakdown.reduce(
+  //         (sum, item) => sum + item.commission,
+  //         0,
+  //       );
+
+  //       platformCharge += vendorCommissionTotal;
+
+  //       const referenceId = `order_${orderId}_vendor_${vendor.businessId.toString()}`;
+
+  //       const payload = {
+  //         userId: vendor.businessId.toString(),
+  //         orderId,
+  //       };
+
+  //       await this.walletRepository.creditWalletPendingBalance(
+  //         {
+  //           ownerType: WalletOwnerType.business,
+  //           businessId: vendor.businessId.toString(),
+  //         },
+  //         vendorNetTotal,
+  //         referenceId,
+  //         LedgerCategory.order_payment,
+  //         {
+  //           orderId,
+  //           breakdown,
+  //         },
+  //         session,
+  //       );
+  //     }
+
+  //     const payObj: PaymentBreakdown = paymentBreakdown;
+
+  //     const collectionFee: number = payObj.platformFees.collectionFee;
+
+  //     const deliveryFee: number = payObj.platformFees.deliveryFee;
+
+  //     const platformTotal: number =
+  //       platformCharge + collectionFee + deliveryFee;
+
+  //     await this.walletRepository.creditWalletPendingBalance(
+  //       {
+  //         ownerType: WalletOwnerType.platform,
+  //       },
+  //       platformTotal,
+  //       generatePaymentReference({ userId: 'platform_fee', orderId }),
+  //       LedgerCategory.platform_fee,
+  //       {
+  //         orderId,
+  //         platformCharge,
+  //         deliveryFee,
+  //         collectionFee,
+  //       },
+  //       session,
+  //     );
+
+  //     orderDoc.status = OrderStatus.paid;
+  //     orderDoc.isPaid = true;
+  //     orderDoc.paidAt = new Date();
+  //     await orderDoc.save({ session });
+  //     await userExist.save({ session });
+
+  //     // 4. Commit DB changes FIRST
+  //     await session.commitTransaction();
+
+  //     // 5. Mark payment verified (outside transaction since already committed)
+  //     payment.verified = true;
+  //     await payment.save();
+
+  //     const clearCart = await this.cartRepository.clearCart(
+  //       userExist._id.toString(),
+  //     );
+
+  //     // Create notification here(to notify vendor of the order)
+
+  //     this.eventEmitter.emit(OrderEvents.order_paid, {
+  //       orderId: orderDoc._id.toString(),
+  //       shipment: orderDoc.shipment,
+  //     });
+
+  //     return { message: 'successful' };
+  //   } catch (error) {
+  //     await session.abortTransaction();
+  //     throw error;
+  //   } finally {
+  //     session.endSession();
+  //   }
+  // }
+
+  // async verifyPayment(reference: string, user: JwtUser) {
+  //   // 1 CHECK DB FIRST (faster + avoids unnecessary provider calls)
+  //   const transaction =
+  //     await this.paymentsRepository.findPaymentTransactionByReference(
+  //       reference,
+  //     );
+
+  //   if (!transaction) {
+  //     throw new NotFoundException({
+  //       message: 'Transaction not found.',
+  //       success: false,
+  //       status: 404,
+  //     });
+  //   }
+
+  //   // Ownership check
+  //   if (transaction.userId.toString() !== user.sub.toString()) {
+  //     throw new ForbiddenException({
+  //       message: 'You are not authorized to access this transaction.',
+  //       success: false,
+  //       status: 403,
+  //     });
+  //   }
+
+  //   // 2️⃣ IDEMPOTENCY CHECK (webhook might have already processed it)
+  //   if (transaction.status === 'successful') {
+  //     return {
+  //       message: 'Payment already verified.',
+  //       success: true,
+  //       status: 200,
+  //       data: transaction,
+  //     };
+  //   }
+
+  //   const provider = transaction.provider;
+  //   const handler = this.providerMap[provider];
+
+  //   if (!handler) {
+  //     throw new BadRequestException({
+  //       message: 'Unsupported provider.',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   // 3️⃣ VERIFY WITH PROVIDER (fallback if webhook hasn't hit yet)
+  //   const providerRes = await handler.verifyPayment(reference);
+
+  //   if (!providerRes || providerRes.status !== 'success') {
+  //     throw new BadRequestException({
+  //       message: 'Payment not successful yet.',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   // 4️⃣ VALIDATE DATA INTEGRITY
+  //   if (transaction.amount !== providerRes.amount) {
+  //     throw new BadRequestException({
+  //       message: 'Payment details mismatch.',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   // 5️⃣ ONLY UPDATE STATUS (DO NOT CALL BUSINESS LOGIC)
+  //   transaction.status = PaymentStatus.successful;
+  //   // transaction.providerResponse = providerRes;
+
+  //   await transaction.save();
+
+  //   return {
+  //     message: 'Payment verified successfully.',
+  //     success: true,
+  //     status: 200,
+  //     provider: transaction?.provider,
+  //   };
+  // }
+
   async handleWebhook(provider: PaymentProvider, req: Request) {
     const handler = this.providerMap[provider];
 
@@ -177,250 +523,34 @@ export class PaymentsService {
 
     const {
       reference,
-      metadata: { amount, userId, orderId, paymentBreakdown },
+      metadata: { userId, orderId },
     } = providerResponse.data;
-
-    const amt = Number(String(amount).replace(/,/g, ''));
-
-    if (isNaN(amt)) {
-      throw new BadRequestException({
-        message: 'Invalid amount provided.',
-        status: 400,
-        success: false,
-      });
-    }
-
-    const userObjectId = new Types.ObjectId(userId);
-    const order = new Types.ObjectId(orderId);
 
     const payment =
       await this.paymentsRepository.getPaymentByRefUserIdAndOrderId(
-        userObjectId,
-        order,
+        new Types.ObjectId(userId),
+        new Types.ObjectId(orderId),
         reference,
       );
 
     if (!payment) {
       throw new NotFoundException({
-        message: 'Payment document not found.',
+        message: 'Payment not found.',
         status: 404,
         success: false,
       });
     }
 
-    if (payment.verified) {
-      return { message: 'Payment already processed.' };
-    }
-
     const verifyResponse = await handler.verifyPayment(reference);
 
     if (verifyResponse.status !== 'success') {
-      return { message: 'Payment verification failed.' };
+      return { message: 'Verification failed.' };
     }
 
-    const session = await this.connection.startSession();
-    session.startTransaction();
-
-    try {
-      // 1. Update payment ONLY ONCE (single source of truth)
-      const updatedPayment =
-        await this.paymentsRepository.updatePaymentStatusUsingPaymentId(
-          payment._id,
-          PaymentStatus.successful,
-          session,
-        );
-
-      // 2. Fetch user inside transaction
-      const userExist = await this.usersRepository.findById(
-        userObjectId,
-        session,
-      );
-
-      if (!userExist) {
-        throw new NotFoundException({
-          message: 'User not found.',
-          success: false,
-          status: 404,
-        });
-      }
-
-      /**
-       * This is where i will credit wallet of sellers
-       */
-
-      const orderDoc = await this.orderRepository.findOrderByOrderId(
-        order.toString(),
-        session,
-      );
-
-      if (!orderDoc) {
-        throw new NotFoundException({
-          message: 'Order not found.',
-          success: false,
-          status: 404,
-        });
-      }
-
-      // ===============================
-      // VENDOR WALLET DISTRIBUTION
-      // ===============================
-
-      const shipment = orderDoc.shipment;
-
-      if (!shipment || !shipment.vendors.length) {
-        throw new BadRequestException({
-          message: 'Invalid shipment data.',
-          success: false,
-          status: 400,
-        });
-      }
-
-      let platformCharge: number = 0;
-
-      for (const vendor of shipment.vendors) {
-        let computedSubtotal = 0;
-        const breakdown: LedgerBreakdownType[] = [];
-
-        // calculate vendor revenue from items
-        for (const item of vendor.items) {
-          const productInventory =
-            await this.inventoryRepository.findInventoryByProductId(
-              item.productId.toString(),
-              session,
-            );
-
-          if (!productInventory) {
-            throw new NotFoundException({
-              message: 'Product inventory document not found.',
-              success: false,
-              status: 404,
-            });
-          }
-
-          // productInventory.
-
-          const itemTotal = item.price * item.quantity;
-
-          const commission = platformComm * itemTotal;
-          const net = itemTotal - commission;
-
-          computedSubtotal += itemTotal;
-
-          breakdown.push({
-            productId: item.productId,
-            name: item.name,
-            unitPrice: item.price,
-            quantity: item.quantity,
-            total: itemTotal + vendor.shippingFee,
-            commission,
-            shippingFee: vendor.shippingFee,
-            netAmount: net,
-          });
-        }
-
-        if (computedSubtotal !== vendor.subtotal) {
-          throw new BadRequestException({
-            message: 'Vendor subtotal mismatch.',
-            success: false,
-            status: 400,
-          });
-        }
-
-        const vendorNetTotal = breakdown.reduce(
-          (sum, item) => sum + item.netAmount,
-          0,
-        );
-
-        const vendorCommissionTotal = breakdown.reduce(
-          (sum, item) => sum + item.commission,
-          0,
-        );
-
-        platformCharge += vendorCommissionTotal;
-
-        const referenceId = `order_${orderId}_vendor_${vendor.businessId.toString()}`;
-
-        const payload = {
-          userId: vendor.businessId.toString(),
-          orderId,
-        };
-
-        await this.walletRepository.creditWalletPendingBalance(
-          {
-            ownerType: WalletOwnerType.business,
-            businessId: vendor.businessId.toString(),
-          },
-          vendorNetTotal,
-          referenceId,
-          LedgerCategory.order_payment,
-          {
-            orderId,
-            breakdown,
-          },
-          session,
-        );
-      }
-
-      const payObj: PaymentBreakdown = paymentBreakdown;
-
-      const collectionFee: number = payObj.platformFees.collectionFee;
-
-      const deliveryFee: number = payObj.platformFees.deliveryFee;
-
-      const platformTotal: number =
-        platformCharge + collectionFee + deliveryFee;
-
-      await this.walletRepository.creditWalletPendingBalance(
-        {
-          ownerType: WalletOwnerType.platform,
-        },
-        platformTotal,
-        generatePaymentReference({ userId: 'platform_fee', orderId }),
-        LedgerCategory.platform_fee,
-        {
-          orderId,
-          platformCharge,
-          deliveryFee,
-          collectionFee,
-        },
-        session,
-      );
-
-      orderDoc.status = OrderStatus.paid;
-      orderDoc.isPaid = true;
-      orderDoc.paidAt = new Date();
-      await orderDoc.save({ session });
-      await userExist.save({ session });
-
-      // 4. Commit DB changes FIRST
-      await session.commitTransaction();
-
-      // 5. Mark payment verified (outside transaction since already committed)
-      payment.verified = true;
-      await payment.save();
-
-      const clearCart = await this.cartRepository.clearCart(
-        userExist._id.toString(),
-      );
-
-      // Create notification here(to notify vendor of the order)
-
-      this.eventEmitter.emit(OrderEvents.order_paid, {
-        orderId: orderDoc._id.toString(),
-        shipment: orderDoc.shipment,
-      });
-
-      return { message: 'successful' };
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
+    return await this.processSuccessfulPayment(payment);
   }
 
   async verifyPayment(reference: string, user: JwtUser) {
-    // 1 CHECK DB FIRST (faster + avoids unnecessary provider calls)
     const transaction =
       await this.paymentsRepository.findPaymentTransactionByReference(
         reference,
@@ -434,37 +564,25 @@ export class PaymentsService {
       });
     }
 
-    // Ownership check
     if (transaction.userId.toString() !== user.sub.toString()) {
       throw new ForbiddenException({
-        message: 'You are not authorized to access this transaction.',
+        message: 'Unauthorized.',
         success: false,
         status: 403,
       });
     }
 
-    // 2️⃣ IDEMPOTENCY CHECK (webhook might have already processed it)
-    if (transaction.status === 'successful') {
+    // Already fully processed
+    if (transaction.processed) {
       return {
-        message: 'Payment already verified.',
+        message: 'Payment already processed.',
         success: true,
         status: 200,
-        data: transaction,
       };
     }
 
-    const provider = transaction.provider;
-    const handler = this.providerMap[provider];
+    const handler = this.providerMap[transaction.provider];
 
-    if (!handler) {
-      throw new BadRequestException({
-        message: 'Unsupported provider.',
-        success: false,
-        status: 400,
-      });
-    }
-
-    // 3️⃣ VERIFY WITH PROVIDER (fallback if webhook hasn't hit yet)
     const providerRes = await handler.verifyPayment(reference);
 
     if (!providerRes || providerRes.status !== 'success') {
@@ -475,27 +593,16 @@ export class PaymentsService {
       });
     }
 
-    // 4️⃣ VALIDATE DATA INTEGRITY
     if (transaction.amount !== providerRes.amount) {
       throw new BadRequestException({
-        message: 'Payment details mismatch.',
+        message: 'Payment mismatch.',
         success: false,
         status: 400,
       });
     }
 
-    // 5️⃣ ONLY UPDATE STATUS (DO NOT CALL BUSINESS LOGIC)
-    transaction.status = PaymentStatus.successful;
-    // transaction.providerResponse = providerRes;
-
-    await transaction.save();
-
-    return {
-      message: 'Payment verified successfully.',
-      success: true,
-      status: 200,
-      provider: transaction?.provider,
-    };
+    // CRITICAL: now process fully
+    return await this.processSuccessfulPayment(transaction);
   }
 
   async getAllPaymentsOfAUserByUserId(
@@ -542,5 +649,263 @@ export class PaymentsService {
     }
 
     return payments;
+  }
+
+  private async processSuccessfulPayment(payment: any) {
+    if (payment.processed) {
+      return { message: 'Payment already processed.' };
+    }
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      const userObjectId = new Types.ObjectId(payment.userId);
+      const orderId = new Types.ObjectId(payment.orderId);
+
+      // ===============================
+      // FETCH USER + ORDER
+      // ===============================
+      const [userExist, orderDoc] = await Promise.all([
+        this.usersRepository.findById(userObjectId, session),
+        this.orderRepository.findOrderByOrderId(orderId.toString(), session),
+      ]);
+
+      if (!userExist) {
+        throw new NotFoundException({
+          message: 'User not found.',
+          success: false,
+          status: 404,
+        });
+      }
+
+      if (!orderDoc) {
+        throw new NotFoundException({
+          message: 'Order not found.',
+          success: false,
+          status: 404,
+        });
+      }
+
+      if (orderDoc.isPaid) {
+        return { message: 'Order already processed.' };
+      }
+
+      const shipment = orderDoc.shipment;
+
+      if (!shipment || !shipment.vendors.length) {
+        throw new BadRequestException({
+          message: 'Invalid shipment data.',
+          success: false,
+          status: 400,
+        });
+      }
+
+      // ===============================
+      // COLLECT ALL PRODUCT IDS
+      // ===============================
+      const allProductIds: string[] = [];
+
+      for (const vendor of shipment.vendors) {
+        for (const item of vendor.items) {
+          allProductIds.push(item.productId.toString());
+        }
+      }
+
+      // ===============================
+      // FETCH INVENTORIES + PRODUCTS (BULK)
+      // ===============================
+      const [inventories, products] = await Promise.all([
+        this.inventoryRepository.findManyByProductIds(allProductIds, session),
+        this.productsRepository.findManyByIds(allProductIds, session),
+      ]);
+
+      const inventoryMap = new Map(
+        inventories.map((inv) => [inv.productId.toString(), inv]),
+      );
+
+      const productMap = new Map(
+        products.map((prod) => [prod._id.toString(), prod]),
+      );
+
+      // ===============================
+      // PREPARE BULK OPS
+      // ===============================
+      const stockUpdates: { productId: string; quantity: number }[] = [];
+      const inventoryLogs: Partial<InventoryLogDocument>[] = [];
+
+      let platformCharge = 0;
+
+      // ===============================
+      // VENDOR DISTRIBUTION
+      // ===============================
+      for (const vendor of shipment.vendors) {
+        let computedSubtotal = 0;
+        const breakdown: LedgerBreakdownType[] = [];
+
+        for (const item of vendor.items) {
+          const productInventory = inventoryMap.get(item.productId.toString());
+          const productExist = productMap.get(item.productId.toString());
+
+          if (!productInventory) {
+            throw new NotFoundException({
+              message: 'Product inventory not found.',
+              success: false,
+              status: 404,
+            });
+          }
+
+          if (!productExist) {
+            throw new NotFoundException({
+              message: 'Product not found.',
+              success: false,
+              status: 404,
+            });
+          }
+
+          const itemTotal = item.price * item.quantity;
+          const commission = platformComm * itemTotal;
+          const net = itemTotal - commission;
+
+          computedSubtotal += itemTotal;
+
+          breakdown.push({
+            productId: item.productId,
+            name: item.name,
+            unitPrice: item.price,
+            quantity: item.quantity,
+            total: itemTotal + vendor.shippingFee,
+            commission,
+            shippingFee: vendor.shippingFee,
+            netAmount: net,
+          });
+
+          // 🔥 ATOMIC BULK UPDATE (NO .save())
+          stockUpdates.push({
+            productId: item.productId.toString(),
+            quantity: item.quantity,
+          });
+
+          inventoryLogs.push({
+            productId: new Types.ObjectId(item.productId),
+            businessId: new Types.ObjectId(vendor.businessId),
+            type: InventoryLogType.sale,
+            quantity: item.quantity,
+            reference: orderId.toString(),
+          });
+        }
+
+        if (computedSubtotal !== vendor.subtotal) {
+          throw new BadRequestException({
+            message: 'Vendor subtotal mismatch.',
+            success: false,
+            status: 400,
+          });
+        }
+
+        const vendorNetTotal = breakdown.reduce(
+          (sum, item) => sum + item.netAmount,
+          0,
+        );
+
+        const vendorCommissionTotal = breakdown.reduce(
+          (sum, item) => sum + item.commission,
+          0,
+        );
+
+        platformCharge += vendorCommissionTotal;
+
+        const referenceId = `order_${orderId.toString()}_vendor_${vendor.businessId.toString()}`;
+
+        await this.walletRepository.creditWalletPendingBalance(
+          {
+            ownerType: WalletOwnerType.business,
+            businessId: vendor.businessId.toString(),
+          },
+          vendorNetTotal,
+          referenceId,
+          LedgerCategory.order_payment,
+          {
+            orderId,
+            breakdown,
+          },
+          session,
+        );
+      }
+
+      // ===============================
+      // EXECUTE BULK WRITES
+      // ===============================
+      await Promise.all([
+        this.productsRepository.decrementStockBulk(stockUpdates, session),
+        this.inventoryRepository.decrementInventoryBulk(stockUpdates, session),
+        this.inventoryRepository.createLogsBulk(inventoryLogs, session),
+      ]);
+
+      // ===============================
+      // PLATFORM CREDIT
+      // ===============================
+      const payObj: PaymentBreakdown = payment.paymentBreakdown;
+
+      const collectionFee = payObj.platformFees.collectionFee;
+      const deliveryFee = payObj.platformFees.deliveryFee;
+
+      const platformTotal = platformCharge + collectionFee + deliveryFee;
+
+      await this.walletRepository.creditWalletPendingBalance(
+        {
+          ownerType: WalletOwnerType.platform,
+        },
+        platformTotal,
+        generatePaymentReference({ userId: 'platform_fee', orderId }),
+        LedgerCategory.platform_fee,
+        {
+          orderId,
+          platformCharge,
+          deliveryFee,
+          collectionFee,
+        },
+        session,
+      );
+
+      // ===============================
+      // FINALIZE ORDER
+      // ===============================
+      orderDoc.status = OrderStatus.paid;
+      orderDoc.isPaid = true;
+      orderDoc.paidAt = new Date();
+
+      await orderDoc.save({ session });
+
+      // ===============================
+      // MARK PAYMENT
+      // ===============================
+      payment.status = PaymentStatus.successful;
+      payment.processed = true;
+
+      await payment.save({ session });
+
+      // ===============================
+      // COMMIT
+      // ===============================
+      await session.commitTransaction();
+
+      // ===============================
+      // POST-COMMIT SIDE EFFECTS
+      // ===============================
+      await this.cartRepository.clearCart(userObjectId.toString());
+
+      this.eventEmitter.emit(OrderEvents.order_paid, {
+        orderId: orderDoc._id.toString(),
+        shipment: orderDoc.shipment,
+      });
+
+      return { message: 'Payment processed successfully.' };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 }

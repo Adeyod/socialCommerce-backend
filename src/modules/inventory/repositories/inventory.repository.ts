@@ -17,6 +17,18 @@ export class InventoryRepository {
     private readonly inventoryLogModel: Model<InventoryLogDocument>,
   ) {}
 
+  async findManyByProductIds(productIds: string[], session?: ClientSession) {
+    const objectIds = productIds.map((id) => new Types.ObjectId(id));
+
+    const response = await this.inventoryModel.find(
+      {
+        productId: { $in: objectIds },
+      },
+      { session },
+    );
+
+    return response;
+  }
   async findInventoryByProductId(productId: string, session?: ClientSession) {
     const response = await this.inventoryModel.findOne(
       {
@@ -94,6 +106,13 @@ export class InventoryRepository {
     return result;
   }
 
+  async createLogsBulk(
+    logs: Partial<InventoryLogDocument>[],
+    session: ClientSession,
+  ) {
+    return this.inventoryLogModel.insertMany(logs, { session });
+  }
+
   async createInventory(
     businessId: string,
     productId: string,
@@ -108,43 +127,6 @@ export class InventoryRepository {
 
     return response;
   }
-
-  // async reserveStock(
-  //   productId: string,
-  //   quantity: number,
-  //   session?: ClientSession,
-  // ) {
-  //   const result = await this.inventoryModel.updateOne(
-  //     {
-  //       productId: new Types.ObjectId(productId),
-
-  //       $expr: {
-  //         $gte: [
-  //           {
-  //             $subtract: ['$stock', { $ifNull: ['$reservedQuantity', 0] }],
-  //           },
-  //           quantity,
-  //         ],
-  //       },
-  //     },
-  //     {
-  //       $inc: {
-  //         reservedQuantity: quantity,
-  //       },
-  //     },
-  //     { session },
-  //   );
-
-  //   if (result.modifiedCount === 0) {
-  //     throw new BadRequestException({
-  //       message: `Insufficient stock for product ${productId}`,
-  //       success: false,
-  //       status: 400,
-  //     });
-  //   }
-
-  //   return result;
-  // }
 
   async reserveStock(
     productId: string,
@@ -179,5 +161,24 @@ export class InventoryRepository {
     }
 
     return result;
+  }
+
+  async decrementInventoryBulk(
+    updates: { productId: string; quantity: number }[],
+    session: ClientSession,
+  ) {
+    const ops = updates.map((item) => ({
+      updateOne: {
+        filter: { productId: new Types.ObjectId(item.productId) },
+        update: {
+          $inc: {
+            quantity: -item.quantity,
+            reservedQuantity: -item.quantity,
+          },
+        },
+      },
+    }));
+
+    return this.inventoryModel.bulkWrite(ops, { session });
   }
 }

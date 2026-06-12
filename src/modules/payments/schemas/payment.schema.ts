@@ -84,6 +84,9 @@ export class Payment {
 
   @Prop({ default: 0 })
   deliveryFee!: number;
+
+  @Prop({ default: false })
+  processed!: boolean;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

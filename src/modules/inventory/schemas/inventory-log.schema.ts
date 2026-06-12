@@ -35,3 +35,6 @@ export class InventoryLog {
 }
 
 export const InventoryLogSchema = SchemaFactory.createForClass(InventoryLog);
+
+InventoryLogSchema.index({ productId: 1, createdAt: -1 });
+InventoryLogSchema.index({ reference: 1 });
