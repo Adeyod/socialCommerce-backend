@@ -15,12 +15,14 @@ import {
   InvitationSchema,
 } from './invitation/schemas/invitation.schema';
 import { RoleRepository } from './role/repositories/role.repository';
+import { StaffPermissionRepository } from './staff-permission/repositories/staff-permission.repository';
 import {
   StaffPermission,
   StaffPermissionSchema,
 } from './staff-permission/schemas/staff-permission.schema';
 import { StaffPermissionController } from './staff-permission/staff-permission.controller';
 import { StaffPermissionService } from './staff-permission/staff-permission.service';
+import { StaffRepository } from './staff/repositories/staff.repository';
 import { Staff, StaffSchema } from './staff/schemas/staff.schema';
 import { StaffController } from './staff/staff.controller';
 import { StaffService } from './staff/staff.service';
@@ -44,6 +46,8 @@ import { StaffService } from './staff/staff.service';
     RoleRepository,
     InvitationRepository,
     InvitationService,
+    StaffRepository,
+    StaffPermissionRepository,
   ],
   controllers: [
     StaffPermissionController,
@@ -51,6 +55,6 @@ import { StaffService } from './staff/staff.service';
     StaffController,
     RoleController,
   ],
-  exports: [StaffPermissionService],
+  exports: [StaffPermissionService, StaffRepository],
 })
 export class StaffAccessControlModule {}

@@ -12,6 +12,10 @@ export enum Permission {
   view_campaign = 'view_campaign',
   update_campaign = 'update_campaign',
 
+  get_business_notifications = 'get_business_notifications',
+  get_business_notification_details = 'get_business_notification_details',
+  read_business_notifications = 'read_business_notifications',
+
   create_business_shipping_rate = 'create_business_shipping_rate',
   view_business_shipping_rate = 'view_business_shipping_rate',
   update_business_shipping_rate = 'update_business_shipping_rate',

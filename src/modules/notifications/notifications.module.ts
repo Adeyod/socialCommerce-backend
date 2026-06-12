@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RiderModule } from '../rider/rider.module';
+import { StaffAccessControlModule } from '../staff-access-control/staff-access-control.module';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
 import { NotificationRepository } from './repositories/notification.repository';
@@ -15,6 +16,7 @@ import {
       { name: Notification.name, schema: NotificationSchema },
     ]),
     RiderModule,
+    StaffAccessControlModule,
   ],
   controllers: [NotificationsController],
   providers: [NotificationsService, NotificationRepository],

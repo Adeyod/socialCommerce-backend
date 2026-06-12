@@ -1,49 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { Permission } from '../../../common/enums/permissions.enum';
 import { BusinessesRepository } from '../../businesses/repositories/businesses.repository';
-import { Role, RoleDocument } from '../role/schemas/role.schema';
-import { Staff, StaffDocument } from '../staff/schemas/staff.schema';
-import {
-  StaffPermission,
-  StaffPermissionDocument,
-} from './schemas/staff-permission.schema';
+import { RoleRepository } from '../role/repositories/role.repository';
+import { StaffRepository } from '../staff/repositories/staff.repository';
+import { StaffPermissionRepository } from './repositories/staff-permission.repository';
 
 @Injectable()
 export class StaffPermissionService {
   constructor(
     private businessesRepository: BusinessesRepository,
-    @InjectModel(Staff.name) private staffModel: Model<StaffDocument>,
-    @InjectModel(Role.name) private roleModel: Model<RoleDocument>,
-    @InjectModel(StaffPermission.name)
-    private staffPermissionModel: Model<StaffPermissionDocument>,
+    private staffRepository: StaffRepository,
+    private roleRepository: RoleRepository,
+    private staffPermissionRepository: StaffPermissionRepository,
   ) {}
 
   async getStaffPermissions(userId: string, businessId: string) {
-    const userObj = new Types.ObjectId(userId);
-    const businessObj = new Types.ObjectId(businessId);
-
-    const staff = await this.staffModel.findOne({
-      userId: userObj,
-      businessId: businessObj,
-      isActive: true,
-    });
+    const staff = await this.staffRepository.findStaff(userId, businessId);
 
     if (!staff) return null;
 
-    const role = await this.roleModel.findById(staff.roleId);
+    const role = await this.roleRepository.findRoleById(
+      staff.roleId.toString(),
+    );
 
     if (!role) return null;
 
     const rolePermissions = role.permissions || [];
 
-    const staffPermissions = await this.staffPermissionModel.find({
-      staffId: staff._id,
-      businessId: businessObj,
-      isActive: true,
-      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
-    });
+    const staffPermissions =
+      await this.staffPermissionRepository.findPermissions(
+        staff._id.toString(),
+        businessId,
+      );
 
     const overridePermissions = staffPermissions.flatMap(
       (p) => p.permissions || [],
@@ -104,11 +93,7 @@ export class StaffPermissionService {
       };
     }
 
-    const staff = await this.staffModel.findOne({
-      userId: userObj,
-      businessId: businessObj,
-      isActive: true,
-    });
+    const staff = await this.staffRepository.findStaff(userId, businessId);
 
     if (!staff) {
       return {
@@ -118,13 +103,12 @@ export class StaffPermissionService {
     }
 
     const [role, staffPermissions] = await Promise.all([
-      this.roleModel.findById(staff.roleId),
-      this.staffPermissionModel.find({
-        staffId: staff._id,
-        businessId: businessObj,
-        isActive: true,
-        $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
-      }),
+      this.roleRepository.findRoleById(staff.roleId.toString()),
+
+      this.staffPermissionRepository.findPermissions(
+        staff._id.toString(),
+        businessId,
+      ),
     ]);
 
     if (!role) {

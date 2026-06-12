@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Verification</title>
+  </head>
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    "
+  >
+    <div
+      style="
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #fff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      "
+    >
+      <h1 style="color: #333"><%=app_name %>Paid Order</h1>
+      <p style="color: #666">
+        <%=businessName %>, You have received a new paid order <%=orderId %>.
+        Please prepare items for pickup.
+      </p>
+
+      <p style="color: #666">
+  These are the items paid for:
+</p>
+
+<table style="width: 100%; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th align="left">Item</th>
+      <th align="left">Qty</th>
+      <th align="left">Price</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% items.forEach(function(item) { %>
+      <tr>
+        <td><%= item.name %></td>
+        <td><%= item.quantity %></td>
+        <td>₦<%= item.price %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+    </div>
+  </body>
+</html>
