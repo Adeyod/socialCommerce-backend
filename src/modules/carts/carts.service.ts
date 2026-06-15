@@ -102,6 +102,7 @@ export class CartsService {
       productExist.price,
       businessExist.businessAddress.state,
       businessExist.businessAddress?.town,
+      productExist.media,
       weight,
       businessId,
       quantity,

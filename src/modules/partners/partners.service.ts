@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,7 +15,7 @@ import { RiderDataDto } from '../rider/dtos/rider-data.dto';
 import { RiderProfileRepository } from '../rider/repositories/rider.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { VendorDataDto } from '../vendor/dtos/vendor-data.dto';
-import { VendorProfileRepository } from '../vendor/repositories/vendor.repository';
+import { VendorService } from '../vendor/vendor.service';
 import { PartnerRole } from './enums/partner-role.enum';
 import { PartnersRepository } from './repositories/partners.repository';
 
@@ -22,10 +24,12 @@ export class PartnersService {
   constructor(
     private readonly partnersRepository: PartnersRepository,
     private readonly businessesRepository: BusinessesRepository,
-    private readonly usersRepository: UsersRepository,
-    private readonly vendorProfileRepository: VendorProfileRepository,
+    private readonly vendorService: VendorService,
     private readonly riderProfileRepository: RiderProfileRepository,
     private readonly promoterProfileRepository: PromoterProfileRepository,
+
+    @Inject(forwardRef(() => UsersRepository))
+    private readonly usersRepository: UsersRepository,
   ) {}
 
   async checkIfPartnerHasBusiness(user: JwtUser) {
@@ -175,10 +179,9 @@ export class PartnersService {
       user.sub.toString(),
     );
 
-    const userPartnerRole =
-      await this.vendorProfileRepository.getVendorProfileByUserId(
-        user.sub.toString(),
-      );
+    const userPartnerRole = await this.vendorService.getVendorProfileByUserId(
+      user.sub.toString(),
+    );
 
     if (userPartnerRole) {
       throw new BadRequestException({
@@ -250,7 +253,7 @@ export class PartnersService {
     }
     const userId = user.sub.toString();
 
-    const vendorAcc = await this.vendorProfileRepository.createVendorProfile(
+    const vendorAcc = await this.vendorService.createVendorProfile(
       userId,
       vendorDataDto,
       businessId,
@@ -395,7 +398,7 @@ export class PartnersService {
 
   async getAllProfilesByUserId(userId: string) {
     const [vendor, rider, promoter] = await Promise.all([
-      this.vendorProfileRepository.getVendorProfileByUserId(userId),
+      this.vendorService.findVendorProfileByUserId(userId),
       this.promoterProfileRepository.getPromoterProfileByUserId(userId),
       this.riderProfileRepository.getRiderProfileByUserId(userId),
     ]);

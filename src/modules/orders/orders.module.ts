@@ -30,9 +30,10 @@ import { Order, OrderSchema } from './schemas/order.schema';
     CartsModule,
     CollectionModule,
     BusinessShippingRateModule,
-    HomeDeliveryModule,
     InventoryModule,
-    PickupCenterModule,
+
+    forwardRef(() => PickupCenterModule),
+    forwardRef(() => HomeDeliveryModule),
     forwardRef(() => PaymentsModule),
   ],
   controllers: [OrdersController],

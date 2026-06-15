@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -14,7 +16,11 @@ import { UsersRepository } from './repositories/users.repository';
 export class UsersService {
   constructor(
     private usersRepository: UsersRepository,
+
+    @Inject(forwardRef(() => PartnersService))
     private partnersService: PartnersService,
+
+    @Inject(forwardRef(() => BusinessesRepository))
     private businessesRepository: BusinessesRepository,
   ) {}
   async findUserById(id: Types.ObjectId): Promise<UserResponseDto> {

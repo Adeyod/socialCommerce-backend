@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { MediaType } from '../../products/enums/product.enum';
 import { Cart, CartDocument } from '../schemas/cart.schema';
 
 @Injectable()
@@ -51,6 +52,11 @@ export class CartRepository {
     productPrice: number,
     productState: string,
     productTown: string,
+    productMedia: {
+      type: MediaType;
+      url: string;
+      publicUrl: string;
+    }[],
     productweight: number,
     businessId: string,
     quantity: number,
@@ -70,7 +76,7 @@ export class CartRepository {
         productId: productObjectId,
         businessId: new Types.ObjectId(businessId),
         quantity,
-
+        media: productMedia,
         name: productName,
         price: productPrice,
         vendorState: productState,

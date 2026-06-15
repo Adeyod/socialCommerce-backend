@@ -1,11 +1,13 @@
 import {
   BadRequestException,
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
-import { Connection, Types } from 'mongoose';
+import { ClientSession, Connection, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { BusinessShippingRateService } from '../business-shipping-rate/business-shipping-rate.service';
@@ -13,16 +15,12 @@ import { BusinessesRepository } from '../businesses/repositories/businesses.repo
 import { CartRepository } from '../carts/repositories/cart.repository';
 import { CollectionFeeRepository } from '../collection/repositories/collection-fee.repository';
 import { NigeriaState } from '../collection/schemas/collection-fee.schema';
-import { DeliveryMarketplaceRepository } from '../delivery-marketplace/repositories/delivery-marketplace.repository';
-import { DeliveryRepository } from '../delivery/repositories/delivery.repository';
 import { HomeDeliveryService } from '../home-delivery/home-delivery.service';
 import { InventoryRepository } from '../inventory/repositories/inventory.repository';
-import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
-import { PaymentsRepository } from '../payments/repositories/payment.repository';
 import { PaymentProvider } from '../payments/schemas/payment.schema';
 import { PaymentBreakdown } from '../payments/types/payment-breakdown.type';
-import { PickupCenterRepository } from '../pickup-center/repositories/pickup-center.repository';
+import { PickupCenterService } from '../pickup-center/pickup-center.service';
 import { ProductsRepository } from '../products/repositories/product.repository';
 import { Role } from '../users/schemas/user.schema';
 import { CreateOrderDto } from './dtos/create-order.dto';
@@ -42,773 +40,19 @@ export class OrdersService {
   constructor(
     private readonly orderRepository: OrderRepository,
     private readonly cartRepository: CartRepository,
-    private readonly deliveryRepository: DeliveryRepository,
-    private readonly deliveryMarketplaceRepository: DeliveryMarketplaceRepository,
     private readonly productsRepository: ProductsRepository,
-    private readonly paymentsService: PaymentsService,
     private readonly businessShippingRateService: BusinessShippingRateService,
-    private readonly notificationsService: NotificationsService,
-    private readonly paymentsRepository: PaymentsRepository,
     private readonly businessesRepository: BusinessesRepository,
-    private readonly pickupCenterRepository: PickupCenterRepository,
-    private readonly homeDeliveryService: HomeDeliveryService,
     private readonly inventoryRepository: InventoryRepository,
     private readonly collectionFeeRepository: CollectionFeeRepository,
     @InjectConnection() private readonly connection: Connection,
+    @Inject(forwardRef(() => HomeDeliveryService))
+    private readonly homeDeliveryService: HomeDeliveryService,
+    @Inject(forwardRef(() => PaymentsService))
+    private readonly paymentsService: PaymentsService,
+    @Inject(forwardRef(() => PickupCenterService))
+    private readonly pickupCenterService: PickupCenterService,
   ) {}
-
-  //   async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
-  //   const {
-  //     customerId,
-  //     vendorOrders,
-  //     deliveryFee,
-  //     subTotalSummation,
-  //     shippingFeeSummation,
-  //     deliveryAddress,
-  //     contactPhone,
-  //     idempotencyKey,
-  //     cartId,
-  //     deliveryMode,
-  //     pickupCenter,
-  //     nearestBusStop,
-  //   } = createOrderDto;
-
-  //   // AUTH CHECK
-  //   if (user.sub.toString() !== customerId) {
-  //     throw new BadRequestException({
-  //       message: 'Invalid user mismatch',
-  //       success: false,
-  //       status: 400,
-  //     });
-  //   }
-
-  //   if (
-  //     deliveryMode === DeliveryMode.pickUpFromOurNearestOffice &&
-  //     !pickupCenter
-  //   ) {
-  //     throw new BadRequestException({
-  //       message: 'Pickup center is required.',
-  //       success: false,
-  //       status: 400,
-  //     });
-  //   }
-
-  //   const buyerState = deliveryAddress.state;
-
-  //   if (!buyerState) {
-  //     throw new BadRequestException({
-  //       message: 'Buyer state is required',
-  //     });
-  //   }
-
-  //   // IDEMPOTENCY CHECK
-  //   const existingOrder = await this.orderRepository.findOrderByIdempotencyKey(
-  //     idempotencyKey,
-  //     user.sub.toString(),
-  //   );
-
-  //   if (existingOrder) {
-  //     const paymentMade = await this.paymentsRepository.findPaymentByOrderId(
-  //       existingOrder._id.toString(),
-  //     );
-
-  //     if (!paymentMade) {
-  //       const newPayment = await this.paymentsService.createPaymentIntent(
-  //         PaymentProvider.PAYSTACK,
-  //         user,
-  //         existingOrder._id.toString(),
-  //         existingOrder.total,
-  //       );
-
-  //       return { order: existingOrder, payment: newPayment };
-  //     }
-
-  //     if (
-  //       existingOrder.isPaid &&
-  //       paymentMade.verified &&
-  //       paymentMade.status === PaymentStatus.successful
-  //     ) {
-  //       return {
-  //         order: existingOrder,
-  //         payment: null,
-  //         message: 'Order already paid',
-  //       };
-  //     } else {
-  //       const now = new Date();
-  //       if (paymentMade?.expiresAt && paymentMade.expiresAt < now) {
-  //         await this.paymentsRepository.updatePaymentExpirationUsingPaymentId(
-  //           paymentMade._id,
-  //         );
-
-  //         const newPayment = await this.paymentsService.createPaymentIntent(
-  //           PaymentProvider.PAYSTACK,
-  //           user,
-  //           existingOrder._id.toString(),
-  //           existingOrder.total,
-  //         );
-
-  //         return { order: existingOrder, payment: newPayment };
-  //       }
-  //     }
-  //   }
-
-  //   // VALIDATE CART
-  //   const cartExist = await this.cartRepository.getCartByCartIdAndUserId(
-  //     cartId,
-  //     user.sub.toString(),
-  //   );
-
-  //   if (!cartExist) {
-  //     throw new NotFoundException({
-  //       message: 'Cart not found.',
-  //       success: false,
-  //       status: 404,
-  //     });
-  //   }
-
-  //   if (!items?.length) {
-  //     throw new BadRequestException({
-  //       message: 'Cart is empty',
-  //       success: false,
-  //       status: 400,
-  //     });
-  //   }
-
-  //   const cartItemsMap = new Map(
-  //     cartExist.items.map((item) => [
-  //       item.productId.toString(),
-  //       {
-  //         quantity: item.quantity,
-  //         businessId: item.businessId.toString(),
-  //       },
-  //     ]),
-  //   );
-
-  //   for (const item of items) {
-  //     const cartItem = cartItemsMap.get(item.productId.toString());
-
-  //     if (!cartItem) {
-  //       throw new BadRequestException({
-  //         message: `Product ${item.productId} not found in cart`,
-  //         success: false,
-  //         status: 400,
-  //       });
-  //     }
-
-  //     if (cartItem.quantity !== item.quantity) {
-  //       throw new BadRequestException({
-  //         message: `Quantity mismatch for product ${item.productId}`,
-  //         success: false,
-  //         status: 400,
-  //       });
-  //     }
-
-  //     if (cartItem.businessId !== item.businessId.toString()) {
-  //       throw new BadRequestException({
-  //         message: `Business mismatch for product ${item.productId}`,
-  //         success: false,
-  //         status: 400,
-  //       });
-  //     }
-  //   }
-
-  //   if (items.length !== cartExist.items.length) {
-  //     throw new BadRequestException({
-  //       message: 'Cart items mismatch',
-  //       success: false,
-  //       status: 400,
-  //     });
-  //   }
-
-  //   // FETCH BUSINESSES
-  //   const businessIds = items.map((v) => v.businessId);
-  //   const businesses =
-  //     await this.businessesRepository.findBusinessesByIds(businessIds);
-
-  //   const businessMap = new Map(businesses.map((b) => [b._id.toString(), b]));
-
-  //   let globalSubtotal = 0;
-  //   let globalTotalWeight = 0;
-  //   let productSurchargeTotal = 0;
-  //   const interStateGroups = new Set<string>();
-
-  //   const vendorMap = new Map<string, any>();
-
-  //   const session = await this.connection.startSession();
-  //   session.startTransaction();
-  //   // PROCESS ITEMS (NO SHIPPING HERE)
-
-  //   try {
-  //     for (const item of items) {
-  //       const product = await this.productsRepository.findById(item.productId);
-
-  //       if (!product) {
-  //         throw new NotFoundException({
-  //           message: `Product not found: ${item.productId}`,
-  //           success: false,
-  //           status: 404,
-  //         });
-  //       }
-
-  //       if (!product.inStock) {
-  //         throw new NotFoundException({
-  //           message: `Product ${product.name} is out of stock`,
-  //           success: false,
-  //           status: 404,
-  //         });
-  //       }
-
-  //       const availableStock = product.stock - product.reservedQuantity;
-
-  //       if (availableStock < item.quantity) {
-  //         throw new BadRequestException({
-  //           message: `Only ${availableStock} ${product.name} left.`,
-  //           success: false,
-  //           status: 400,
-  //         });
-  //       }
-
-  //       await this.productsRepository.reserveStock(
-  //         item.productId,
-  //         item.quantity,
-  //         session,
-  //       );
-
-  //       await this.inventoryRepository.reserveStock(
-  //         item.productId,
-  //         item.quantity,
-  //         session,
-  //       );
-
-  //       const business = businessMap.get(item.businessId);
-
-  //       if (!business?.businessAddress?.state) {
-  //         throw new NotFoundException({
-  //           message: `Business address not found.`,
-  //           status: 404,
-  //           success: false,
-  //         });
-  //       }
-
-  //       const productState = business.businessAddress.state.toLowerCase();
-
-  //       const itemTotal = product.price * item.quantity;
-
-  //       if (!vendorMap.has(item.businessId)) {
-  //         vendorMap.set(item.businessId, {
-  //           businessId: item.businessId,
-  //           items: [],
-  //           subtotal: 0,
-  //           totalWeight: 0,
-  //           state: productState,
-  //           status: VendorOrderStatus.pending,
-  //         });
-  //       }
-
-  //       const vendorGroup = vendorMap.get(item.businessId);
-
-  //       vendorGroup.items.push({
-  //         productId: product._id,
-  //         name: product.name,
-  //         price: product.price,
-  //         quantity: item.quantity,
-  //         itemStatus: VendorItemOrderStatus.pending,
-  //       });
-
-  //       vendorGroup.subtotal += itemTotal;
-
-  //       // AGGREGATE WEIGHT
-  //       const itemWeight = product?.weight * item.quantity;
-
-  //       vendorGroup.totalWeight += itemWeight;
-
-  //       globalSubtotal += itemTotal;
-  //       globalTotalWeight += itemWeight;
-  //     }
-
-  //     // SHIPPING (PER VENDOR)
-  //     for (const vendor of vendorMap.values()) {
-  //       const isInterState = vendor.state !== buyerState;
-
-  //       if (isInterState) {
-  //         const shippingFee =
-  //           await this.businessShippingRateService.getBusinessShippingPricePerState(
-  //             vendor.businessId.toString(),
-  //             buyerState,
-  //             vendor.totalWeight,
-  //           );
-
-  //         if (!shippingFee) {
-  //           throw new NotFoundException(
-  //             `Shipping fee not configured for business ${vendor.businessId}`,
-  //           );
-  //         }
-
-  //         vendor.subtotal += shippingFee;
-  //         productSurchargeTotal += shippingFee;
-
-  //         interStateGroups.add(vendor.state);
-  //       }
-  //     }
-
-  //     // COLLECTION FEE
-  //     let collectionFee = 0;
-
-  //     if (interStateGroups.size > 0) {
-  //       const feeConfig =
-  //         await this.collectionFeeRepository.findCollectionFeeByState(
-  //           buyerState,
-  //         );
-
-  //       if (!feeConfig) {
-  //         throw new NotFoundException(
-  //           `Collection fee not set for ${buyerState}`,
-  //         );
-  //       }
-
-  //       collectionFee =
-  //         feeConfig.baseFee +
-  //         feeConfig.additionalFee * (interStateGroups.size - 1);
-  //     }
-
-  //     // LAST-MILE DELIVERY
-  //     let lastMileFee = 0;
-
-  //     if (deliveryMode === DeliveryMode.homeDelivery) {
-  //       if (!nearestBusStop) {
-  //         throw new BadRequestException({
-  //           message: 'Nearest bus stop is required to proceed.',
-  //           success: false,
-  //           status: 400,
-  //         });
-  //       }
-
-  //       const result =
-  //         await this.homeDeliveryService.findHomeDeliveryFeeUsingWeightStateAndNearestBusStop(
-  //           deliveryAddress.state,
-  //           nearestBusStop,
-  //           globalTotalWeight,
-  //         );
-  //       lastMileFee = result;
-  //     }
-
-  //     // TOTAL
-  //     const total =
-  //       globalSubtotal + productSurchargeTotal + collectionFee + lastMileFee;
-
-  //     const vendors: VendorObject[] = Array.from(vendorMap.values());
-
-  //     // SHIPMENT
-  //     const shipment = {
-  //       shipmentId: crypto.randomUUID(),
-  //       originPickupCenter: process.env.EKITI_PICKUP_CENTER_ID || '',
-  //       destinationPickupCenter:
-  //         deliveryMode === DeliveryMode.pickUpFromOurNearestOffice
-  //           ? pickupCenter
-  //           : undefined,
-  //       deliveryMode,
-  //       vendors,
-  //       subtotal: globalSubtotal,
-  //       status: ShipmentStatus.pending,
-  //     };
-
-  //     // ORDER PAYLOAD
-  //     const payload = {
-  //       cartId,
-  //       customerId,
-  //       shipments: [shipment],
-  //       subtotal: globalSubtotal,
-  //       productSurchargeTotal,
-  //       collectionFee,
-  //       deliveryFee: lastMileFee,
-  //       total,
-  //       deliveryMode,
-  //       deliveryAddress,
-  //       destinationPickupCenter: pickupCenter,
-  //       contactPhone,
-  //       isPaid: false,
-  //       status: OrderStatus.pending,
-  //       idempotencyKey,
-  //     };
-  //     // CREATE ORDER
-  //     const order = await this.orderRepository.createOrder(payload, session);
-
-  //     if (!order) {
-  //       throw new BadRequestException('Order creation failed');
-  //     }
-
-  //     // PAYMENT
-  //     const paymentIntent = await this.paymentsService.createPaymentIntent(
-  //       PaymentProvider.PAYSTACK,
-  //       user,
-  //       order._id.toString(),
-  //       total,
-  //     );
-
-  //     return {
-  //       order,
-  //       paymentIntent,
-  //     };
-  //   } catch (error) {
-  //     await session.abortTransaction();
-  //     session.endSession();
-  //     throw error;
-  //   }
-  // }
-
-  /**
- *
-async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
-  const {
-    customerId,
-    vendorOrders,
-    deliveryAddress,
-    contactPhone,
-    idempotencyKey,
-    cartId,
-    deliveryMode,
-    pickupCenter,
-    nearestBusStop,
-    subTotalSummation,
-    shippingFeeSummation,
-  } = createOrderDto;
-
-  // AUTH CHECK
-  if (user.sub.toString() !== customerId) {
-    throw new BadRequestException('Invalid user mismatch');
-  }
-
-  if (
-    deliveryMode === DeliveryMode.pickUpFromOurNearestOffice &&
-    !pickupCenter
-  ) {
-    throw new BadRequestException('Pickup center is required.');
-  }
-
-  if (
-    (deliveryMode === DeliveryMode.homeDelivery && !deliveryAddress) ||
-    (deliveryAddress === undefined && !deliveryAddress.state)
-  ) {
-    throw new BadRequestException('Delivery state is required');
-  }
-
-  const buyerState = deliveryAddress.state;
-  if (!buyerState) {
-    throw new BadRequestException('Buyer state is required');
-  }
-
-  // IDEMPOTENCY
-  const existingOrder = await this.orderRepository.findOrderByIdempotencyKey(
-    idempotencyKey,
-    user.sub.toString(),
-  );
-
-  if (existingOrder) {
-    const paymentMade = await this.paymentsRepository.findPaymentByOrderId(
-      existingOrder._id.toString(),
-    );
-
-    if (!paymentMade) {
-      const newPayment = await this.paymentsService.createPaymentIntent(
-        PaymentProvider.PAYSTACK,
-        user,
-        existingOrder._id.toString(),
-        existingOrder.total,
-      );
-      return { order: existingOrder, payment: newPayment };
-    }
-
-    if (
-      existingOrder.isPaid &&
-      paymentMade.verified &&
-      paymentMade.status === PaymentStatus.successful
-    ) {
-      return { order: existingOrder, payment: null };
-    }
-  }
-
-  // VALIDATE CART
-  const cartExist = await this.cartRepository.getCartByCartIdAndUserId(
-    cartId,
-    user.sub.toString(),
-  );
-
-  if (!cartExist) {
-    throw new NotFoundException('Cart not found.');
-  }
-
-  // FLATTEN ITEMS
-  const flatItems = vendorOrders.flatMap((vendor) =>
-    vendor.items.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      businessId: vendor.businessId,
-    })),
-  );
-
-  if (!flatItems.length) {
-    throw new BadRequestException('Cart is empty');
-  }
-
-  const cartItemsMap = new Map(
-    cartExist.items.map((item) => [
-      item.productId.toString(),
-      {
-        quantity: item.quantity,
-        businessId: item.businessId.toString(),
-      },
-    ]),
-  );
-
-  for (const item of flatItems) {
-    const cartItem = cartItemsMap.get(item.productId.toString());
-
-    if (!cartItem) {
-      throw new BadRequestException(
-        `Product ${item.productId} not found in cart`,
-      );
-    }
-
-    if (cartItem.quantity !== item.quantity) {
-      throw new BadRequestException(
-        `Quantity mismatch for product ${item.productId}`,
-      );
-    }
-
-    if (cartItem.businessId !== item.businessId.toString()) {
-      throw new BadRequestException(
-        `Business mismatch for product ${item.productId}`,
-      );
-    }
-  }
-
-  if (flatItems.length !== cartExist.items.length) {
-    throw new BadRequestException('Cart items mismatch');
-  }
-
-  // FETCH BUSINESSES
-  const businessIds = vendorOrders.map((v) => v.businessId);
-
-  const businesses =
-    await this.businessesRepository.findBusinessesByIds(businessIds);
-
-  const businessMap = new Map(businesses.map((b) => [b._id.toString(), b]));
-
-  let globalSubtotal = 0;
-  let globalTotalWeight = 0;
-  let shippingFeeTotal = 0;
-  let collectionFee = 0;
-  const interStateGroups = new Set<string>();
-
-  const vendorMap = new Map<string, any>();
-
-  const session = await this.connection.startSession();
-  session.startTransaction();
-
-  try {
-    // PROCESS VENDORS
-    for (const vendor of vendorOrders) {
-      const business = businessMap.get(vendor.businessId);
-
-      if (!business?.businessAddress?.state) {
-        throw new NotFoundException('Business address not found');
-      }
-
-      const productState = business.businessAddress.state.toLowerCase();
-
-      const vendorGroup = {
-        businessId: vendor.businessId,
-        items: [],
-        subtotal: 0,
-        totalWeight: 0,
-        shippingFee: 0,
-        state: productState,
-        status: VendorOrderStatus.pending,
-      };
-
-      for (const item of vendor.items) {
-        const product = await this.productsRepository.findById(
-          item.productId,
-        );
-
-        if (!product) {
-          throw new NotFoundException(`Product not found: ${item.productId}`);
-        }
-
-        if (!product.inStock) {
-          throw new BadRequestException(`${product.name} is out of stock`);
-        }
-
-        const availableStock = product.stock - product.reservedQuantity;
-
-        if (availableStock < item.quantity) {
-          throw new BadRequestException(
-            `Only ${availableStock} ${product.name} left.`,
-          );
-        }
-
-        await this.productsRepository.reserveStock(
-          item.productId,
-          item.quantity,
-          session,
-        );
-
-        await this.inventoryRepository.reserveStock(
-          item.productId,
-          item.quantity,
-          session,
-        );
-
-        const itemTotal = product.price * item.quantity;
-        const itemWeight = product.weight * item.quantity;
-
-        vendorGroup.items.push({
-          productId: product._id,
-          name: product.name,
-          price: product.price,
-          quantity: item.quantity,
-          itemStatus: VendorItemOrderStatus.pending,
-        });
-
-        vendorGroup.subtotal += itemTotal;
-        vendorGroup.totalWeight += itemWeight;
-
-        globalSubtotal += itemTotal;
-        globalTotalWeight += itemWeight;
-      }
-
-      // SHIPPING PER VENDOR
-      const isInterState = vendorGroup.state !== buyerState;
-
-      if (isInterState) {
-        const shippingFee =
-          await this.businessShippingRateService.getBusinessShippingPricePerState(
-            vendor.businessId,
-            buyerState,
-            vendorGroup.totalWeight,
-          );
-
-        if (!shippingFee) {
-          throw new NotFoundException(
-            `Shipping fee not configured for business ${vendor.businessId}`,
-          );
-        }
-
-        vendorGroup.shippingFee = shippingFee;
-        shippingFeeTotal += shippingFee;
-        interStateGroups.add(vendorGroup.state);
-      }
-
-      vendorMap.set(vendor.businessId, vendorGroup);
-    }
-
-    // VALIDATE FRONTEND TOTALS (optional but recommended)
-    if (subTotalSummation && subTotalSummation !== globalSubtotal) {
-      throw new BadRequestException('Subtotal mismatch detected');
-    }
-
-    if (shippingFeeSummation && shippingFeeSummation !== shippingFeeTotal) {
-      throw new BadRequestException('Shipping fee mismatch detected');
-    }
-
-    // COLLECTION FEE
-    if (interStateGroups.size > 0) {
-      const feeConfig =
-        await this.collectionFeeRepository.findCollectionFeeByState(
-          buyerState,
-        );
-
-      if (!feeConfig) {
-        throw new NotFoundException(
-          `Collection fee not set for ${buyerState}`,
-        );
-      }
-
-      collectionFee =
-        feeConfig.baseFee +
-        feeConfig.additionalFee * (interStateGroups.size - 1);
-    }
-
-    // LAST MILE
-    let lastMileFee = 0;
-
-    if (deliveryMode === DeliveryMode.homeDelivery) {
-      if (!nearestBusStop) {
-        throw new BadRequestException('Nearest bus stop is required');
-      }
-
-      lastMileFee =
-        await this.homeDeliveryService.findHomeDeliveryFeeUsingWeightStateAndNearestBusStop(
-          deliveryAddress.state,
-          nearestBusStop,
-          globalTotalWeight,
-        );
-    }
-
-    const total =
-      globalSubtotal + shippingFeeTotal + collectionFee + lastMileFee;
-
-    const vendors = Array.from(vendorMap.values());
-
-    const shipment = {
-      shipmentId: crypto.randomUUID(),
-      originPickupCenter: process.env.EKITI_PICKUP_CENTER_ID || '',
-      destinationPickupCenter:
-        deliveryMode === DeliveryMode.pickUpFromOurNearestOffice
-          ? pickupCenter
-          : undefined,
-      deliveryMode,
-      vendors,
-      subtotal: globalSubtotal,
-      status: ShipmentStatus.pending,
-    };
-
-    const payload = {
-      cartId,
-      customerId,
-      shipments: [shipment],
-      subtotal: globalSubtotal,
-      shippingFeeTotal,
-      collectionFee,
-      deliveryFee: lastMileFee,
-      total,
-      deliveryMode,
-      deliveryAddress,
-      destinationPickupCenter: pickupCenter,
-      contactPhone,
-      isPaid: false,
-      status: OrderStatus.pending,
-      idempotencyKey,
-    };
-
-    const order = await this.orderRepository.createOrder(payload, session);
-
-    if (!order) {
-      throw new BadRequestException('Order creation failed');
-    }
-
-    const paymentIntent = await this.paymentsService.createPaymentIntent(
-      PaymentProvider.PAYSTACK,
-      user,
-      order._id.toString(),
-      total,
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return {
-      order,
-      paymentIntent,
-    };
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
-  }
-}
-
- */
 
   async getCustomerOrderDetails(
     buyerId: string,
@@ -881,6 +125,28 @@ async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
     return response;
   }
 
+  async getVendorSingleOrderByBusinessIdAndOrderId(
+    businessId: string,
+    orderId: string,
+    user: JwtUser,
+  ) {
+    const response =
+      await this.orderRepository.getVendorSingleOrderByBusinessIdAndOrderId(
+        orderId,
+        businessId,
+      );
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'Order not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return response;
+  }
+
   async markBusinessItemInAnOrderAsDeliveredToPickupCenter(
     user: JwtUser,
     orderId: string,
@@ -943,20 +209,20 @@ async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
     }
 
     // STEP 4: UPDATE ITEM STATUS
-    item.itemStatus = VendorItemOrderStatus.delivered_to_pickup_center;
+    item.itemStatus = VendorItemOrderStatus.sent_to_pickup_center;
 
     // STEP 5: CHECK IF ALL ITEMS IN VENDOR ARE DONE
     const allVendorItemsDone = vendor.items.every(
-      (i) => i.itemStatus === VendorItemOrderStatus.delivered_to_pickup_center,
+      (i) => i.itemStatus === VendorItemOrderStatus.sent_to_pickup_center,
     );
 
     if (allVendorItemsDone) {
-      vendor.status = VendorOrderStatus.delivered_to_pickup_center;
+      vendor.status = VendorOrderStatus.sent_to_pickup_center;
     }
 
     // STEP 6: CHECK IF ALL VENDORS IN THIS SHIPMENT ARE READY
     const allVendorsDone = shipment.vendors.every(
-      (v) => v.status === VendorOrderStatus.delivered_to_pickup_center,
+      (v) => v.status === VendorOrderStatus.sent_to_pickup_center,
     );
 
     if (allVendorsDone) {
@@ -971,96 +237,118 @@ async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
     return {
       message: 'Item marked as delivered to pickup center successfully',
     };
-
-    /**
- *
-const businessOrder = order.vendorOrders.find(
-  (b) => b.businessId.toString() === businessId,
-);
-
-if (!businessOrder) {
-  throw new NotFoundException({
-    message: 'Business order not found.',
-    success: false,
-    status: 404,
-  });
-}
-
-const item = businessOrder.items.find(
-  (i) => i.productId.toString() === productId,
-);
-
-if (!item) {
-  throw new NotFoundException({
-    message: `Product with ID: ${productId} not found.`,
-    success: false,
-    status: 404,
-  });
-}
-
-item.itemStatus = VendorItemOrderStatus.ready;
-
-const allPacked = businessOrder.items.every(
-  (i) => i.itemStatus === VendorItemOrderStatus.ready,
-);
-if (allPacked) {
-  businessOrder.status = VendorOrderStatus.ready;
-}
-
-const allBusinessesOrderPacked = order.vendorOrders.every(
-  (biz) => biz.status === VendorOrderStatus.ready,
-);
-
-if (allBusinessesOrderPacked) {
-  order.status = OrderStatus.processing;
-
-  const payload = {
-    orderId: order._id,
-    deliveryMode: order.deliveryMode,
-    dropoffAddress:
-      order.deliveryMode === DeliveryMode.homeDelivery
-        ? order.deliveryAddress
-        : undefined,
-    pickupPoints: order.vendorOrders.map((v) => ({
-      businessId: v.businessId.toString(),
-      address: v.businessAddress,
-      isPickedUp: false,
-    })),
-
-    status: DeliveryStatus.available,
-  };
-  const delivery =
-    await this.deliveryRepository.createDeliveryFromOrder(payload);
-
-  if (!delivery) {
-    throw new BadRequestException({
-      message: 'Unable to create delivery document for this order.',
-      success: false,
-      status: 400,
-    });
   }
 
-  const marketplaceEntry =
-    await this.deliveryMarketplaceRepository.publishDelivery(delivery._id);
+  async getPendingPickupCenterItems(
+    pickupCenterId: string,
+    queryWithPaginationDto: QueryWithPaginationDto,
+  ) {
+    const response = await this.orderRepository.getPendingPickupCenterItems(
+      pickupCenterId,
+      queryWithPaginationDto,
+    );
 
-  const notifyRiders =
-    await this.notificationsService.notifyRidersNearby(order);
+    if (!response) {
+      throw new NotFoundException({
+        message: 'No orders found.',
+        success: false,
+        status: 404,
+      });
+    }
 
-  const updateOrderStatus = await this.orderRepository.updateOrderStatus(
-    order._id.toString(),
-    OrderStatus.in_transit,
-  );
-}
+    return response;
+  }
+  async markItemAsReceivedAtPickupCenter(
+    pickupCenterId: string,
+    orderId: string,
+    businessId: string,
+    productId: string,
+  ) {
+    const response =
+      await this.orderRepository.markItemAsReceivedAtPickupCenter(
+        pickupCenterId,
+        orderId,
+        businessId,
+        productId,
+      );
 
-await order.save();
+    if (!response) {
+      throw new BadRequestException({
+        message: 'Unable to mark as received.',
+        success: false,
+        status: 400,
+      });
+    }
 
-return {
-  message: 'Order marked successfull',
-};
- */
+    return response;
+  }
+  async updateOrderStatus(orderId: string, status: OrderStatus) {
+    const response = await this.orderRepository.updateOrderStatus(
+      orderId,
+      status,
+    );
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'No order found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return response;
+  }
+  async findOrderByOrderIdWithoutSession(orderId: string) {
+    const response =
+      await this.orderRepository.findOrderByOrderIdWithoutSession(orderId);
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'No order found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return response;
+  }
+  async getOrdersForPickupCenter(
+    pickupCenterId: string,
+    queryWithPaginationDto: QueryWithPaginationDto,
+  ) {
+    const response = await this.orderRepository.getOrdersForPickupCenter(
+      pickupCenterId,
+      queryWithPaginationDto,
+    );
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'No orders found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return response;
   }
 
-  // async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {}
+  async findOrderByOrderId(orderId: string, session: ClientSession) {
+    const response = await this.orderRepository.findOrderByOrderId(
+      orderId,
+      session,
+    );
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'Order not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return response;
+  }
+
   async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
     const {
       customerId,
@@ -1102,11 +390,7 @@ return {
       }
 
       const pickupCenterData =
-        await this.pickupCenterRepository.getPickupCenterById(pickupCenter);
-
-      if (!pickupCenterData) {
-        throw new NotFoundException('Pickup center not found');
-      }
+        await this.pickupCenterService.getPickupCenterById(pickupCenter);
 
       buyerState = pickupCenterData.state;
     }
@@ -1460,17 +744,136 @@ return {
     }
   }
 
-  /*
-  FOR CALCULATING park collection fee
-  const baseFee = 500;
-const additionalFee = 200;
+  async getVendorBusinessSingleOrderDetailsForFulfilment(
+    businessId: string,
+    orderId: string,
+    user: JwtUser,
+  ) {
+    const buzId = new Types.ObjectId(businessId);
+    const order = new Types.ObjectId(orderId);
 
-// VERY IMPORTANT
-const uniqueParks = getUniqueArrivalParks(order);
+    const response =
+      await this.orderRepository.getVendorBusinessSingleOrderDetailsForFulfilment(
+        buzId,
+        order,
+      );
 
-const collectionFee =
-  uniqueParks.length === 0
-    ? 0
-    : baseFee + (uniqueParks.length - 1) * additionalFee;
-    */
+    return response;
+  }
+  async sendSingleOrderToPickup(
+    businessId: string,
+    orderId: string,
+    user: JwtUser,
+  ) {
+    const buzId = new Types.ObjectId(businessId);
+    const order = new Types.ObjectId(orderId);
+
+    const response = await this.orderRepository.markItemsAsSentToPickup(buzId, [
+      order,
+    ]);
+
+    return response;
+  }
+  async sendMultipleOrderToPickup(
+    orderIds: string[],
+    businessId: string,
+    user: JwtUser,
+  ) {
+    const bizId = new Types.ObjectId(businessId);
+
+    const response = await this.orderRepository.markItemsAsSentToPickup(
+      bizId,
+      orderIds.map((id) => new Types.ObjectId(id)),
+    );
+
+    return response;
+  }
+  async getVendorBusinessOrdersToFulfill(
+    businessId: string,
+    user: JwtUser,
+    queryWithPaginationDto: QueryWithPaginationDto,
+  ) {
+    const response =
+      await this.orderRepository.getVendorBusinessOrdersToFulfill(
+        businessId,
+        queryWithPaginationDto,
+      );
+
+    return response;
+  }
+
+  //   async getOrdersForPickupCenter(
+  //   pickupCenterId: string,
+  //   queryWithPaginationDto: QueryWithPaginationDto,
+  // ) {
+  //   const response = await this.ordersService.getOrdersForPickupCenter(
+  //     pickupCenterId,
+  //     queryWithPaginationDto,
+  //   );
+
+  //   return response;
+  // }
+  // async getPendingPickupCenterItems(
+  //   pickupCenterId: string,
+  //   queryWithPaginationDto: QueryWithPaginationDto,
+  // ) {
+  //   const response = await this.ordersService.getPendingPickupCenterItems(
+  //     pickupCenterId,
+  //     queryWithPaginationDto,
+  //   );
+
+  //   return response;
+  // }
+
+  // async markItemAsReceivedAtPickupCenter(
+  //   pickupCenterId: string,
+  //   businessId: string,
+  //   orderId: string,
+  //   productId: string,
+  // ) {
+  //   const order =
+  //     await this.ordersService.findOrderByOrderIdWithoutSession(orderId);
+
+  //   if (
+  //     order.destinationPickupCenter &&
+  //     order.destinationPickupCenter.toString() !== pickupCenterId
+  //   ) {
+  //     throw new ConflictException({
+  //       message: 'This order is not meant for this pickup center.',
+  //       success: false,
+  //       status: 409,
+  //     });
+  //   }
+
+  //   const response = await this.ordersService.markItemAsReceivedAtPickupCenter(
+  //     pickupCenterId,
+  //     orderId,
+  //     businessId,
+  //     productId,
+  //   );
+
+  //   const updatedOrder =
+  //     await this.ordersService.findOrderByOrderIdWithoutSession(orderId);
+
+  //   // 3. check if ALL items are received
+  //   const allReceived = updatedOrder.shipment.vendors.every((vendor) =>
+  //     vendor.items.every(
+  //       (item) =>
+  //         item.itemStatus === VendorItemOrderStatus.received_at_pickup_center,
+  //     ),
+  //   );
+
+  //   // 4. if complete → update order status
+  //   if (allReceived) {
+  //     await this.ordersService.updateOrderStatus(
+  //       orderId,
+  //       OrderStatus.completed_at_pickup_center, // or your enum
+  //     );
+
+  //     // OPTIONAL: trigger next workflow
+  //     // create shipment entity, notify riders, etc.
+  //   }
+
+  //   return { success: true, allReceived };
+  // }
 }

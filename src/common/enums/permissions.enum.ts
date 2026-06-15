@@ -8,6 +8,9 @@ export enum Permission {
   view_role = 'view_role',
   update_role = 'update_role',
 
+  get_order_for_fulfilment = 'get_order_for_fulfilment',
+  send_order_to_pickup_center = 'send_order_to_pickup_center',
+
   create_campaign = 'create_campaign',
   view_campaign = 'view_campaign',
   update_campaign = 'update_campaign',

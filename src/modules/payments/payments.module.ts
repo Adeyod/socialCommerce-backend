@@ -12,6 +12,15 @@ import { PaystackService } from './providers/paystack/paystack.service';
 import { PaymentsRepository } from './repositories/payment.repository';
 import { Payment, PaymentSchema } from './schemas/payment.schema';
 
+console.log({
+  UsersModule,
+  CartsModule,
+  WalletModule,
+  InventoryModule,
+  ProductsModule,
+  OrdersModule,
+});
+
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]),

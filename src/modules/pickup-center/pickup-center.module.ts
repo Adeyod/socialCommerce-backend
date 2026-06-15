@@ -13,6 +13,7 @@ import {
     MongooseModule.forFeature([
       { name: PickupCenter.name, schema: PickupCenterSchema },
     ]),
+    // forwardRef(() => OrdersModule),
   ],
   controllers: [PickupCenterController],
   providers: [PickupCenterService, PickupCenterRepository],

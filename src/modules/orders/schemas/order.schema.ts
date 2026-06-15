@@ -5,16 +5,17 @@ import type { Shipment } from '../types/order.types';
 export type OrderDocument = HydratedDocument<Order>;
 
 export enum DeliveryMode {
-  // pickUpFromVendor = 'pickUpFromVendor',
   pickUpFromOurNearestOffice = 'pickUpFromOurNearestOffice',
   homeDelivery = 'homeDelivery',
 }
 
 export enum OrderStatus {
-  paid = 'paid',
   pending = 'pending',
+  paid = 'paid',
   processing = 'processing',
-  in_transit = 'in_transit',
+  // ready_at_pickup_center = 'ready_at_pickup_center',
+  completed_at_pickup_center = 'completed_at_pickup_center',
+  in_delivery = 'in_delivery',
   completed = 'completed',
   cancelled = 'cancelled',
 }
@@ -22,13 +23,15 @@ export enum OrderStatus {
 export enum VendorOrderStatus {
   pending = 'pending',
   processing = 'processing',
-  delivered_to_pickup_center = 'delivered_to_pickup_center',
+  sent_to_pickup_center = 'sent_to_pickup_center',
+  received_at_pickup_center = 'received_at_pickup_center',
 }
 
 export enum VendorItemOrderStatus {
   pending = 'pending',
   processing = 'processing',
-  delivered_to_pickup_center = 'delivered_to_pickup_center',
+  sent_to_pickup_center = 'sent_to_pickup_center',
+  received_at_pickup_center = 'received_at_pickup_center',
 }
 
 export enum ShipmentStatus {

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { StaffAccessControlModule } from '../staff-access-control/staff-access-control.module';
 import { VendorProfileRepository } from './repositories/vendor.repository';
 import { VendorProfile, VendorProfileSchema } from './schemas/vendor.schema';
 import { VendorController } from './vendor.controller';
@@ -10,6 +11,8 @@ import { VendorService } from './vendor.service';
     MongooseModule.forFeature([
       { name: VendorProfile.name, schema: VendorProfileSchema },
     ]),
+    StaffAccessControlModule,
+    // forwardRef(() => OrdersModule),
   ],
   controllers: [VendorController],
   providers: [VendorService, VendorProfileRepository],
