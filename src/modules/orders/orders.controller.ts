@@ -23,7 +23,6 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtUser } from '../../common/types/jwt-user.type';
 import { PermissionsGuard } from '../staff-access-control/guards/permissions.guard';
 import { Role } from '../users/schemas/user.schema';
-import { BulkSendToPickupDto } from '../vendor/dtos/bulk-send-to-pickup.dto';
 import { CreateOrderDto } from './dtos/create-order.dto';
 import { OrdersService } from './orders.service';
 
@@ -280,21 +279,23 @@ export class OrdersController {
     status: 500,
     description: 'Internal server error',
   })
-  async sendMultipleOrderToPickup(
-    @Body() dto: BulkSendToPickupDto,
-    @Param('businessId') businessId: string,
-    @GetCurrentUser() user: JwtUser,
-  ) {
-    const response = await this.ordersService.sendMultipleOrderToPickup(
-      dto.orderIds,
-      businessId,
-      user,
-    );
+  async sendMultipleOrderToPickup() {}
+  // async sendMultipleOrderToPickup(
+  //   @Body() dto: BulkSendToPickupDto,
+  //   @Param('businessId') businessId: string,
+  //   @GetCurrentUser() user: JwtUser,
+  // ) {
+  //   const response = await this.ordersService.sendMultipleOrderToPickup(
+  //     dto.payload,
+  //     dto.pickupCenterId,
+  //     businessId,
+  //     user,
+  //   );
 
-    return response;
-  }
+  //   return response;
+  // }
 
-  @Post('send-single-order-to-pickup/:businessId/:orderId')
+  @Post('send-single-order-to-pickup/:businessId/:orderId/:pickupCenterId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user)
   @Permissions(Permission.send_order_to_pickup_center)
@@ -322,10 +323,12 @@ export class OrdersController {
   async sendSingleOrderToPickup(
     @Param('businessId') businessId: string,
     @Param('orderId') orderId: string,
+    @Param('pickupCenterId') pickupCenterId: string,
     @GetCurrentUser() user: JwtUser,
   ) {
     const response = await this.ordersService.sendSingleOrderToPickup(
       businessId,
+      pickupCenterId,
       orderId,
       user,
     );

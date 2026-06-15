@@ -6,9 +6,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectConnection } from '@nestjs/mongoose';
 import { ClientSession, Connection, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
+import { ShipmentEvents } from '../../common/events/order.events';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { BusinessShippingRateService } from '../business-shipping-rate/business-shipping-rate.service';
 import { BusinessesRepository } from '../businesses/repositories/businesses.repository';
@@ -40,6 +42,8 @@ export class OrdersService {
   constructor(
     private readonly orderRepository: OrderRepository,
     private readonly cartRepository: CartRepository,
+    private readonly eventEmitter: EventEmitter2,
+
     private readonly productsRepository: ProductsRepository,
     private readonly businessShippingRateService: BusinessShippingRateService,
     private readonly businessesRepository: BusinessesRepository,
@@ -279,6 +283,13 @@ export class OrdersService {
         status: 400,
       });
     }
+
+    this.eventEmitter.emit(ShipmentEvents.item_received_at_pickup_center, {
+      pickupCenterId,
+      orderId,
+      businessId,
+      productId,
+    });
 
     return response;
   }
@@ -758,11 +769,20 @@ export class OrdersService {
         order,
       );
 
+    if (!response) {
+      throw new NotFoundException({
+        message: 'Vendor order details not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
     return response;
   }
   async sendSingleOrderToPickup(
     businessId: string,
     orderId: string,
+    pickupCenterId: string,
     user: JwtUser,
   ) {
     const buzId = new Types.ObjectId(businessId);
@@ -772,22 +792,130 @@ export class OrdersService {
       order,
     ]);
 
+    if (!response) {
+      throw new BadRequestException({
+        message: 'Unable to mark item as sent to pickup center.',
+        success: false,
+        status: 400,
+      });
+    }
+
+    // Notify pickup of new order on its way
+
+    this.eventEmitter.emit(ShipmentEvents.item_sent_to_pickup_center, {
+      orderId: order.toString(),
+      pickupCenterId,
+      vendorBusinessId: businessId,
+      triggeredBy: user.sub,
+    });
+
     return response;
   }
-  async sendMultipleOrderToPickup(
-    orderIds: string[],
-    businessId: string,
-    user: JwtUser,
-  ) {
-    const bizId = new Types.ObjectId(businessId);
+  // async sendMultipleOrderToPickup(
+  //   payload: SendItemsDto[],
+  //   businessId: string,
+  //   pickupCenterId: string,
+  //   user: JwtUser,
+  // ) {
+  //   const bizId = new Types.ObjectId(businessId);
 
-    const response = await this.orderRepository.markItemsAsSentToPickup(
-      bizId,
-      orderIds.map((id) => new Types.ObjectId(id)),
-    );
+  //   const response = await this.orderRepository.markItemsAsSentToPickup(
+  //     bizId,
+  //     orderIds.map((id) => new Types.ObjectId(id)),
+  //   );
 
-    return response;
-  }
+  //   if (!response) {
+  //     throw new BadRequestException({
+  //       message: 'Unable to mark item as sent to pickup center.',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   // Notify pickup of new order on its way
+  //   for (const order of orderIds) {
+  //     this.eventEmitter.emit(ShipmentEvents.item_sent_to_pickup_center, {
+  //       orderId: order.toString(),
+  //       pickupCenterId,
+  //       vendorBusinessId: businessId,
+  //       triggeredBy: user.sub.toString(),
+  //     });
+  //   }
+
+  //   return response;
+  // }
+
+  // async sendMultipleOrderToPickup(
+  //   payload: SendItemsDto[],
+  //   businessId: string,
+  //   pickupCenterId: string,
+  //   user: JwtUser,
+  // ) {
+  //   const bizId = new Types.ObjectId(businessId);
+
+  //   const bulkOps: any[] = [];
+
+  //   for (const entry of payload) {
+  //     const orderId = new Types.ObjectId(entry.orderId);
+
+  //     for (const item of entry.items) {
+  //       bulkOps.push({
+  //         updateOne: {
+  //           filter: {
+  //             _id: orderId,
+  //             'shipment.vendors.businessId': bizId,
+  //             'shipment.vendors.items.productId': new Types.ObjectId(
+  //               item.productId,
+  //             ),
+  //           },
+  //           update: {
+  //             $set: {
+  //               'shipment.vendors.$[v].items.$[i].itemStatus':
+  //                 VendorItemOrderStatus.sent_to_pickup_center,
+  //               'shipment.vendors.$[v].status':
+  //                 VendorOrderStatus.sent_to_pickup_center,
+  //             },
+  //           },
+  //           arrayFilters: [
+  //             { 'v.businessId': bizId },
+  //             { 'i.productId': new Types.ObjectId(item.productId) },
+  //           ],
+  //         },
+  //       });
+  //     }
+  //   }
+
+  //   if (bulkOps.length === 0) {
+  //     throw new BadRequestException({
+  //       message: 'No valid items to update.',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   const result = await this.orderModel.bulkWrite(bulkOps);
+
+  //   // Emit event ONCE per order (not per item)
+  //   const orderIds = [...new Set(payload.map((p) => p.orderId))];
+
+  //   for (const orderId of orderIds) {
+  //     this.eventEmitter.emit(
+  //       ShipmentEvents.item_sent_to_pickup_center,
+  //       {
+  //         orderId,
+  //         pickupCenterId,
+  //         vendorBusinessId: businessId,
+  //         triggeredBy: user.sub.toString(),
+  //       },
+  //     );
+  //   }
+
+  //   return {
+  //     success: true,
+  //     matchedCount: result.matchedCount,
+  //     modifiedCount: result.modifiedCount,
+  //   };
+  // }
   async getVendorBusinessOrdersToFulfill(
     businessId: string,
     user: JwtUser,
@@ -798,6 +926,14 @@ export class OrdersService {
         businessId,
         queryWithPaginationDto,
       );
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'No order to fulfil is found.',
+        status: 404,
+        success: false,
+      });
+    }
 
     return response;
   }

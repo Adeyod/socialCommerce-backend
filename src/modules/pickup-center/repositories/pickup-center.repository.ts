@@ -25,6 +25,8 @@ export class PickupCenterRepository {
       town: dto.town.trim().toLowerCase(),
       address: dto.address.trim().toLowerCase(),
       phone: dto.phone.trim(),
+      businessId: new Types.ObjectId(dto.businessId),
+      ownershipType: dto.ownershipType,
     }).save();
 
     return center;

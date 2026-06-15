@@ -66,4 +66,41 @@ export class NotificationListener {
       );
     }
   }
+
+  // @OnEvent(ShipmentEvents.item_sent_to_pickup_center)
+  // async handleItemSentToPickupCenter(payload: {
+  //   orderId: string,
+  //   pickupCenterId: string,
+  //   vendorBusinessId: string,
+  //   triggeredBy: string,
+
+  // }) {
+  //   if(!payload.orderId || !payload.pickupCenterId || !payload.vendorBusinessId || !payload.triggeredBy) {
+  //     return
+  //   }
+
+  //   const id = new Types.ObjectId(payload.vendorBusinessId)
+
+  //   const vendorBiz = await this.businessesRepository.findBusinessByBusinessId(
+  //     id
+  //   )
+
+  //   if(!vendorBiz) {
+  //     throw new NotFoundException({
+  //         message: 'Vendor business not found.',
+  //         success: false,
+  //         status: 404,
+  //       });
+  //   }
+
+  //    const title = 'New Order on its way';
+  //     const message = `${vendorBiz.businessName} has sent .`;
+  //     const type = NotificationType.order_paid;
+  //     const metadata = {
+  //       orderId,
+  //       items: vendor.items,
+  //     };
+
+  //   const pickupCenter = await this.
+  // }
 }

@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { BusinessesModule } from '../businesses/businesses.module';
+import { PickupCenterModule } from '../pickup-center/pickup-center.module';
 import { PromotersModule } from '../promoters/promoters.module';
 import { RiderModule } from '../rider/rider.module';
 import { UsersModule } from '../users/users.module';
@@ -14,6 +15,7 @@ import { PartnersRepository } from './repositories/partners.repository';
     VendorModule,
     RiderModule,
     PromotersModule,
+    PickupCenterModule,
     forwardRef(() => UsersModule),
   ],
   controllers: [PartnersController],

@@ -1,7 +1,20 @@
 import { IsArray, IsMongoId } from 'class-validator';
 
-export class BulkSendToPickupDto {
+export class SendItemsDto {
+  @IsMongoId()
+  orderId!: string;
+
   @IsArray()
-  @IsMongoId({ each: true })
-  orderIds!: string[];
+  items!: {
+    productId: string;
+    quantity: number;
+  }[];
+}
+
+export class BulkSendToPickupDto {
+  @IsMongoId()
+  pickupCenterId!: string;
+
+  @IsArray()
+  payload!: SendItemsDto[];
 }

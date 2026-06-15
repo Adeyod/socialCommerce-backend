@@ -43,14 +43,6 @@ export class PickupCenterService {
   async getAllPickupCenters() {
     const centers = await this.pickupCenterRepository.getAllPickupCenters();
 
-    if (!centers || centers.length === 0) {
-      throw new BadRequestException({
-        message: 'Unable to fetch pick up centers.',
-        success: false,
-        status: 400,
-      });
-    }
-
     return centers;
   }
   async getPickupCenterById(pickupCenterId: string) {

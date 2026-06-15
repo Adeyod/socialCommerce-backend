@@ -7,6 +7,7 @@ import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtUser } from '../../common/types/jwt-user.type';
+import { PickupCenterPartnerDto } from '../pickup-center/dtos/pickup-center.dto';
 import { PromoterDataDto } from '../promoters/dtos/promoter-data.dto';
 import { RiderDataDto } from '../rider/dtos/rider-data.dto';
 import { Role } from '../users/schemas/user.schema';
@@ -82,6 +83,39 @@ export class PartnersController {
       vendorDataDto,
       user,
     );
+
+    return response;
+  }
+  @Post('become-pickup-center')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.user)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Pickup center partnership submitted successfully.')
+  @ApiOperation({
+    summary: 'Endpoint to become a pickup center',
+    description:
+      'This is the endpoint that user will use to become a pickup center.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pickup center partnership submitted successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad request. Unable to process business partnership for this user.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async becomePickupCenter(
+    @Body() dto: PickupCenterPartnerDto,
+    @GetCurrentUser() user: JwtUser,
+  ) {
+    console.log('dto:', dto);
+    const response = await this.partnersService.becomePickupCenter(dto, user);
 
     return response;
   }
