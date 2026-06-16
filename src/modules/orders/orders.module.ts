@@ -16,11 +16,20 @@ import { StaffAccessControlModule } from '../staff-access-control/staff-access-c
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { OrderRepository } from './repositories/order.repository';
+import {
+  ItemVendorOrder,
+  ItemVendorOrderSchema,
+} from './schemas/item-vendor-order.schema';
 import { Order, OrderSchema } from './schemas/order.schema';
+import { VendorOrder, VendorOrderSchema } from './schemas/vendor-order.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
+    MongooseModule.forFeature([
+      { name: Order.name, schema: OrderSchema },
+      { name: VendorOrder.name, schema: VendorOrderSchema },
+      { name: ItemVendorOrder.name, schema: ItemVendorOrderSchema },
+    ]),
     ProductsModule,
     StaffAccessControlModule,
     DeliveryModule,

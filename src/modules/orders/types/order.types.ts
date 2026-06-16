@@ -1,10 +1,7 @@
 import { Types } from 'mongoose';
-import {
-  DeliveryMode,
-  ShipmentStatus,
-  VendorItemOrderStatus,
-  VendorOrderStatus,
-} from '../schemas/order.schema';
+import { VendorItemOrderStatus } from '../schemas/item-vendor-order.schema';
+import { DeliveryMode, ShipmentStatus } from '../schemas/order.schema';
+import { VendorOrderStatus } from '../schemas/vendor-order.schema';
 
 export type ShipmentItem = {
   productId: Types.ObjectId;

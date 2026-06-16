@@ -9,7 +9,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
-import { DeliveryMode, VendorOrderStatus } from '../schemas/order.schema';
+import { DeliveryMode } from '../schemas/order.schema';
+import { VendorOrderStatus } from '../schemas/vendor-order.schema';
 
 export class CreateOrderItemDto {
   @ApiProperty()

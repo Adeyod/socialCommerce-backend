@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { OrderDocument } from '../../orders/schemas/order.schema';
 import { Analytics, AnalyticsDocument } from '../schemas/analytics.schema';
 import {
   VendorCustomer,
@@ -224,71 +223,71 @@ export class AnalyticsRepository {
   //     });
   //   }
 
-  async recordOrderPayment(order: OrderDocument) {
-    // =========================
-    // 1. LOOP SHIPMENTS
-    // =========================
+  // async recordOrderPayment(order: OrderDocument) {
+  //   // =========================
+  //   // 1. LOOP SHIPMENTS
+  //   // =========================
 
-    const shipment = order.shipment;
+  //   const shipment = order.shipment;
 
-    for (const vendorOrder of shipment.vendors) {
-      const businessId = vendorOrder.businessId;
-      const customerId = order.customerId;
+  //   for (const vendorOrder of shipment.vendors) {
+  //     const businessId = vendorOrder.businessId;
+  //     const customerId = order.customerId;
 
-      let revenue = 0;
-      let productsSold = 0;
+  //     let revenue = 0;
+  //     let productsSold = 0;
 
-      for (const item of vendorOrder.items) {
-        revenue += item.price * item.quantity;
-        productsSold += item.quantity;
-      }
+  //     for (const item of vendorOrder.items) {
+  //       revenue += item.price * item.quantity;
+  //       productsSold += item.quantity;
+  //     }
 
-      // =========================
-      // 2. UPSERT CUSTOMER RELATION
-      // =========================
-      const customerResult = await this.vendorCustomerModel.updateOne(
-        {
-          businessId,
-          customerId,
-        },
-        {
-          $setOnInsert: {
-            businessId,
-            customerId,
-          },
-        },
-        { upsert: true },
-      );
+  //     // =========================
+  //     // 2. UPSERT CUSTOMER RELATION
+  //     // =========================
+  //     const customerResult = await this.vendorCustomerModel.updateOne(
+  //       {
+  //         businessId,
+  //         customerId,
+  //       },
+  //       {
+  //         $setOnInsert: {
+  //           businessId,
+  //           customerId,
+  //         },
+  //       },
+  //       { upsert: true },
+  //     );
 
-      const isNewCustomer = customerResult.upsertedCount > 0;
+  //     const isNewCustomer = customerResult.upsertedCount > 0;
 
-      // =========================
-      // 3. BUILD ANALYTICS UPDATE
-      // =========================
-      const update: any = {
-        $inc: {
-          totalRevenue: revenue,
-          totalOrders: 1,
-          totalProductsSold: productsSold,
-        },
-        $set: {
-          lastUpdated: new Date(),
-        },
-      };
+  //     // =========================
+  //     // 3. BUILD ANALYTICS UPDATE
+  //     // =========================
+  //     const update: any = {
+  //       $inc: {
+  //         totalRevenue: revenue,
+  //         totalOrders: 1,
+  //         totalProductsSold: productsSold,
+  //       },
+  //       $set: {
+  //         lastUpdated: new Date(),
+  //       },
+  //     };
 
-      // ONLY increment for first-time customer
-      if (isNewCustomer) {
-        update.$inc.totalCustomers = 1;
-      }
+  //     // ONLY increment for first-time customer
+  //     if (isNewCustomer) {
+  //       update.$inc.totalCustomers = 1;
+  //     }
 
-      // =========================
-      // 4. APPLY ANALYTICS UPDATE
-      // =========================
-      await this.analyticsModel.updateOne({ businessId }, update, {
-        upsert: true,
-      });
-    }
-  }
+  //     // =========================
+  //     // 4. APPLY ANALYTICS UPDATE
+  //     // =========================
+  //     await this.analyticsModel.updateOne({ businessId }, update, {
+  //       upsert: true,
+  //     });
+  //   }
+  // }
   async getBusinessAnalytics(businessId: string) {
     const id = new Types.ObjectId(businessId);
     const response = await this.analyticsModel.findOne({

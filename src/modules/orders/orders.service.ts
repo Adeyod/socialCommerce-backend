@@ -25,16 +25,17 @@ import { PaymentBreakdown } from '../payments/types/payment-breakdown.type';
 import { PickupCenterService } from '../pickup-center/pickup-center.service';
 import { ProductsRepository } from '../products/repositories/product.repository';
 import { Role } from '../users/schemas/user.schema';
+import { SendItemsToPickupDto } from '../vendor/dtos/bulk-send-to-pickup.dto';
 import { CreateOrderDto } from './dtos/create-order.dto';
+import { MarkItemReceivedDto } from './dtos/mark-item-received.dto';
 import { OrderRepository } from './repositories/order.repository';
+import { VendorItemOrderStatus } from './schemas/item-vendor-order.schema';
 import {
   DeliveryMode,
   OrderStatus,
   ShipmentStatus,
-  VendorItemOrderStatus,
-  VendorOrderStatus,
 } from './schemas/order.schema';
-import { ShipmentDto } from './types/processed-vendor.dto';
+import { VendorOrderStatus } from './schemas/vendor-order.schema';
 import { VendorGroup } from './types/vendor.types';
 
 @Injectable()
@@ -73,7 +74,8 @@ export class OrdersService {
       }
     }
 
-    const response = await this.orderRepository.findOrderByOrderId(orderId);
+    const response =
+      await this.orderRepository.findOrderByOrderIdWithoutSession(orderId);
 
     if (!response) {
       throw new NotFoundException({
@@ -157,7 +159,8 @@ export class OrdersService {
     businessId: string,
     productId: string,
   ) {
-    const order = await this.orderRepository.findOrderByOrderId(orderId);
+    const order =
+      await this.orderRepository.findOrderByOrderIdWithoutSession(orderId);
 
     if (!order) {
       throw new NotFoundException({
@@ -262,36 +265,84 @@ export class OrdersService {
 
     return response;
   }
+
   async markItemAsReceivedAtPickupCenter(
+    dto: MarkItemReceivedDto,
     pickupCenterId: string,
-    orderId: string,
-    businessId: string,
-    productId: string,
   ) {
-    const response =
-      await this.orderRepository.markItemAsReceivedAtPickupCenter(
-        pickupCenterId,
-        orderId,
-        businessId,
-        productId,
-      );
+    const { orderId, vendorOrderId, itemVendorOrderId, businessId } = dto;
 
-    if (!response) {
-      throw new BadRequestException({
-        message: 'Unable to mark as received.',
-        success: false,
-        status: 400,
-      });
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      // =========================
+      // 1. UPDATE ITEM (SOURCE OF TRUTH)
+      // =========================
+      const itemUpdateResult =
+        await this.orderRepository.updateOneItemVendorOrderStatus(
+          dto,
+          VendorItemOrderStatus.received_at_pickup_center,
+          session,
+        );
+
+      if (itemUpdateResult.modifiedCount === 0) {
+        throw new BadRequestException('Item not found or already processed');
+      }
+
+      // =========================
+      // 2. CHECK IF VENDOR ORDER IS COMPLETE
+      // =========================
+      const pendingVendorItems =
+        await this.orderRepository.countItemVendorOrderDocumentNotYetAtPickupCenter(
+          vendorOrderId,
+          session,
+        );
+
+      const vendorComplete = pendingVendorItems === 0;
+
+      if (vendorComplete) {
+        await this.orderRepository.updateOneVendorOrderStatus(
+          vendorOrderId,
+          businessId,
+          VendorOrderStatus.received_at_pickup_center,
+          session,
+        );
+      }
+
+      // =========================
+      // 3. CHECK IF FULL ORDER IS COMPLETE
+      // =========================
+      const pendingOrderItems =
+        await this.orderRepository.countAllItemsNotYetAtPickupCenterInAnOrderDocument(
+          orderId,
+          VendorItemOrderStatus.received_at_pickup_center,
+          session,
+        );
+
+      const orderComplete = pendingOrderItems === 0;
+
+      if (orderComplete) {
+        await this.orderRepository.updateOrderStatusWithSession(
+          orderId,
+          OrderStatus.completed_at_pickup_center,
+          session,
+        );
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return {
+        success: true,
+        vendorComplete,
+        orderComplete,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
     }
-
-    this.eventEmitter.emit(ShipmentEvents.item_received_at_pickup_center, {
-      pickupCenterId,
-      orderId,
-      businessId,
-      productId,
-    });
-
-    return response;
   }
   async updateOrderStatus(orderId: string, status: OrderStatus) {
     const response = await this.orderRepository.updateOrderStatus(
@@ -453,6 +504,11 @@ export class OrdersService {
 
     try {
       for (const vendor of vendorOrders) {
+        if (!vendor.items || vendor.items.length === 0) {
+          throw new BadRequestException(
+            `Vendor ${vendor.businessId} has no items in order`,
+          );
+        }
         const business = businessMap.get(vendor.businessId);
 
         if (!business) {
@@ -684,21 +740,12 @@ export class OrdersService {
         resolvedPickupCenter = 'No pickup center';
       }
 
-      const shipment: ShipmentDto = {
-        shipmentId: new Types.ObjectId().toString(),
-        deliveryMode,
-        vendors,
-        subtotal: globalSubtotal,
-
-        status: ShipmentStatus.pending,
-      };
       console.log('deliveryMode:', deliveryMode);
 
       const order = await this.orderRepository.createOrder(
         {
           cartId,
           customerId,
-          shipment: shipment,
           subtotal: globalSubtotal,
           shippingFeeTotal,
           collectionFee,
@@ -727,6 +774,47 @@ export class OrdersService {
           success: false,
           status: 400,
         });
+      }
+
+      // =========================
+      // ✅ CREATE VENDOR ORDERS
+      // =========================
+      const vendorOrderDocs: any[] = [];
+
+      for (const vendor of vendors) {
+        const vendorOrder = await this.orderRepository.createVendorOrder(
+          {
+            orderId: order._id,
+            businessId: vendor.businessId,
+            subtotal: vendor.subtotal,
+            status: VendorOrderStatus.pending,
+          },
+          session,
+        );
+
+        vendorOrderDocs.push({
+          vendorOrder,
+          items: vendor.items,
+          businessId: vendor.businessId,
+        });
+      }
+
+      // =========================
+      // ✅ CREATE ITEM ORDERS
+      // =========================
+      for (const vendor of vendorOrderDocs) {
+        const itemDocs = vendor.items.map((item) => ({
+          orderId: order._id,
+          vendorOrderId: vendor.vendorOrder._id,
+          businessId: vendor.businessId,
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          status: VendorItemOrderStatus.pending,
+        }));
+
+        await this.orderRepository.createItemVendorOrders(itemDocs, session);
       }
 
       // =========================
@@ -781,141 +869,159 @@ export class OrdersService {
   }
   async sendSingleOrderToPickup(
     businessId: string,
-    orderId: string,
+    itemId: string,
     pickupCenterId: string,
     user: JwtUser,
   ) {
-    const buzId = new Types.ObjectId(businessId);
-    const order = new Types.ObjectId(orderId);
+    const session = await this.connection.startSession();
+    session.startTransaction();
 
-    const response = await this.orderRepository.markItemsAsSentToPickup(buzId, [
-      order,
-    ]);
+    try {
+      const bizId = new Types.ObjectId(businessId);
+      const itemObjectId = new Types.ObjectId(itemId);
 
-    if (!response) {
+      // 1. Update item
+      const item = await this.orderRepository.markSingleItemAsSentToPickup(
+        bizId,
+        itemObjectId,
+        session,
+      );
+
+      if (!item) {
+        throw new BadRequestException('Item already processed or not found');
+      }
+
+      const { vendorOrderId, orderId } = item;
+
+      // 2. Recompute vendor order state
+      const vendorOrderUpdated =
+        await this.orderRepository.syncVendorOrderAfterItemUpdate(
+          vendorOrderId,
+          bizId,
+          session,
+        );
+
+      // 3. Recompute order state
+      await this.orderRepository.syncOrderAfterVendorUpdate(orderId, session);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      // 4. Event emission AFTER commit
+      this.eventEmitter.emit(ShipmentEvents.item_sent_to_pickup_center, {
+        itemVendorOrderId: itemId,
+        vendorOrderId: vendorOrderId.toString(),
+        orderId: orderId.toString(),
+        pickupCenterId,
+        vendorBusinessId: businessId,
+        triggeredBy: user.sub.toString(),
+        vendorOrderCompleted: vendorOrderUpdated,
+      });
+
+      return {
+        success: true,
+        vendorOrderUpdated,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+
+  async sendMultipleOrderToPickup(
+    payload: SendItemsToPickupDto[],
+    businessId: string,
+    pickupCenterId: string,
+    user: JwtUser,
+  ) {
+    const bizId = new Types.ObjectId(businessId);
+
+    if (!payload.length) {
       throw new BadRequestException({
-        message: 'Unable to mark item as sent to pickup center.',
+        message: 'No items provided',
         success: false,
         status: 400,
       });
     }
 
-    // Notify pickup of new order on its way
+    const session = await this.connection.startSession();
+    session.startTransaction();
 
-    this.eventEmitter.emit(ShipmentEvents.item_sent_to_pickup_center, {
-      orderId: order.toString(),
-      pickupCenterId,
-      vendorBusinessId: businessId,
-      triggeredBy: user.sub,
-    });
+    try {
+      const itemIds = payload.map(
+        (p) => new Types.ObjectId(p.itemVendorOrderId),
+      );
 
-    return response;
+      // =========================
+      // 1. FETCH ITEMS (to derive order + vendorOrder)
+      // =========================
+      const items =
+        await this.orderRepository.findItemVendorOrdersByIdsWithSession(
+          bizId,
+          itemIds,
+          session,
+        );
+
+      if (!items.length) {
+        throw new BadRequestException('No valid items found');
+      }
+
+      // =========================
+      // 2. UPDATE ITEMS IN BULK
+      // =========================
+      await this.orderRepository.markItemsAsSentToPickupCenter(
+        itemIds,
+        bizId,
+        session,
+      );
+      // =========================
+      // 3. DERIVE AFFECTED VENDOR ORDERS + ORDERS
+      // =========================
+      const vendorOrderIds = [
+        ...new Set(items.map((i) => i.vendorOrderId.toString())),
+      ];
+
+      const orderIds = [...new Set(items.map((i) => i.orderId.toString()))];
+
+      // =========================
+      // 4. UPDATE VENDOR ORDERS STATUS
+      // =========================
+      const updatedVendorStatus =
+        await this.orderRepository.updateManyOrderOfAVendor(
+          bizId,
+          vendorOrderIds,
+          VendorOrderStatus.sent_to_pickup_center,
+          session,
+        );
+
+      // =========================
+      // 5. EMIT EVENTS (ONCE PER ORDER)
+      // =========================
+      for (const orderId of orderIds) {
+        this.eventEmitter.emit(ShipmentEvents.item_sent_to_pickup_center, {
+          orderId,
+          pickupCenterId,
+          vendorBusinessId: businessId,
+          triggeredBy: user.sub.toString(),
+        });
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return {
+        success: true,
+        updatedItems: items.length,
+        affectedOrders: orderIds.length,
+        affectedVendorOrders: vendorOrderIds.length,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
   }
-  // async sendMultipleOrderToPickup(
-  //   payload: SendItemsDto[],
-  //   businessId: string,
-  //   pickupCenterId: string,
-  //   user: JwtUser,
-  // ) {
-  //   const bizId = new Types.ObjectId(businessId);
-
-  //   const response = await this.orderRepository.markItemsAsSentToPickup(
-  //     bizId,
-  //     orderIds.map((id) => new Types.ObjectId(id)),
-  //   );
-
-  //   if (!response) {
-  //     throw new BadRequestException({
-  //       message: 'Unable to mark item as sent to pickup center.',
-  //       success: false,
-  //       status: 400,
-  //     });
-  //   }
-
-  //   // Notify pickup of new order on its way
-  //   for (const order of orderIds) {
-  //     this.eventEmitter.emit(ShipmentEvents.item_sent_to_pickup_center, {
-  //       orderId: order.toString(),
-  //       pickupCenterId,
-  //       vendorBusinessId: businessId,
-  //       triggeredBy: user.sub.toString(),
-  //     });
-  //   }
-
-  //   return response;
-  // }
-
-  // async sendMultipleOrderToPickup(
-  //   payload: SendItemsDto[],
-  //   businessId: string,
-  //   pickupCenterId: string,
-  //   user: JwtUser,
-  // ) {
-  //   const bizId = new Types.ObjectId(businessId);
-
-  //   const bulkOps: any[] = [];
-
-  //   for (const entry of payload) {
-  //     const orderId = new Types.ObjectId(entry.orderId);
-
-  //     for (const item of entry.items) {
-  //       bulkOps.push({
-  //         updateOne: {
-  //           filter: {
-  //             _id: orderId,
-  //             'shipment.vendors.businessId': bizId,
-  //             'shipment.vendors.items.productId': new Types.ObjectId(
-  //               item.productId,
-  //             ),
-  //           },
-  //           update: {
-  //             $set: {
-  //               'shipment.vendors.$[v].items.$[i].itemStatus':
-  //                 VendorItemOrderStatus.sent_to_pickup_center,
-  //               'shipment.vendors.$[v].status':
-  //                 VendorOrderStatus.sent_to_pickup_center,
-  //             },
-  //           },
-  //           arrayFilters: [
-  //             { 'v.businessId': bizId },
-  //             { 'i.productId': new Types.ObjectId(item.productId) },
-  //           ],
-  //         },
-  //       });
-  //     }
-  //   }
-
-  //   if (bulkOps.length === 0) {
-  //     throw new BadRequestException({
-  //       message: 'No valid items to update.',
-  //       success: false,
-  //       status: 400,
-  //     });
-  //   }
-
-  //   const result = await this.orderModel.bulkWrite(bulkOps);
-
-  //   // Emit event ONCE per order (not per item)
-  //   const orderIds = [...new Set(payload.map((p) => p.orderId))];
-
-  //   for (const orderId of orderIds) {
-  //     this.eventEmitter.emit(
-  //       ShipmentEvents.item_sent_to_pickup_center,
-  //       {
-  //         orderId,
-  //         pickupCenterId,
-  //         vendorBusinessId: businessId,
-  //         triggeredBy: user.sub.toString(),
-  //       },
-  //     );
-  //   }
-
-  //   return {
-  //     success: true,
-  //     matchedCount: result.matchedCount,
-  //     modifiedCount: result.modifiedCount,
-  //   };
-  // }
   async getVendorBusinessOrdersToFulfill(
     businessId: string,
     user: JwtUser,
@@ -937,79 +1043,4 @@ export class OrdersService {
 
     return response;
   }
-
-  //   async getOrdersForPickupCenter(
-  //   pickupCenterId: string,
-  //   queryWithPaginationDto: QueryWithPaginationDto,
-  // ) {
-  //   const response = await this.ordersService.getOrdersForPickupCenter(
-  //     pickupCenterId,
-  //     queryWithPaginationDto,
-  //   );
-
-  //   return response;
-  // }
-  // async getPendingPickupCenterItems(
-  //   pickupCenterId: string,
-  //   queryWithPaginationDto: QueryWithPaginationDto,
-  // ) {
-  //   const response = await this.ordersService.getPendingPickupCenterItems(
-  //     pickupCenterId,
-  //     queryWithPaginationDto,
-  //   );
-
-  //   return response;
-  // }
-
-  // async markItemAsReceivedAtPickupCenter(
-  //   pickupCenterId: string,
-  //   businessId: string,
-  //   orderId: string,
-  //   productId: string,
-  // ) {
-  //   const order =
-  //     await this.ordersService.findOrderByOrderIdWithoutSession(orderId);
-
-  //   if (
-  //     order.destinationPickupCenter &&
-  //     order.destinationPickupCenter.toString() !== pickupCenterId
-  //   ) {
-  //     throw new ConflictException({
-  //       message: 'This order is not meant for this pickup center.',
-  //       success: false,
-  //       status: 409,
-  //     });
-  //   }
-
-  //   const response = await this.ordersService.markItemAsReceivedAtPickupCenter(
-  //     pickupCenterId,
-  //     orderId,
-  //     businessId,
-  //     productId,
-  //   );
-
-  //   const updatedOrder =
-  //     await this.ordersService.findOrderByOrderIdWithoutSession(orderId);
-
-  //   // 3. check if ALL items are received
-  //   const allReceived = updatedOrder.shipment.vendors.every((vendor) =>
-  //     vendor.items.every(
-  //       (item) =>
-  //         item.itemStatus === VendorItemOrderStatus.received_at_pickup_center,
-  //     ),
-  //   );
-
-  //   // 4. if complete → update order status
-  //   if (allReceived) {
-  //     await this.ordersService.updateOrderStatus(
-  //       orderId,
-  //       OrderStatus.completed_at_pickup_center, // or your enum
-  //     );
-
-  //     // OPTIONAL: trigger next workflow
-  //     // create shipment entity, notify riders, etc.
-  //   }
-
-  //   return { success: true, allReceived };
-  // }
 }

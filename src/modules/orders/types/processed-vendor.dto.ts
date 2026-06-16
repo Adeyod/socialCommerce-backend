@@ -1,14 +1,14 @@
 import { Types } from 'mongoose';
 import { BusinessAddress } from '../../businesses/schemas/business.schema';
 import { CreateVendorOrderDto } from '../dtos/create-order.dto';
+import { VendorItemOrderStatus } from '../schemas/item-vendor-order.schema';
 import {
   DeliveryAddress,
   DeliveryMode,
   OrderStatus,
   ShipmentStatus,
-  VendorItemOrderStatus,
-  VendorOrderStatus,
 } from '../schemas/order.schema';
+import { VendorOrderStatus } from '../schemas/vendor-order.schema';
 
 export type ProcessedVendorOrder = CreateVendorOrderDto & {
   businessAddress: BusinessAddress;
@@ -44,7 +44,7 @@ export type ProcessedOrderDataObjectId = {
   cartId: string;
   customerId: Types.ObjectId;
 
-  shipment: ShipmentDto;
+  // shipment: ShipmentDto;
   subtotal: number;
   deliveryFee: number;
   total: number;
@@ -67,7 +67,7 @@ export type ProcessedOrderData = {
   cartId: string;
   customerId: string;
 
-  shipment: ShipmentDto;
+  // shipment: ShipmentDto;
   subtotal: number;
   deliveryFee: number;
   total: number;

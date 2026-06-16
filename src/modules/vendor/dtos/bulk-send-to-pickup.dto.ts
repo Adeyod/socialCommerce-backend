@@ -1,14 +1,8 @@
 import { IsArray, IsMongoId } from 'class-validator';
 
-export class SendItemsDto {
+export class SendItemsToPickupDto {
   @IsMongoId()
-  orderId!: string;
-
-  @IsArray()
-  items!: {
-    productId: string;
-    quantity: number;
-  }[];
+  itemVendorOrderId!: string;
 }
 
 export class BulkSendToPickupDto {
@@ -16,5 +10,5 @@ export class BulkSendToPickupDto {
   pickupCenterId!: string;
 
   @IsArray()
-  payload!: SendItemsDto[];
+  payload!: SendItemsToPickupDto[];
 }

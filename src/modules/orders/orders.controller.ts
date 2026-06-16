@@ -23,7 +23,9 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtUser } from '../../common/types/jwt-user.type';
 import { PermissionsGuard } from '../staff-access-control/guards/permissions.guard';
 import { Role } from '../users/schemas/user.schema';
+import { BulkSendToPickupDto } from '../vendor/dtos/bulk-send-to-pickup.dto';
 import { CreateOrderDto } from './dtos/create-order.dto';
+import { MarkItemReceivedDto } from './dtos/mark-item-received.dto';
 import { OrdersService } from './orders.service';
 
 @Controller('orders')
@@ -279,23 +281,22 @@ export class OrdersController {
     status: 500,
     description: 'Internal server error',
   })
-  async sendMultipleOrderToPickup() {}
-  // async sendMultipleOrderToPickup(
-  //   @Body() dto: BulkSendToPickupDto,
-  //   @Param('businessId') businessId: string,
-  //   @GetCurrentUser() user: JwtUser,
-  // ) {
-  //   const response = await this.ordersService.sendMultipleOrderToPickup(
-  //     dto.payload,
-  //     dto.pickupCenterId,
-  //     businessId,
-  //     user,
-  //   );
+  async sendMultipleOrderToPickup(
+    @Body() dto: BulkSendToPickupDto,
+    @Param('businessId') businessId: string,
+    @GetCurrentUser() user: JwtUser,
+  ) {
+    const response = await this.ordersService.sendMultipleOrderToPickup(
+      dto.payload,
+      dto.pickupCenterId,
+      businessId,
+      user,
+    );
 
-  //   return response;
-  // }
+    return response;
+  }
 
-  @Post('send-single-order-to-pickup/:businessId/:orderId/:pickupCenterId')
+  @Post('send-single-order-to-pickup/:businessId/:itemId/:pickupCenterId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user)
   @Permissions(Permission.send_order_to_pickup_center)
@@ -322,14 +323,14 @@ export class OrdersController {
   })
   async sendSingleOrderToPickup(
     @Param('businessId') businessId: string,
-    @Param('orderId') orderId: string,
+    @Param('itemId') itemId: string,
     @Param('pickupCenterId') pickupCenterId: string,
     @GetCurrentUser() user: JwtUser,
   ) {
     const response = await this.ordersService.sendSingleOrderToPickup(
       businessId,
+      itemId,
       pickupCenterId,
-      orderId,
       user,
     );
 
@@ -454,9 +455,7 @@ export class OrdersController {
     return response;
   }
 
-  @Post(
-    'mark-item-as-received-at-pickup-center/:pickupCenterId/:businessId/:orderId/:productId',
-  )
+  @Post('mark-item-as-received-at-pickup-center/:pickupCenterId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.admin, Role.user)
   @ApiBearerAuth('JWT-auth')
@@ -485,16 +484,12 @@ export class OrdersController {
     description: 'Too many requests. Rate limit exceeded',
   })
   async markItemAsReceivedAtPickupCenter(
+    @Query() dto: MarkItemReceivedDto,
     @Param('pickupCenterId') pickupCenterId: string,
-    @Param('businessId') businessId: string,
-    @Param('orderId') orderId: string,
-    @Param('productId') productId: string,
   ) {
     const response = await this.ordersService.markItemAsReceivedAtPickupCenter(
+      dto,
       pickupCenterId,
-      businessId,
-      orderId,
-      productId,
     );
 
     return response;
