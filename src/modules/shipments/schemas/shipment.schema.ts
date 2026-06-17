@@ -6,12 +6,12 @@ import {
 } from '../../orders/schemas/order.schema';
 import { ShipmentVendor } from '../../orders/types/order.types';
 
-export type ShipmentDocument = HydratedDocument<ShipmentEntity>;
+export type ShipmentEntityDocument = HydratedDocument<ShipmentEntity>;
 
 @Schema({ timestamps: true })
 export class ShipmentEntity {
-  @Prop({ required: true })
-  shipmentId!: string;
+  @Prop({ type: Types.ObjectId, ref: 'Order', required: true })
+  orderId!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'PickupCenter', required: true })
   originPickupCenter?: Types.ObjectId;
@@ -35,4 +35,5 @@ export class ShipmentEntity {
   status!: ShipmentStatus;
 }
 
-export const ShipmentSchema = SchemaFactory.createForClass(ShipmentEntity);
+export const ShipmentEntitySchema =
+  SchemaFactory.createForClass(ShipmentEntity);

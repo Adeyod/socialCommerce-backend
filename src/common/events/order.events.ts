@@ -6,6 +6,8 @@ export const OrderEvents = {
 
 export const ShipmentEvents = {
   item_sent_to_pickup_center: 'item_sent_to_pickup_center',
+  vendor_order_received_at_pickup_center:
+    'vendor_order_received_at_pickup_center',
   item_received_at_pickup_center: 'item_received_at_pickup_center',
   all_items_received_at_pickup_center: 'all_items_received_at_pickup_center',
 

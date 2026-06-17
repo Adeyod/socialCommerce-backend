@@ -25,6 +25,7 @@ export enum ShipmentStatus {
   arrived = 'arrived', // at destination hub
   out_for_delivery = 'out_for_delivery',
   delivered = 'delivered',
+  assigned_to_rider = 'assigned_to_rider',
 }
 
 export class DeliveryAddress {

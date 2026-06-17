@@ -12,6 +12,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PickupCenterModule } from '../pickup-center/pickup-center.module';
 import { ProductsModule } from '../products/products.module';
+import { ShipmentsModule } from '../shipments/shipments.module';
 import { StaffAccessControlModule } from '../staff-access-control/staff-access-control.module';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
@@ -40,6 +41,7 @@ import { VendorOrder, VendorOrderSchema } from './schemas/vendor-order.schema';
     CollectionModule,
     BusinessShippingRateModule,
     InventoryModule,
+    ShipmentsModule,
 
     forwardRef(() => PickupCenterModule),
     forwardRef(() => HomeDeliveryModule),

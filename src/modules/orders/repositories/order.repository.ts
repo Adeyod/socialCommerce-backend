@@ -75,15 +75,33 @@ export class OrderRepository {
     return response;
   }
 
-  async countItemVendorOrderDocumentNotYetAtPickupCenter(
+  async countVendorOrderDocumentByStatus(
+    orderId: string,
+    status: VendorOrderStatus,
+    session: ClientSession,
+  ) {
+    const count = await this.vendorOrderModel.countDocuments(
+      {
+        orderId: new Types.ObjectId(orderId),
+        status: {
+          $ne: status,
+        },
+      },
+      { session },
+    );
+
+    return count;
+  }
+  async countItemVendorOrderDocumentByStatus(
     vendorOrderId: string,
+    status: VendorItemOrderStatus,
     session: ClientSession,
   ) {
     const count = await this.itemVendorOrderModel.countDocuments(
       {
         vendorOrderId: new Types.ObjectId(vendorOrderId),
         status: {
-          $ne: VendorItemOrderStatus.received_at_pickup_center,
+          $ne: status,
         },
       },
       { session },
@@ -187,7 +205,7 @@ export class OrderRepository {
         },
       },
 
-      // ✅ Vendor Orders
+      // Vendor Orders
       {
         $lookup: {
           from: 'vendororders', // collection name
@@ -197,7 +215,7 @@ export class OrderRepository {
         },
       },
 
-      // ✅ Attach Items to each Vendor
+      // Attach Items to each Vendor
       {
         $lookup: {
           from: 'itemvendororders',
@@ -207,7 +225,7 @@ export class OrderRepository {
         },
       },
 
-      // ✅ Group items under each vendor
+      // Group items under each vendor
       {
         $addFields: {
           vendorOrders: {
@@ -1024,7 +1042,7 @@ export class OrderRepository {
       .find({
         vendorOrderId: { $in: vendorOrderIds },
         status: {
-          $ne: VendorItemOrderStatus.sent_to_pickup_center,
+          $ne: VendorItemOrderStatus.sent_to_pickup_center, //might change this to pending
         },
       })
       .lean();
