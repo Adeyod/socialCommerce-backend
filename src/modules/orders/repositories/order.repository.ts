@@ -210,9 +210,11 @@ export class OrderRepository {
   ): Promise<OrderDocument | null> {
     console.log('order repository:', createOrderDto);
     const order = new this.orderModel(this.toOrderPayload(createOrderDto));
-    await order.save({ session });
+    const response = await order.save({ session });
 
-    return order;
+    console.log('response:', response);
+
+    return response;
   }
   async findOrderByOrderIdWithoutSession(orderId: string): Promise<any> {
     const id = new Types.ObjectId(orderId);
@@ -1776,15 +1778,20 @@ export class OrderRepository {
     session?: ClientSession,
   ) {
     const doc = new this.vendorOrderModel(payload);
-    await doc.save({ session });
-    return doc;
+    const response = await doc.save({ session });
+    console.log('response:', response);
+    return response;
   }
 
   async createItemVendorOrders(
     payload: Partial<ItemVendorOrder>[],
     session?: ClientSession,
   ) {
-    return this.itemVendorOrderModel.insertMany(payload, { session });
+    const response = await this.itemVendorOrderModel.insertMany(payload, {
+      session,
+    });
+    console.log('response:', response);
+    return response;
   }
   private toOrderPayload(dto: ProcessedOrderData): ProcessedOrderDataObjectId {
     const response = {

@@ -515,6 +515,7 @@ export class OrdersService {
     } = createOrderDto;
 
     console.log('incoming service createOrderDto:', createOrderDto);
+    console.log('deliveryAddress:', deliveryAddress);
 
     if (user.sub.toString() !== customerId) {
       throw new BadRequestException('Invalid user mismatch');
@@ -855,6 +856,8 @@ export class OrdersService {
         session,
       );
 
+      console.log('order:', order);
+
       if (!order) {
         throw new BadRequestException({
           message: 'Unable to create order.',
@@ -879,6 +882,8 @@ export class OrdersService {
           session,
         );
 
+        console.log('vendorOrder:', vendorOrder);
+
         vendorOrderDocs.push({
           vendorOrder,
           items: vendor.items,
@@ -901,7 +906,11 @@ export class OrdersService {
           status: VendorItemOrderStatus.pending,
         }));
 
-        await this.orderRepository.createItemVendorOrders(itemDocs, session);
+        const itemOrder = await this.orderRepository.createItemVendorOrders(
+          itemDocs,
+          session,
+        );
+        console.log('itemOrder:', itemOrder);
       }
 
       // =========================

@@ -78,7 +78,7 @@ export class Order {
   deliveryMode!: DeliveryMode;
 
   @Prop()
-  deliveryAddress?: string;
+  deliveryAddress?: DeliveryAddress;
 
   @Prop()
   destinationPickupCenter?: Types.ObjectId;

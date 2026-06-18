@@ -59,6 +59,7 @@ export class OrdersController {
     @Req() req: Request,
     @GetCurrentUser() user: JwtUser,
   ) {
+    console.log('controller createOrderDto:', createOrderDto);
     const response = await this.ordersService.createOrder(user, createOrderDto);
 
     return response;
