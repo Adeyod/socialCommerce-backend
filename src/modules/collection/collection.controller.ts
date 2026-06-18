@@ -126,9 +126,9 @@ export class CollectionController {
   }
 
   @Get('find-collection-fee/:collectionFeeId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.admin, Role.user)
-  @ApiBearerAuth('JWT-auth')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.admin, Role.user)
+  // @ApiBearerAuth('JWT-auth')
   @SuccessMessage('Collection fee fetched successfully.')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -160,9 +160,9 @@ export class CollectionController {
   }
 
   @Get('find-collection-fee-by-state/:state')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.admin)
-  @ApiBearerAuth('JWT-auth')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.admin)
+  // @ApiBearerAuth('JWT-auth')
   @SuccessMessage('Collection fee fetched successfully.')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
