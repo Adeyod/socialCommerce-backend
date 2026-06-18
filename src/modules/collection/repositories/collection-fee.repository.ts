@@ -20,7 +20,7 @@ export class CollectionFeeRepository {
     createCollectionFeeDto: CreateCollectionFeeDto,
   ): Promise<CollectionFeeDocument | null> {
     const fee = await new this.collectionFeeModel({
-      state: createCollectionFeeDto.state.trim().toLowerCase(),
+      state: createCollectionFeeDto.state,
       baseFee: createCollectionFeeDto.baseFee,
       additionalFee: createCollectionFeeDto.additionalFee,
     }).save();

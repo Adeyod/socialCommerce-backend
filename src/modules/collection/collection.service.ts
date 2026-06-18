@@ -119,6 +119,13 @@ export class CollectionService {
     return fee;
   }
   async findCollectionFeeByState(state: NigeriaState) {
+    if (!state) {
+      throw new BadRequestException({
+        message: 'State is required.',
+        success: false,
+        status: 400,
+      });
+    }
     const fee = await this.collectionRepository.findCollectionFeeByState(state);
 
     if (!fee) {
