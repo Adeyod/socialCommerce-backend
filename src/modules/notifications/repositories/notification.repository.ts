@@ -24,6 +24,9 @@ export class NotificationRepository {
       businessId: dto.businessId
         ? new Types.ObjectId(dto.businessId)
         : undefined,
+      pickupCenterId: dto.pickupCenterId
+        ? new Types.ObjectId(dto.pickupCenterId)
+        : undefined,
       deliveryId: dto.deliveryId
         ? new Types.ObjectId(dto.deliveryId)
         : undefined,

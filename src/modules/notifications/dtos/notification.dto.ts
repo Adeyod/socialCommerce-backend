@@ -42,6 +42,14 @@ export class CreateNotificationDto {
 
   @ApiPropertyOptional({
     description:
+      'This is the pickup center ID of the business that is processing the purchased product.',
+    example: '102o3948u5hj438e3h4u5',
+  })
+  @IsOptional()
+  pickupCenterId?: string;
+
+  @ApiPropertyOptional({
+    description:
       'This is the business ID of the business that is selling the purchased product.',
     example: '102o3948u5hj438e3h4u5',
   })

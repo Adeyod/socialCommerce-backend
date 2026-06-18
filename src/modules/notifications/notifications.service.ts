@@ -4,7 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { JwtUser } from '../../common/types/jwt-user.type';
+import { NigeriaState } from '../collection/schemas/collection-fee.schema';
 import { RiderProfileRepository } from '../rider/repositories/rider.repository';
 import { NotificationRepository } from './repositories/notification.repository';
 import { NotificationType } from './schemas/notification.schema';
@@ -16,6 +18,40 @@ export class NotificationsService {
     private readonly riderProfileRepository: RiderProfileRepository,
   ) {}
 
+  async notifyPickupCenter(
+    pickupCenterId: string,
+    title: string,
+    message: string,
+    type: NotificationType,
+    metadata: any,
+  ) {
+    const response = await this.notificationRepository.createNotification({
+      pickupCenterId: pickupCenterId,
+      type,
+      title,
+      message,
+      orderId: metadata.orderId,
+    });
+
+    return response;
+  }
+  async notifyBusiness(
+    businessId: string,
+    title: string,
+    message: string,
+    type: NotificationType,
+    metadata: any,
+  ) {
+    const response = await this.notificationRepository.createNotification({
+      businessId: businessId,
+      type,
+      title,
+      message,
+      orderId: metadata.orderId,
+    });
+
+    return response;
+  }
   async notifyBusinessOrderPaid(
     businessId: string,
     title: string,
@@ -34,23 +70,52 @@ export class NotificationsService {
     return response;
   }
 
-  async notifyRidersNearby(delivery) {
-    const riders = await this.riderProfileRepository.findByMultipleAreas(
-      delivery.pickupPoints[0].location,
-    );
+  async notifyRidersNearby(
+    title: string,
+    message: string,
+    type: NotificationType,
+    pickupCenterState: NigeriaState,
+    nearestBusStop: string,
+    metadata: any,
+  ) {
+    // find riders that resides in the pickup center state and also has picked the buyer location as part of where he want to service
+
+    const riders =
+      await this.riderProfileRepository.findRidersInPickupStatePlyingNearestBusStop(
+        pickupCenterState,
+        nearestBusStop,
+      );
 
     for (const rider of riders) {
       const notification = await this.notificationRepository.createNotification(
         {
           userId: rider._id.toString(),
           businessId: undefined,
-          title: 'New Delivery Available.',
-          message: 'A new delivery is waiting nearby.',
-          deliveryId: delivery._id,
-          type: NotificationType.order_ready_for_delivery,
+          title,
+          message,
+          type,
         },
       );
     }
+  }
+
+  async notifyBusinessOrderReceivedByPickupCenter(
+    businessId: Types.ObjectId,
+    title: string,
+    message: string,
+    type: NotificationType,
+    metadata: any,
+  ) {
+    // Find business of the vendor and create in-app notification for the business.
+  }
+  async notifyBuyer(
+    title: string,
+    message: string,
+    type: NotificationType,
+    buyerId: Types.ObjectId,
+    metadata: any,
+  ) {
+    // Find buyer here using buyerId and create in-app notification for the buyer.
   }
 
   async findNotificationsByBusinessId(businessId: string, user: JwtUser) {

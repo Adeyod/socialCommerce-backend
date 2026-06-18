@@ -3,9 +3,13 @@ import { HydratedDocument, Types } from 'mongoose';
 
 export enum NotificationType {
   order_paid = 'order_paid',
+  all_vendor_package_in_an_order_received_by_pickup_center = 'all_vendor_package_in_an_order_received_by_pickup_center',
+  order_sent_to_pickup_center_by_vendor = 'order_sent_to_pickup_center_by_vendor',
   order_packed = 'order_packed',
   order_ready_for_delivery = 'order_ready_for_delivery',
   order_assigned_to_rider = 'order_assigned_to_rider',
+  order_ready_for_pickup = 'order_ready_for_pickup',
+  new_shipment_alert = 'new_shipment_alert',
 }
 
 export enum NotificationStatus {
@@ -35,6 +39,9 @@ export class Notification {
 
   @Prop({ type: Types.ObjectId, ref: 'Business' })
   businessId?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'PickupCenter' })
+  pickupCenterId?: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Delivery' })
   deliveryId?: Types.ObjectId;

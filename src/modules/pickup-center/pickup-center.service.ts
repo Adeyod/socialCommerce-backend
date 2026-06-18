@@ -50,10 +50,10 @@ export class PickupCenterService {
       await this.pickupCenterRepository.getPickupCenterById(pickupCenterId);
 
     if (!centers) {
-      throw new BadRequestException({
-        message: 'Unable to fetch pick up center.',
+      throw new NotFoundException({
+        message: 'Pick up center not found.',
         success: false,
-        status: 400,
+        status: 404,
       });
     }
 

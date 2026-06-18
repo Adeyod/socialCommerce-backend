@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
 
 export type RiderProfileDocument = HydratedDocument<RiderProfile>;
 
@@ -8,7 +9,7 @@ export class RiderServiceArea {
   name!: string; // Ikeja
 
   @Prop()
-  state?: string; // optional: "Lagos"
+  state?: NigeriaState; // optional: "Lagos"
 
   @Prop()
   country?: string; // optional: "Nigeria"
@@ -38,6 +39,9 @@ export class RiderProfile {
   vehicleType!: string;
 
   @Prop()
+  riderLocationState?: NigeriaState;
+
+  @Prop()
   licenseNumber!: string;
 
   @Prop({ default: true })
@@ -64,7 +68,14 @@ export class RiderProfile {
     default: [],
   })
   serviceAreas!: RiderServiceArea[];
+
+  @Prop({
+    type: [String],
+    default: [],
+  })
+  riderRoutes!: string[];
 }
 
 export const RiderProfileSchema = SchemaFactory.createForClass(RiderProfile);
 RiderProfileSchema.index({ location: '2dsphere' });
+RiderProfileSchema.index({ riderRoutes: 1, riderLocationState: 1 });

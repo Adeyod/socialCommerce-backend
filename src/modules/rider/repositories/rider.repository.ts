@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
 import { RiderDataDto } from '../dtos/rider-data.dto';
 import { RiderProfile, RiderProfileDocument } from '../schemas/rider.schema';
 
@@ -57,6 +58,18 @@ export class RiderProfileRepository {
       },
       isAvailable: true,
     });
+  }
+
+  async findRidersInPickupStatePlyingNearestBusStop(
+    pickupCenterState: NigeriaState,
+    nearestBusStop: string,
+  ) {
+    const riders = await this.riderModel.find({
+      isAvailable: true,
+      riderLocationState: pickupCenterState,
+      riderRoutes: nearestBusStop,
+    });
+    return riders;
   }
 
   //   async findNearby(

@@ -110,6 +110,38 @@ export class OrderRepository {
     return count;
   }
 
+  async countAllItemsNotYetSentToPickupInAnOrderDocument(
+    orderId: Types.ObjectId,
+    targetStatus: VendorItemOrderStatus,
+    session: ClientSession,
+  ): Promise<number> {
+    const result = await this.orderModel
+      .aggregate([
+        {
+          $match: {
+            _id: orderId,
+          },
+        },
+        {
+          $unwind: '$vendorOrders',
+        },
+        {
+          $unwind: '$vendorOrders.items',
+        },
+        {
+          $match: {
+            'vendorOrders.items.status': { $ne: targetStatus },
+          },
+        },
+        {
+          $count: 'remainingItems',
+        },
+      ])
+      .session(session);
+
+    return result[0]?.remainingItems || 0;
+  }
+
   async countAllItemsNotYetAtPickupCenterInAnOrderDocument(
     orderId: string,
     status: VendorItemOrderStatus,
@@ -1732,6 +1764,13 @@ export class OrderRepository {
     return items;
   }
 
+  async findItemVendorOrderByItemId(itemId: string) {
+    const id = new Types.ObjectId(itemId);
+    const response = await this.itemVendorOrderModel.findById(id);
+
+    return response;
+  }
+
   async createVendorOrder(
     payload: Partial<VendorOrder>,
     session?: ClientSession,
@@ -1752,6 +1791,7 @@ export class OrderRepository {
       cartId: dto.cartId,
       shippingFeeTotal: dto.shippingFeeTotal,
       collectionFee: dto.collectionFee,
+      nearestBusStop: dto.nearestBusStop ? dto.nearestBusStop : undefined,
       destinationPickupCenter: dto.destinationPickupCenter
         ? new Types.ObjectId(dto.destinationPickupCenter)
         : null,

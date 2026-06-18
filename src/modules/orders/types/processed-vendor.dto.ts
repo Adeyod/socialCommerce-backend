@@ -42,6 +42,7 @@ export type ShipmentDto = {
 
 export type ProcessedOrderDataObjectId = {
   cartId: string;
+  nearestBusStop?: string;
   customerId: Types.ObjectId;
 
   // shipment: ShipmentDto;
@@ -65,6 +66,7 @@ export type ProcessedOrderDataObjectId = {
 
 export type ProcessedOrderData = {
   cartId: string;
+  nearestBusStop?: string;
   customerId: string;
 
   // shipment: ShipmentDto;

@@ -100,6 +100,9 @@ export class Order {
   status!: OrderStatus;
 
   @Prop()
+  nearestBusStop?: string;
+
+  @Prop()
   notes?: string;
 }
 
