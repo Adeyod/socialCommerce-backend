@@ -71,6 +71,9 @@ export class Order {
   @Prop({ default: 0 })
   deliveryFee!: number;
 
+  @Prop({ default: 0 })
+  collectionFee?: number;
+
   @Prop({ required: true })
   total!: number;
 
@@ -101,6 +104,10 @@ export class Order {
 
   @Prop()
   nearestBusStop?: string;
+
+  // Optional logistics tracking
+  @Prop({ type: Types.ObjectId, ref: 'ShipmentEntity' })
+  shipmentId?: string;
 
   @Prop()
   notes?: string;

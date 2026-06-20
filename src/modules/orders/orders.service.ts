@@ -514,28 +514,33 @@ export class OrdersService {
       interStatePickupFee,
     } = createOrderDto;
 
-    console.log('incoming service createOrderDto:', createOrderDto);
-    console.log('deliveryAddress:', deliveryAddress);
-
     if (user.sub.toString() !== customerId) {
-      throw new BadRequestException('Invalid user mismatch');
+      throw new BadRequestException({
+        message: 'Invalid user mismatch',
+        success: false,
+        status: 400,
+      });
     }
 
     let buyerState: NigeriaState;
 
     if (deliveryMode === DeliveryMode.homeDelivery) {
       if (!deliveryAddress) {
-        throw new BadRequestException(
-          'deliveryAddress is required for home delivery',
-        );
+        throw new BadRequestException({
+          message: 'deliveryAddress is required for home delivery',
+          success: false,
+          status: 400,
+        });
       }
 
       buyerState = deliveryAddress.state;
     } else {
       if (!pickupCenter) {
-        throw new BadRequestException(
-          'pickupCenter is required for pickup delivery',
-        );
+        throw new BadRequestException({
+          message: 'pickupCenter is required for pickup delivery',
+          success: false,
+          status: 400,
+        });
       }
 
       const pickupCenterData =
@@ -550,7 +555,12 @@ export class OrdersService {
       user.sub.toString(),
     );
 
-    if (!cartExist) throw new NotFoundException('Cart not found');
+    if (!cartExist)
+      throw new NotFoundException({
+        message: 'Cart not found',
+        status: 404,
+        success: false,
+      });
 
     // FLATTEN
     const flatItems = vendorOrders.flatMap((v) =>
@@ -562,7 +572,7 @@ export class OrdersService {
     );
 
     // =========================
-    // 🔥 SINGLE PRODUCT QUERY
+    // SINGLE PRODUCT QUERY
     // =========================
     const productIds = flatItems.map((i) => i.productId);
 
@@ -614,8 +624,6 @@ export class OrdersService {
           );
         }
 
-        console.log('businessState:', businessState);
-
         const vendorGroup: VendorGroup = {
           businessId: vendor.businessId,
           items: [],
@@ -627,15 +635,12 @@ export class OrdersService {
 
         for (const item of vendor.items) {
           const product = productMap.get(item.productId.toString());
-          console.log('product:', product);
 
           if (!product) {
             throw new NotFoundException(`Product not found: ${item.productId}`);
           }
 
           const availableStock = product.stock - product.reservedQuantity;
-          console.log('availableStock:', availableStock);
-          console.log('item.quantity:', item.quantity);
 
           if (availableStock < item.quantity) {
             throw new BadRequestException(
@@ -663,6 +668,8 @@ export class OrdersService {
             name: product.name,
             price: product.price,
             quantity: item.quantity,
+            itemTotalWeight: itemWeight,
+            itemSubTotal: itemTotal,
           });
 
           vendorGroup.subtotal += itemTotal;
@@ -676,7 +683,6 @@ export class OrdersService {
         const isInterState =
           vendorGroup.originState !== buyerState.toLowerCase();
 
-        console.log('isInterState:', isInterState);
         const shippingFee =
           await this.businessShippingRateService.getBusinessShippingPricePerState(
             vendor.businessId,
@@ -684,7 +690,6 @@ export class OrdersService {
             vendorGroup.totalWeight,
           );
 
-        console.log('shippingFee:', shippingFee);
         vendorGroup.shippingFee = shippingFee;
         shippingFeeTotal += shippingFee;
         if (isInterState) {
@@ -693,21 +698,23 @@ export class OrdersService {
 
         vendorMap.set(vendor.businessId, vendorGroup);
       }
-      console.log('globalSubtotal:', globalSubtotal);
-      console.log('subTotalSummation:', subTotalSummation);
 
       // VALIDATE FRONTEND TOTALS
       if (subTotalSummation && subTotalSummation !== globalSubtotal) {
-        throw new BadRequestException('Subtotal mismatch');
+        throw new BadRequestException({
+          message: 'Subtotal mismatch',
+          status: 400,
+          success: false,
+        });
       }
-
-      console.log('shippingFeeTotal:', shippingFeeTotal);
-      console.log('shippingFeeSummation:', shippingFeeSummation);
 
       if (shippingFeeSummation && shippingFeeSummation !== shippingFeeTotal) {
-        throw new BadRequestException('Shipping mismatch');
+        throw new BadRequestException({
+          message: 'Shipping mismatch',
+          status: 400,
+          success: false,
+        });
       }
-      console.log('pass 2');
 
       // COLLECTION FEE
       if (interStateGroups.size > 0) {
@@ -763,7 +770,6 @@ export class OrdersService {
             nearestBusStop,
             globalTotalWeight,
           );
-        console.log('lastMileFee:', lastMileFee);
 
         if (!deliveryFee || deliveryFee === 0) {
           throw new BadRequestException({
@@ -784,7 +790,6 @@ export class OrdersService {
 
       const total =
         globalSubtotal + shippingFeeTotal + collectionFee + lastMileFee;
-      console.log('total:', total);
 
       const vendors = Array.from(vendorMap.values());
 
@@ -813,7 +818,6 @@ export class OrdersService {
             ? pickupCenter
             : null,
       };
-      console.log('paymentBreakdown:', paymentBreakdown);
 
       let resolvedPickupCenter: string;
 
@@ -826,8 +830,6 @@ export class OrdersService {
       } else {
         resolvedPickupCenter = 'No pickup center';
       }
-
-      console.log('deliveryMode:', deliveryMode);
 
       const order = await this.orderRepository.createOrder(
         {
@@ -856,8 +858,6 @@ export class OrdersService {
         session,
       );
 
-      console.log('order:', order);
-
       if (!order) {
         throw new BadRequestException({
           message: 'Unable to create order.',
@@ -867,7 +867,7 @@ export class OrdersService {
       }
 
       // =========================
-      // ✅ CREATE VENDOR ORDERS
+      // CREATE VENDOR ORDERS
       // =========================
       const vendorOrderDocs: any[] = [];
 
@@ -875,14 +875,15 @@ export class OrdersService {
         const vendorOrder = await this.orderRepository.createVendorOrder(
           {
             orderId: order._id,
-            businessId: vendor.businessId,
+            businessId: new Types.ObjectId(vendor.businessId),
             subtotal: vendor.subtotal,
+            totalWeight: vendor.totalWeight,
+            total: vendor.subtotal + vendor.shippingFee,
+            shippingFee: vendor.shippingFee,
             status: VendorOrderStatus.pending,
           },
           session,
         );
-
-        console.log('vendorOrder:', vendorOrder);
 
         vendorOrderDocs.push({
           vendorOrder,
@@ -892,17 +893,18 @@ export class OrdersService {
       }
 
       // =========================
-      // ✅ CREATE ITEM ORDERS
+      // CREATE ITEM ORDERS
       // =========================
       for (const vendor of vendorOrderDocs) {
         const itemDocs = vendor.items.map((item) => ({
           orderId: order._id,
           vendorOrderId: vendor.vendorOrder._id,
-          businessId: vendor.businessId,
+          businessId: new Types.ObjectId(vendor.businessId),
           productId: item.productId,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
+          totalWeight: item.itemTotalWeight,
           status: VendorItemOrderStatus.pending,
         }));
 
@@ -910,7 +912,6 @@ export class OrdersService {
           itemDocs,
           session,
         );
-        console.log('itemOrder:', itemOrder);
       }
 
       // =========================

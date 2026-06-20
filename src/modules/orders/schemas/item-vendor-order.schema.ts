@@ -38,16 +38,15 @@ export class ItemVendorOrder {
   @Prop({ required: true })
   quantity!: number;
 
+  @Prop({ required: true })
+  totalWeight!: number;
+
   @Prop({
     type: String,
     enum: VendorItemOrderStatus,
     default: VendorItemOrderStatus.pending,
   })
   status!: VendorItemOrderStatus;
-
-  // Optional logistics tracking
-  @Prop()
-  shipmentId?: string;
 }
 
 export const ItemVendorOrderSchema =

@@ -5,6 +5,8 @@ export type VendorItemWithoutStatus = {
   name: string;
   price: number;
   quantity: number;
+  itemTotalWeight: number;
+  itemSubTotal: number;
 };
 
 export type VendorGroup = {

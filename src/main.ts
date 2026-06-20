@@ -10,7 +10,7 @@ import { AppModule } from './app.module';
 import { MongoExceptionFilter } from './common/filters/mongo-exception.filter';
 import { GlobalResponseInterceptor } from './common/interceptor/global-response.interceptor';
 import { FormDataNormalizePipe } from './common/pipes/formdata-normalize.pipe';
-import { InventoryRepository } from './modules/inventory/repositories/inventory.repository';
+import { BusinessShippingRateRepository } from './modules/business-shipping-rate/repositories/business-shipping-rate.repository';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -38,7 +38,45 @@ async function bootstrap() {
   // const productId = '6a27fcbf5e60b18bce2137d6';
   // const quantity = 12;
 
-  const repo = app.get(InventoryRepository);
+  // const dto = {
+  //   businessId: '6a2727a602164e3e56316342',
+  //   originState: NigeriaState.OYO,
+  //   destinationState: NigeriaState.EKITI,
+  //   weightRanges: [
+  //     {
+  //       min: 0,
+  //       max: 5,
+  //       price: 2200,
+  //     },
+  //     {
+  //       min: 6,
+  //       max: 10,
+  //       price: 2350,
+  //     },
+  //     {
+  //       min: 11,
+  //       max: 20,
+  //       price: 2500,
+  //     },
+  //     {
+  //       min: 21,
+  //       max: 50,
+  //       price: 3000,
+  //     },
+  //     {
+  //       min: 51,
+  //       max: 100,
+  //       price: 3500,
+  //     },
+  //     {
+  //       min: 101,
+  //       price: 6000,
+  //     },
+  //   ],
+  // };
+
+  const repo = app.get(BusinessShippingRateRepository);
+  // await repo.createBusinessShippingRate(dto);
   // await repo.addBusinessAddress(businessId, addressData);
   // await repo.createInventory(businessId, productId, quantity);
 

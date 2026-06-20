@@ -19,7 +19,16 @@ export class VendorOrder {
   businessId!: Types.ObjectId;
 
   @Prop({ required: true })
-  subtotal!: number;
+  subtotal!: number; // productTotal
+
+  @Prop({ required: true })
+  total!: number; //subtotal of products + shipping fee
+
+  @Prop({ required: true, default: 0 })
+  shippingFee!: number;
+
+  @Prop({ required: true, default: 0 })
+  totalWeight!: number;
 
   @Prop({
     type: String,
