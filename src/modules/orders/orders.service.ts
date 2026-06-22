@@ -735,6 +735,9 @@ export class OrdersService {
           feeConfig.baseFee +
           feeConfig.additionalFee * (interStateGroups.size - 1);
 
+        console.log('interStatePickupFee:', interStatePickupFee);
+        console.log('collectionFee:', collectionFee);
+
         if (!interStatePickupFee || interStatePickupFee === 0) {
           throw new BadRequestException({
             message: 'State logistic fee is required.',

@@ -173,6 +173,7 @@ export class PaymentsController {
     @Param('reference') reference: string,
     @GetCurrentUser() user: JwtUser,
   ) {
+    console.log('reference:', reference);
     return await this.paymentsService.verifyPayment(reference, user);
   }
 }

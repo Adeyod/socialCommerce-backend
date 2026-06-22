@@ -217,6 +217,8 @@ export class PaymentsService {
         reference,
       );
 
+    console.log('transaction:', transaction);
+
     if (!transaction) {
       throw new NotFoundException({
         message: 'Transaction not found.',
@@ -253,6 +255,9 @@ export class PaymentsService {
         status: 400,
       });
     }
+
+    console.log('providerRes:', providerRes);
+    console.log('providerRes.amount:', providerRes.amount);
 
     if (transaction.amount !== providerRes.amount) {
       throw new BadRequestException({
