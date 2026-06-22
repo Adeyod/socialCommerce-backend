@@ -803,6 +803,10 @@ export class ProductsRepository {
                 business: {
                   id: '$business._id',
                   name: '$business.name',
+                  businessAddress: {
+                    state: '$business.businessAddress.state',
+                    town: '$business.businessAddress.town',
+                  },
                 },
                 shippingRates: {
                   $map: {

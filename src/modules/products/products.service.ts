@@ -39,9 +39,6 @@ export class ProductsService {
   ) {
     const id = new Types.ObjectId(businessId);
 
-    console.log('Files in service:', files);
-    console.log('createProductDto in service:', createProductDto);
-
     const businessExist =
       await this.businessesRepository.findBusinessByBusinessId(id);
 
