@@ -226,6 +226,25 @@ export class PaymentsService {
         status: 404,
       });
     }
+    const order = await this.orderRepository.findOrderByOrderIdWithoutSession(
+      transaction.orderId.toString(),
+    );
+
+    if (!order) {
+      throw new NotFoundException({
+        message: 'Order not found.',
+        status: 404,
+        success: false,
+      });
+    }
+
+    if (transaction.amount !== order.total) {
+      throw new BadRequestException({
+        message: 'Payment amount and order total mismatch.',
+        success: false,
+        status: 400,
+      });
+    }
 
     if (transaction.userId.toString() !== user.sub.toString()) {
       throw new ForbiddenException({
@@ -262,7 +281,7 @@ export class PaymentsService {
     console.log('formattedAmt:', formattedAmt);
     console.log('providerRes.amount:', providerRes.amount);
 
-    if (transaction.amount !== providerRes.amount) {
+    if (transaction.amount !== formattedAmt) {
       throw new BadRequestException({
         message: 'Payment mismatch.',
         success: false,

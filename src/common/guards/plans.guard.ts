@@ -11,7 +11,6 @@ export class PlansGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    console.log('I want to run PlansGuard');
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
