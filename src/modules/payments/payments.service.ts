@@ -348,9 +348,11 @@ export class PaymentsService {
       console.log('payment.userId:', payment.userId);
       console.log('payment.orderId:', payment.orderId);
 
-      const userObjectId = new Types.ObjectId(payment.userId);
-      const orderId = new Types.ObjectId(payment.orderId);
+      const userObjectId = payment.userId;
+      const orderId = payment.orderId;
 
+      console.log('userObjectId:', userObjectId);
+      console.log('orderId:', orderId);
       console.log('Comment 1');
       // ===============================
       // FETCH USER + ORDER
