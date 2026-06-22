@@ -566,6 +566,9 @@ export class PaymentsService {
       // ===============================
       const payObj: PaymentBreakdown = payment.paymentBreakdown;
 
+      console.log('payment.paymentBreakdown:', payment.paymentBreakdown);
+      console.log('payObj.platformFees:', payObj.platformFees);
+
       const collectionFee = payObj.platformFees.collectionFee;
       const deliveryFee = payObj.platformFees.deliveryFee;
 

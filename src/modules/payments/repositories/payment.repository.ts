@@ -50,11 +50,12 @@ export class PaymentsRepository {
       amount,
       reference,
       provider,
-      deliveryMode: paymentBreakdown.deliveryMode,
-      deliveryAddress: paymentBreakdown.deliveryAddress,
-      vendorsPaymentBreakdown: paymentBreakdown.vendors,
-      collectionFee: paymentBreakdown.platformFees.collectionFee,
-      deliveryFee: paymentBreakdown.platformFees.deliveryFee,
+      paymentBreakdown,
+      // deliveryMode: paymentBreakdown.deliveryMode,
+      // deliveryAddress: paymentBreakdown.deliveryAddress,
+      // vendorsPaymentBreakdown: paymentBreakdown.vendors,
+      // collectionFee: paymentBreakdown.platformFees.collectionFee,
+      // deliveryFee: paymentBreakdown.platformFees.deliveryFee,
     }).save();
 
     console.log('newPayment:', newPayment);
