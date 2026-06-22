@@ -514,6 +514,8 @@ export class OrdersService {
       interStatePickupFee,
     } = createOrderDto;
 
+    console.log('vendorOrders:', vendorOrders);
+
     if (user.sub.toString() !== customerId) {
       throw new BadRequestException({
         message: 'Invalid user mismatch',
@@ -561,6 +563,8 @@ export class OrdersService {
         status: 404,
         success: false,
       });
+
+    console.log('cartExist:', cartExist);
 
     // FLATTEN
     const flatItems = vendorOrders.flatMap((v) =>
