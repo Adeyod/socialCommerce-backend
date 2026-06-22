@@ -17,15 +17,14 @@ export class InventoryRepository {
     private readonly inventoryLogModel: Model<InventoryLogDocument>,
   ) {}
 
-  async findManyByProductIds(productIds: string[], session?: ClientSession) {
+  async findManyByProductIds(productIds: string[], session: ClientSession) {
     const objectIds = productIds.map((id) => new Types.ObjectId(id));
 
-    const response = await this.inventoryModel.find(
-      {
+    const response = await this.inventoryModel
+      .find({
         productId: { $in: objectIds },
-      },
-      { session },
-    );
+      })
+      .session(session);
 
     return response;
   }

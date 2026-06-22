@@ -417,10 +417,15 @@ export class PaymentsService {
       // ===============================
       // FETCH INVENTORIES + PRODUCTS (BULK)
       // ===============================
-      const [inventories, products] = await Promise.all([
-        this.inventoryRepository.findManyByProductIds(allProductIds, session),
-        this.productsRepository.findManyByIds(allProductIds, session),
-      ]);
+      const products = await this.productsRepository.findManyByIds(
+        allProductIds,
+        session,
+      );
+
+      const inventories = await this.inventoryRepository.findManyByProductIds(
+        allProductIds,
+        session,
+      );
 
       const inventoryMap = new Map(
         inventories.map((inv) => [inv.productId.toString(), inv]),
