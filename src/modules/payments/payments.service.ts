@@ -256,7 +256,10 @@ export class PaymentsService {
       });
     }
 
+    const formattedAmt = providerRes.amount / 100;
+
     console.log('providerRes:', providerRes);
+    console.log('formattedAmt:', formattedAmt);
     console.log('providerRes.amount:', providerRes.amount);
 
     if (transaction.amount !== providerRes.amount) {
