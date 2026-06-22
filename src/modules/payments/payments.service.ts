@@ -361,6 +361,9 @@ export class PaymentsService {
         this.orderRepository.findOrderByOrderId(orderId.toString(), session),
       ]);
 
+      console.log('userExist:', userExist);
+      console.log('orderDoc:', orderDoc);
+
       if (!userExist) {
         throw new NotFoundException({
           message: 'User not found.',
