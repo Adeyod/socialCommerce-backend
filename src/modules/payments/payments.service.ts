@@ -617,6 +617,7 @@ export class PaymentsService {
       return { message: 'Payment processed successfully.' };
     } catch (error) {
       await session.abortTransaction();
+      console.log('error:', error);
       throw error;
     } finally {
       session.endSession();

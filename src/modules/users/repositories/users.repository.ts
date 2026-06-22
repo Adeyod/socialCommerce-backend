@@ -14,9 +14,9 @@ export class UsersRepository {
   }
   async findById(
     id: Types.ObjectId,
-    session?: ClientSession,
+    session: ClientSession,
   ): Promise<UserDocument | null> {
-    return this.userModel.findById(id, { session });
+    return this.userModel.findById(id).session(session);
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
