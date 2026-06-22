@@ -389,11 +389,11 @@ export class PaymentsService {
         return { message: 'Order already processed.' };
       }
 
-      const shipment = orderDoc.shipment;
+      const shipment = orderDoc.vendorOrders;
 
       console.log('Comment 2');
 
-      if (!shipment || !shipment.vendors.length) {
+      if (!shipment || !shipment.length) {
         throw new BadRequestException({
           message: 'Invalid shipment data.',
           success: false,
@@ -406,8 +406,8 @@ export class PaymentsService {
       // ===============================
       const allProductIds: string[] = [];
 
-      for (const vendor of shipment.vendors) {
-        for (const item of vendor.items) {
+      for (const vendorOrder of orderDoc.vendorOrders) {
+        for (const item of vendorOrder.items) {
           allProductIds.push(item.productId.toString());
         }
       }
@@ -443,7 +443,7 @@ export class PaymentsService {
       // ===============================
       // VENDOR DISTRIBUTION
       // ===============================
-      for (const vendor of shipment.vendors) {
+      for (const vendor of orderDoc.vendorOrders) {
         let computedSubtotal = 0;
         const breakdown: LedgerBreakdownType[] = [];
 
@@ -545,14 +545,14 @@ export class PaymentsService {
       }
       console.log('Comment 10');
 
-      // ===============================
-      // EXECUTE BULK WRITES
-      // ===============================
-      await Promise.all([
-        this.productsRepository.decrementStockBulk(stockUpdates, session),
-        this.inventoryRepository.decrementInventoryBulk(stockUpdates, session),
-        this.inventoryRepository.createLogsBulk(inventoryLogs, session),
-      ]);
+      await this.productsRepository.decrementStockBulk(stockUpdates, session);
+
+      await this.inventoryRepository.decrementInventoryBulk(
+        stockUpdates,
+        session,
+      );
+
+      await this.inventoryRepository.createLogsBulk(inventoryLogs, session);
 
       console.log('Comment 11');
 
