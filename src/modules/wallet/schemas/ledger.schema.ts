@@ -72,12 +72,44 @@ export class Ledger {
 
 export const LedgerSchema = SchemaFactory.createForClass(Ledger) as any;
 
+// LedgerSchema.pre('save', function (this: Ledger) {
+//   if (!this.userId && !this.businessId) {
+//     throw new Error('Ledger must belong to a user or business');
+//   }
+
+//   if (this.userId && this.businessId) {
+//     throw new Error('Ledger cannot belong to both');
+//   }
+// });
+
 LedgerSchema.pre('save', function (this: Ledger) {
-  if (!this.userId && !this.businessId) {
-    throw new Error('Ledger must belong to a user or business');
+  // PLATFORM case (no userId or businessId required)
+  if (this.ownerType === LedgerOwnerType.platform) {
+    if (this.userId || this.businessId) {
+      throw new Error('Platform ledger cannot have userId or businessId');
+    }
+    return;
   }
 
-  if (this.userId && this.businessId) {
-    throw new Error('Ledger cannot belong to both');
+  // USER case
+  if (this.ownerType === LedgerOwnerType.user) {
+    if (!this.userId) {
+      throw new Error('User ledger must have userId');
+    }
+    if (this.businessId) {
+      throw new Error('User ledger cannot have businessId');
+    }
+    return;
+  }
+
+  // BUSINESS case
+  if (this.ownerType === LedgerOwnerType.business) {
+    if (!this.businessId) {
+      throw new Error('Business ledger must have businessId');
+    }
+    if (this.userId) {
+      throw new Error('Business ledger cannot have userId');
+    }
+    return;
   }
 });
