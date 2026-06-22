@@ -313,6 +313,7 @@ export class PaymentsService {
   }
 
   private async processSuccessfulPayment(payment: any) {
+    console.log('processSuccessfulPayment service payload:', payment);
     if (payment.processed) {
       return { message: 'Payment already processed.' };
     }
@@ -324,6 +325,7 @@ export class PaymentsService {
       const userObjectId = new Types.ObjectId(payment.userId);
       const orderId = new Types.ObjectId(payment.orderId);
 
+      console.log('Comment 1');
       // ===============================
       // FETCH USER + ORDER
       // ===============================
@@ -354,6 +356,8 @@ export class PaymentsService {
 
       const shipment = orderDoc.shipment;
 
+      console.log('Comment 2');
+
       if (!shipment || !shipment.vendors.length) {
         throw new BadRequestException({
           message: 'Invalid shipment data.',
@@ -373,6 +377,8 @@ export class PaymentsService {
         }
       }
 
+      console.log('Comment 3');
+
       // ===============================
       // FETCH INVENTORIES + PRODUCTS (BULK)
       // ===============================
@@ -389,6 +395,8 @@ export class PaymentsService {
         products.map((prod) => [prod._id.toString(), prod]),
       );
 
+      console.log('Comment 4');
+
       // ===============================
       // PREPARE BULK OPS
       // ===============================
@@ -404,6 +412,7 @@ export class PaymentsService {
         let computedSubtotal = 0;
         const breakdown: LedgerBreakdownType[] = [];
 
+        console.log('Comment 5');
         for (const item of vendor.items) {
           const productInventory = inventoryMap.get(item.productId.toString());
           const productExist = productMap.get(item.productId.toString());
@@ -424,6 +433,8 @@ export class PaymentsService {
             });
           }
 
+          console.log('Comment 6');
+
           const itemTotal = item.price * item.quantity;
           const commission = platformComm * itemTotal;
           const net = itemTotal - commission;
@@ -441,7 +452,9 @@ export class PaymentsService {
             netAmount: net,
           });
 
-          // 🔥 ATOMIC BULK UPDATE (NO .save())
+          console.log('Comment 7');
+
+          // ATOMIC BULK UPDATE (NO .save())
           stockUpdates.push({
             productId: item.productId.toString(),
             quantity: item.quantity,
@@ -456,6 +469,7 @@ export class PaymentsService {
           });
         }
 
+        console.log('Comment 8');
         if (computedSubtotal !== vendor.subtotal) {
           throw new BadRequestException({
             message: 'Vendor subtotal mismatch.',
@@ -478,6 +492,7 @@ export class PaymentsService {
 
         const referenceId = `order_${orderId.toString()}_vendor_${vendor.businessId.toString()}`;
 
+        console.log('Comment 9');
         await this.walletRepository.creditWalletPendingBalance(
           {
             ownerType: WalletOwnerType.business,
@@ -493,6 +508,7 @@ export class PaymentsService {
           session,
         );
       }
+      console.log('Comment 10');
 
       // ===============================
       // EXECUTE BULK WRITES
@@ -502,6 +518,8 @@ export class PaymentsService {
         this.inventoryRepository.decrementInventoryBulk(stockUpdates, session),
         this.inventoryRepository.createLogsBulk(inventoryLogs, session),
       ]);
+
+      console.log('Comment 11');
 
       // ===============================
       // PLATFORM CREDIT
@@ -529,6 +547,8 @@ export class PaymentsService {
         session,
       );
 
+      console.log('Comment 12');
+
       // ===============================
       // FINALIZE ORDER
       // ===============================
@@ -551,6 +571,7 @@ export class PaymentsService {
       // ===============================
       await session.commitTransaction();
 
+      console.log('Comment 13');
       // ===============================
       // POST-COMMIT SIDE EFFECTS
       // ===============================
@@ -561,6 +582,7 @@ export class PaymentsService {
         shipment: orderDoc.shipment,
       });
 
+      console.log('Comment 14');
       return { message: 'Payment processed successfully.' };
     } catch (error) {
       await session.abortTransaction();
