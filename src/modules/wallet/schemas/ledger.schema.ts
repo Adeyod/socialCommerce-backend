@@ -16,6 +16,7 @@ export enum LedgerStatus {
 export enum LedgerOwnerType {
   user = 'user',
   business = 'business',
+  platform = 'platform',
 }
 
 export enum LedgerCategory {
