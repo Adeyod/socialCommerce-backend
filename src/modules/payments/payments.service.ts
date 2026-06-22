@@ -277,10 +277,6 @@ export class PaymentsService {
 
     const formattedAmt = providerRes.amount / 100;
 
-    console.log('providerRes:', providerRes);
-    console.log('formattedAmt:', formattedAmt);
-    console.log('providerRes.amount:', providerRes.amount);
-
     if (transaction.amount !== formattedAmt) {
       throw new BadRequestException({
         message: 'Payment mismatch.',
@@ -349,6 +345,9 @@ export class PaymentsService {
     session.startTransaction();
 
     try {
+      console.log('payment.userId:', payment.userId);
+      console.log('payment.orderId:', payment.orderId);
+
       const userObjectId = new Types.ObjectId(payment.userId);
       const orderId = new Types.ObjectId(payment.orderId);
 
