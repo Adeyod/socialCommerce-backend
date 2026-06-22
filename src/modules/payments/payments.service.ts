@@ -357,10 +357,14 @@ export class PaymentsService {
       // ===============================
       // FETCH USER + ORDER
       // ===============================
-      const [userExist, orderDoc] = await Promise.all([
-        this.usersRepository.findById(userObjectId, session),
-        this.orderRepository.findOrderByOrderId(orderId.toString(), session),
-      ]);
+      const userExist = await this.usersRepository.findById(
+        userObjectId,
+        session,
+      );
+      const orderDoc = await this.orderRepository.findOrderByOrderId(
+        orderId.toString(),
+        session,
+      );
 
       console.log('userExist:', userExist);
       console.log('orderDoc:', orderDoc);
@@ -617,7 +621,6 @@ export class PaymentsService {
       return { message: 'Payment processed successfully.' };
     } catch (error) {
       await session.abortTransaction();
-      console.log('error:', error);
       throw error;
     } finally {
       session.endSession();
