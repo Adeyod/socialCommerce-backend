@@ -24,6 +24,62 @@ export class WalletRepository {
     private readonly ledgerModel: Model<LedgerDocument>,
   ) {}
 
+  // async creditWalletPendingBalance(
+  //   owner: WalletOwner,
+  //   amount: number,
+  //   referenceId: string,
+  //   category: LedgerCategory,
+  //   metadata?: Record<string, any>,
+  //   session?: ClientSession,
+  // ) {
+  //   const query =
+  //     owner.ownerType === WalletOwnerType.user
+  //       ? { userId: new Types.ObjectId(owner.userId) }
+  //       : owner.ownerType === WalletOwnerType.business
+  //         ? { businessId: new Types.ObjectId(owner.businessId) }
+  //         : { ownerType: WalletOwnerType.platform };
+
+  //   const newLedger = await new this.ledgerModel({
+  //     ...owner,
+  //     type: LedgerType.credit,
+  //     amount,
+  //     referenceId,
+  //     category,
+  //     metadata,
+  //   }).save({ session });
+
+  //   const setOnInsert: any = {
+  //     ownerType: owner.ownerType,
+  //   };
+
+  //   switch (owner.ownerType) {
+  //     case WalletOwnerType.user:
+  //       setOnInsert.userId = new Types.ObjectId(owner.userId);
+  //       break;
+
+  //     case WalletOwnerType.business:
+  //       setOnInsert.businessId = new Types.ObjectId(owner.businessId);
+  //       break;
+
+  //     case WalletOwnerType.platform:
+  //       // nothing extra
+  //       break;
+  //   }
+
+  //   const newWalletBalance = await this.walletModel.updateOne(
+  //     query,
+  //     {
+  //       $setOnInsert: setOnInsert,
+  //       $inc: { yetToBeClearedBalance: amount },
+  //     },
+  //     { upsert: true, session },
+  //   );
+
+  //   console.log('newWalletBalance:', newWalletBalance);
+
+  //   return newWalletBalance;
+  // }
+
   async creditWalletPendingBalance(
     owner: WalletOwner,
     amount: number,
@@ -31,7 +87,10 @@ export class WalletRepository {
     category: LedgerCategory,
     metadata?: Record<string, any>,
     session?: ClientSession,
-  ) {
+  ): Promise<{
+    ledger: LedgerDocument;
+    wallet: any;
+  }> {
     const query =
       owner.ownerType === WalletOwnerType.user
         ? { userId: new Types.ObjectId(owner.userId) }
@@ -39,24 +98,66 @@ export class WalletRepository {
           ? { businessId: new Types.ObjectId(owner.businessId) }
           : { ownerType: WalletOwnerType.platform };
 
-    const newLedger = await new this.ledgerModel({
-      ...owner,
+    const ledgerData: any = {
+      ownerType: owner.ownerType,
       type: LedgerType.credit,
       amount,
       referenceId,
       category,
       metadata,
-    }).save({ session });
+    };
 
-    const newWalletBalance = await this.walletModel.updateOne(
-      query,
-      { $inc: { yetToBeClearedBalance: amount } },
-      { upsert: true, session },
-    );
+    if (owner.ownerType === WalletOwnerType.user) {
+      ledgerData.userId = new Types.ObjectId(owner.userId);
+    }
 
-    console.log('newWalletBalance:', newWalletBalance);
+    if (owner.ownerType === WalletOwnerType.business) {
+      ledgerData.businessId = new Types.ObjectId(owner.businessId);
+    }
 
-    return newWalletBalance;
+    const setOnInsert: any = {
+      ownerType: owner.ownerType,
+    };
+
+    if (owner.ownerType === WalletOwnerType.user) {
+      setOnInsert.userId = new Types.ObjectId(owner.userId);
+    }
+
+    if (owner.ownerType === WalletOwnerType.business) {
+      setOnInsert.businessId = new Types.ObjectId(owner.businessId);
+    }
+
+    const ledgerCreation = await new this.ledgerModel(ledgerData).save({
+      session,
+    });
+
+    let walletUpdate: any;
+
+    try {
+      walletUpdate = await this.walletModel.updateOne(
+        query,
+        {
+          $setOnInsert: setOnInsert,
+          $inc: { yetToBeClearedBalance: amount },
+        },
+        { upsert: true, session },
+      );
+    } catch (err: any) {
+      if (err.code === 11000) {
+        walletUpdate = await this.walletModel.updateOne(
+          query,
+          { $inc: { yetToBeClearedBalance: amount } },
+          { session },
+        );
+      } else {
+        throw err;
+      }
+    }
+
+    return {
+      ledger: ledgerCreation,
+      wallet: walletUpdate,
+    };
   }
   async creditWalletWithdrawableBalance(
     owner: WalletOwner,

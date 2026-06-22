@@ -53,8 +53,22 @@ WalletSchema.pre(
   },
 );
 
-WalletSchema.index({ userId: 1 }, { unique: true, sparse: true });
-WalletSchema.index({ businessId: 1 }, { unique: true, sparse: true });
+WalletSchema.index(
+  { userId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { userId: { $exists: true, $ne: null } },
+  },
+);
+
+WalletSchema.index(
+  { businessId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { businessId: { $exists: true, $ne: null } },
+  },
+);
+
 WalletSchema.index(
   { ownerType: 1 },
   {
