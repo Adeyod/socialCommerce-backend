@@ -1,10 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import {
-  CallbackError,
-  HydratedDocument,
-  Schema as MongooseSchema,
-  Types,
-} from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 
 export type LedgerDocument = HydratedDocument<Ledger>;
 
@@ -76,17 +71,12 @@ export class Ledger {
 
 export const LedgerSchema = SchemaFactory.createForClass(Ledger) as any;
 
-LedgerSchema.pre(
-  'save',
-  function (this: Ledger, next: (err?: CallbackError) => void) {
-    if (!this.userId && !this.businessId) {
-      return next(new Error('Ledger must belong to a user or business'));
-    }
+LedgerSchema.pre('save', function (this: Ledger) {
+  if (!this.userId && !this.businessId) {
+    throw new Error('Ledger must belong to a user or business');
+  }
 
-    if (this.userId && this.businessId) {
-      return next(new Error('Ledger cannot belong to both'));
-    }
-
-    next();
-  },
-);
+  if (this.userId && this.businessId) {
+    throw new Error('Ledger cannot belong to both');
+  }
+});
