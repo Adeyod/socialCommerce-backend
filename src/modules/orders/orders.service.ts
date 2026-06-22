@@ -791,13 +791,18 @@ export class OrdersService {
         }
       }
 
+      console.log('globalSubtotal:', globalSubtotal);
+      console.log('shippingFeeTotal:', shippingFeeTotal);
+      console.log('collectionFee:', collectionFee);
+      console.log('lastMileFee:', lastMileFee);
+
       const total =
         globalSubtotal + shippingFeeTotal + collectionFee + lastMileFee;
 
       const vendors = Array.from(vendorMap.values());
 
       // =========================
-      // 💰 PAYMENT BREAKDOWN
+      // PAYMENT BREAKDOWN
       // =========================
       const paymentBreakdown: PaymentBreakdown = {
         vendors: vendors.map((v) => ({
