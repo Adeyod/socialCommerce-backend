@@ -285,7 +285,7 @@ export class OrdersService {
     }));
 
     return {
-      order: order.toObject(),
+      order: order,
       vendorOrders: vendorOrdersWithItems,
     };
   }
