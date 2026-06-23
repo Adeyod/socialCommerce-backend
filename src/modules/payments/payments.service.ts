@@ -441,7 +441,9 @@ export class PaymentsService {
       const stockUpdates: { productId: string; quantity: number }[] = [];
       const inventoryLogs: Partial<InventoryLogDocument>[] = [];
 
-      let platformCharge = 0;
+      let platformProductCharge = 0;
+
+      const platformDeliveryCharge = 0;
 
       // ===============================
       // VENDOR DISTRIBUTION
@@ -488,6 +490,7 @@ export class PaymentsService {
             commission,
             shippingFee: vendor.shippingFee,
             netAmount: net,
+            netAmountPlusShipping: net + vendor.shippingFee,
           });
 
           console.log('Comment 7');
@@ -521,22 +524,29 @@ export class PaymentsService {
           0,
         );
 
+        const vendorShippingTotal = breakdown.reduce(
+          (sum, item) => sum + item.shippingFee,
+          0,
+        );
+
         const vendorCommissionTotal = breakdown.reduce(
           (sum, item) => sum + item.commission,
           0,
         );
 
-        platformCharge += vendorCommissionTotal;
+        platformProductCharge += vendorCommissionTotal;
 
         const referenceId = `order_${orderId.toString()}_vendor_${vendor.businessId.toString()}`;
 
         console.log('Comment 9');
+        const netTotalPlusShipping = vendorNetTotal + vendorShippingTotal;
+
         await this.walletRepository.creditWalletPendingBalance(
           {
             ownerType: WalletOwnerType.business,
             businessId: vendor.businessId.toString(),
           },
-          vendorNetTotal,
+          netTotalPlusShipping,
           referenceId,
           LedgerCategory.order_payment,
           {
@@ -570,7 +580,7 @@ export class PaymentsService {
       const collectionFee = payObj.platformFees.collectionFee;
       const deliveryFee = payObj.platformFees.deliveryFee;
 
-      const platformTotal = platformCharge + collectionFee + deliveryFee;
+      const platformTotal = platformProductCharge + collectionFee + deliveryFee;
 
       await this.walletRepository.creditWalletPendingBalance(
         {
@@ -581,7 +591,8 @@ export class PaymentsService {
         LedgerCategory.platform_fee,
         {
           orderId,
-          platformCharge,
+          platformProductCharge,
+          platformDeliveryCharge,
           deliveryFee,
           collectionFee,
         },

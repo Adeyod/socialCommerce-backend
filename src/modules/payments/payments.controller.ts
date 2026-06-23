@@ -149,7 +149,7 @@ export class PaymentsController {
   @Get('verify-payment/:reference')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
-  @SuccessMessage('Payment status fetched successfully.')
+  @SuccessMessage('Payment processed successfully.')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Verify payment status',
@@ -158,7 +158,7 @@ export class PaymentsController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Payment status fetched successfully.',
+    description: 'Payment processed successfully.',
     type: ApiResponseDto,
   })
   @ApiResponse({

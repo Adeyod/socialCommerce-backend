@@ -9,4 +9,5 @@ export type LedgerBreakdownType = {
   shippingFee: number;
   commission: number;
   netAmount: number;
+  netAmountPlusShipping: number;
 };
