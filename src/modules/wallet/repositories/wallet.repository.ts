@@ -131,6 +131,8 @@ export class WalletRepository {
       session,
     });
 
+    console.log('ledgerCreation:', ledgerCreation);
+
     let walletUpdate: any;
 
     try {
@@ -142,6 +144,7 @@ export class WalletRepository {
         },
         { upsert: true, session },
       );
+      console.log('walletUpdate 1:', walletUpdate);
     } catch (err: any) {
       if (err.code === 11000) {
         walletUpdate = await this.walletModel.updateOne(
@@ -149,11 +152,14 @@ export class WalletRepository {
           { $inc: { yetToBeClearedBalance: amount } },
           { session },
         );
+        console.log('walletUpdate 2:', walletUpdate);
       } else {
+        console.log('err:', err);
         throw err;
       }
     }
 
+    console.log('walletUpdate final:', walletUpdate);
     return {
       ledger: ledgerCreation,
       wallet: walletUpdate,
