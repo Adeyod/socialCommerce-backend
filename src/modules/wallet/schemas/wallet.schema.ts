@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { CallbackError, HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 export enum WalletOwnerType {
   user = 'user',
@@ -10,10 +10,20 @@ export type WalletDocument = HydratedDocument<Wallet>;
 
 @Schema({ timestamps: true })
 export class Wallet {
-  @Prop({ type: Types.ObjectId, ref: 'Business' })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Business',
+    required: false,
+    default: undefined,
+  })
   businessId?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    required: false,
+    default: undefined,
+  })
   userId?: Types.ObjectId;
 
   @Prop({ enum: WalletOwnerType, required: true })
@@ -28,36 +38,29 @@ export class Wallet {
 
 export const WalletSchema = SchemaFactory.createForClass(Wallet) as any;
 
-WalletSchema.pre(
-  'save',
-  function (this: Wallet, next: (err?: CallbackError) => void) {
-    const isUser = !!this.userId;
-    const isBusiness = !!this.businessId;
-    const isPlatform = this.ownerType === WalletOwnerType.platform;
+WalletSchema.pre('save', function (this: Wallet) {
+  const isUser = this.ownerType === WalletOwnerType.user;
+  const isBusiness = this.ownerType === WalletOwnerType.business;
+  const isPlatform = this.ownerType === WalletOwnerType.platform;
 
-    // PLATFORM must stand alone
-    if (isPlatform && (isUser || isBusiness)) {
-      return next(
-        new Error('Platform wallet cannot have userId or businessId'),
-      );
-    }
+  if (isUser && !this.userId) {
+    throw new Error('userId is required for user wallet');
+  }
 
-    // USER or BUSINESS must have exactly one ID
-    if (!isPlatform && !isUser && !isBusiness) {
-      return next(
-        new Error('Wallet must belong to user, business, or platform'),
-      );
-    }
+  if (isBusiness && !this.businessId) {
+    throw new Error('businessId is required for business wallet');
+  }
 
-    next();
-  },
-);
+  if (isPlatform && (this.userId || this.businessId)) {
+    throw new Error('Platform wallet cannot have IDs');
+  }
+});
 
 WalletSchema.index(
   { userId: 1 },
   {
     unique: true,
-    partialFilterExpression: { userId: { $exists: true, $ne: null } },
+    sparse: true,
   },
 );
 
@@ -65,7 +68,7 @@ WalletSchema.index(
   { businessId: 1 },
   {
     unique: true,
-    partialFilterExpression: { businessId: { $exists: true, $ne: null } },
+    sparse: true,
   },
 );
 

@@ -10,7 +10,8 @@ import { AppModule } from './app.module';
 import { MongoExceptionFilter } from './common/filters/mongo-exception.filter';
 import { GlobalResponseInterceptor } from './common/interceptor/global-response.interceptor';
 import { FormDataNormalizePipe } from './common/pipes/formdata-normalize.pipe';
-import { BusinessShippingRateRepository } from './modules/business-shipping-rate/repositories/business-shipping-rate.repository';
+import { WalletRepository } from './modules/wallet/repositories/wallet.repository';
+import { WalletOwnerType } from './modules/wallet/schemas/wallet.schema';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -75,7 +76,21 @@ async function bootstrap() {
   //   ],
   // };
 
-  const repo = app.get(BusinessShippingRateRepository);
+  const businessObj = [
+    '69fcb9ec749def01837b39e4',
+    '6a072f6fb400c151391f195b',
+    '6a2727a602164e3e56316342',
+    '6a27ea488cdda362e629ffdb',
+    '6a2855a348cc887a34ff6b32',
+  ];
+
+  const owner = {
+    ownerType: WalletOwnerType.business,
+    businessId: businessObj[4],
+  } as const;
+
+  const repo = app.get(WalletRepository);
+  // await repo.createWallet(owner);
   // await repo.createBusinessShippingRate(dto);
   // await repo.addBusinessAddress(businessId, addressData);
   // await repo.createInventory(businessId, productId, quantity);
