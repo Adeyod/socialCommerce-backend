@@ -163,7 +163,7 @@ export class WalletRepository {
       walletUpdate = await this.walletModel.updateOne(
         {
           ownerType: WalletOwnerType.business,
-          businessId: owner.businessId,
+          businessId: new Types.ObjectId(owner.businessId),
         },
         { $inc: { yetToBeClearedBalance: amount } },
         { session },
@@ -181,7 +181,7 @@ export class WalletRepository {
       walletUpdate = await this.walletModel.updateOne(
         {
           ownerType: WalletOwnerType.user,
-          userId: owner.userId,
+          userId: new Types.ObjectId(owner.userId),
         },
         {
           $setOnInsert: {
