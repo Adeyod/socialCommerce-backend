@@ -22,7 +22,7 @@ import {
   InventoryLogDocument,
   InventoryLogType,
 } from '../inventory/schemas/inventory-log.schema';
-import { OrderRepository } from '../orders/repositories/order.repository';
+import { OrdersService } from '../orders/orders.service';
 import { OrderStatus } from '../orders/schemas/order.schema';
 import { ProductsRepository } from '../products/repositories/product.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
@@ -53,7 +53,8 @@ export class PaymentsService {
     private walletRepository: WalletRepository,
     private inventoryRepository: InventoryRepository,
     private productsRepository: ProductsRepository,
-    private readonly orderRepository: OrderRepository,
+    private readonly ordersService: OrdersService,
+    // private readonly orderRepository: OrderRepository,
   ) {
     this.providerMap = {
       [PaymentProvider.PAYSTACK]: this.paystackService,
@@ -226,7 +227,7 @@ export class PaymentsService {
         status: 404,
       });
     }
-    const order = await this.orderRepository.findOrderByOrderIdWithoutSession(
+    const order = await this.ordersService.findOrderByOrderIdWithoutSession(
       transaction.orderId.toString(),
     );
 
@@ -361,13 +362,18 @@ export class PaymentsService {
         userObjectId,
         session,
       );
-      const orderDoc = await this.orderRepository.findOrderByOrderId(
-        orderId.toString(),
-        session,
-      );
+      // const orderDoc = await this.orderRepository.findOrderByOrderId(
+      //   orderId.toString(),
+      //   session,
+      // );
+      const { order, vendorOrders } =
+        await this.ordersService.getFullOrderWithoutAggregation(
+          orderId.toString(),
+          session,
+        );
 
       console.log('userExist:', userExist);
-      console.log('orderDoc:', orderDoc);
+      console.log('order:', order);
 
       if (!userExist) {
         throw new NotFoundException({
@@ -377,19 +383,11 @@ export class PaymentsService {
         });
       }
 
-      if (!orderDoc) {
-        throw new NotFoundException({
-          message: 'Order not found.',
-          success: false,
-          status: 404,
-        });
-      }
-
-      if (orderDoc.isPaid) {
+      if (order.isPaid) {
         return { message: 'Order already processed.' };
       }
 
-      const shipment = orderDoc.vendorOrders;
+      const shipment = vendorOrders;
 
       console.log('Comment 2');
 
@@ -406,7 +404,7 @@ export class PaymentsService {
       // ===============================
       const allProductIds: string[] = [];
 
-      for (const vendorOrder of orderDoc.vendorOrders) {
+      for (const vendorOrder of vendorOrders) {
         for (const item of vendorOrder.items) {
           allProductIds.push(item.productId.toString());
         }
@@ -448,7 +446,7 @@ export class PaymentsService {
       // ===============================
       // VENDOR DISTRIBUTION
       // ===============================
-      for (const vendor of orderDoc.vendorOrders) {
+      for (const vendor of vendorOrders) {
         let computedSubtotal = 0;
         const breakdown: LedgerBreakdownType[] = [];
 
@@ -595,11 +593,11 @@ export class PaymentsService {
       // ===============================
       // FINALIZE ORDER
       // ===============================
-      orderDoc.status = OrderStatus.paid;
-      orderDoc.isPaid = true;
-      orderDoc.paidAt = new Date();
+      order.status = OrderStatus.paid;
+      order.isPaid = true;
+      order.paidAt = new Date();
 
-      await orderDoc.save({ session });
+      await order.save({ session });
 
       // ===============================
       // MARK PAYMENT
@@ -621,8 +619,8 @@ export class PaymentsService {
       await this.cartRepository.clearCart(userObjectId.toString());
 
       this.eventEmitter.emit(OrderEvents.order_paid, {
-        orderId: orderDoc._id.toString(),
-        shipment: orderDoc.shipment,
+        orderId: order._id.toString(),
+        shipment: vendorOrders,
       });
 
       console.log('Comment 14');

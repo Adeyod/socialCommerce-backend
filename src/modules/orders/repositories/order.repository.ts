@@ -384,6 +384,56 @@ export class OrderRepository {
     return result[0] || null;
   }
 
+  async findOrderById(orderId: string, session: ClientSession) {
+    const id = new Types.ObjectId(orderId);
+    const response = await this.orderModel.findById(id).session(session).exec();
+
+    return response;
+  }
+
+  async findVendorOrdersByOrderId(orderId: string, session: ClientSession) {
+    const id = new Types.ObjectId(orderId);
+    const response = await this.vendorOrderModel
+      .find({
+        orderId: id,
+      })
+      .session(session)
+      .exec();
+
+    return response;
+  }
+
+  async findItemVendorOrdersByOrderId(orderId: string, session: ClientSession) {
+    const id = new Types.ObjectId(orderId);
+    const response = await this.itemVendorOrderModel
+      .find({
+        orderId: id,
+      })
+      .session(session)
+      .exec();
+
+    return response;
+  }
+
+  async findOrderByOrderIdWithoutAggregation(
+    orderId: string,
+    session: ClientSession,
+  ) {
+    const result = await this.orderModel
+      .findById(orderId)
+      .session(session)
+      .populate('customerId')
+      .populate({
+        path: 'vendorOrders',
+        populate: {
+          path: 'items',
+        },
+      })
+      .exec();
+
+    return result;
+  }
+
   // This is what we use to get the orders that a customer has made
   async findOrdersByCustomer(
     customerId: string,

@@ -158,99 +158,137 @@ export class OrdersService {
     return response;
   }
 
-  // async markBusinessItemInAnOrderAsDeliveredToPickupCenter(
-  //   user: JwtUser,
+  // async getFullOrderWithoutAggregation(
   //   orderId: string,
-  //   businessId: string,
-  //   productId: string,
+  //   session: ClientSession,
   // ) {
-  //   const order =
-  //     await this.orderRepository.findOrderByOrderIdWithoutSession(orderId);
+  //   const order = await this.orderRepository.findOrderById(orderId, session);
 
   //   if (!order) {
   //     throw new NotFoundException({
   //       message: 'Order not found.',
-  //       status: 404,
   //       success: false,
+  //       status: 404,
   //     });
   //   }
 
-  //   const shipment = order.shipment;
-
-  //   if (!shipment) {
-  //     throw new NotFoundException({
-  //       message: 'Shipment containing this vendor not found.',
-  //       status: 404,
-  //       success: false,
-  //     });
-  //   }
-
-  //   const vendorExists = shipment.vendors.some(
-  //     (v) => v.businessId.toString() === businessId,
+  //   // Get all vendor orders attached to this order
+  //   const vendorOrders = await this.orderRepository.findVendorOrdersByOrderId(
+  //     orderId,
+  //     session,
   //   );
 
-  //   if (!vendorExists) {
+  //   if (!vendorOrders.length) {
   //     throw new NotFoundException({
-  //       message: 'Shipment does not contain this vendor.',
-  //       status: 404,
+  //       message: 'No vendor order found in this order.',
   //       success: false,
+  //       status: 404,
   //     });
   //   }
 
-  //   const vendor = shipment.vendors.find(
-  //     (v) => v.businessId.toString() === businessId,
-  //   );
+  //   // Get all items inside each of the vendorOrder
+  //   const vendorOrderIds = vendorOrders.map((v) => v._id);
 
-  //   if (!vendor) {
+  //   const items =
+  //     await this.orderRepository.findItemVendorOrdersByVendorOrderIds(
+  //       orderId,
+  //       session,
+  //     );
+
+  //   if (!items.length) {
   //     throw new NotFoundException({
-  //       message: 'Vendor not found in shipment.',
-  //       status: 404,
+  //       message: 'No Item found in this order.',
   //       success: false,
+  //       status: 404,
   //     });
   //   }
 
-  //   // STEP 3: FIND PRODUCT ITEM
-  //   const item = vendor.items.find((i) => i.productId.toString() === productId);
+  //   const itemMap = new Map<string, any[]>();
 
-  //   if (!item) {
-  //     throw new NotFoundException({
-  //       message: `Product ${productId} not found in vendor order.`,
-  //       status: 404,
-  //       success: false,
-  //     });
+  //   for (const item of items) {
+  //     const key = item.vendorOrderId.toString();
+  //     if (!itemMap.has(key)) itemMap.set(key, []);
+  //     itemMap.get(key)!.push(item);
   //   }
 
-  //   // STEP 4: UPDATE ITEM STATUS
-  //   item.itemStatus = VendorItemOrderStatus.sent_to_pickup_center;
+  //   const vendorOrdersWithItems = vendorOrders.map((v) => ({
+  //     ...v.toObject(),
+  //     items: itemMap.get(v._id.toString()) || [],
+  //   }));
 
-  //   // STEP 5: CHECK IF ALL ITEMS IN VENDOR ARE DONE
-  //   const allVendorItemsDone = vendor.items.every(
-  //     (i) => i.itemStatus === VendorItemOrderStatus.sent_to_pickup_center,
-  //   );
-
-  //   if (allVendorItemsDone) {
-  //     vendor.status = VendorOrderStatus.sent_to_pickup_center;
+  //   const response = {
+  //     order,
+  //     vendorOrders: [
+  //       {
+  //         ...vendorOrders,
+  //         items: [...vendorOrdersWithItems]
+  //       }
+  //     ]
   //   }
-
-  //   // STEP 6: CHECK IF ALL VENDORS IN THIS SHIPMENT ARE READY
-  //   const allVendorsDone = shipment.vendors.every(
-  //     (v) => v.status === VendorOrderStatus.sent_to_pickup_center,
-  //   );
-
-  //   if (allVendorsDone) {
-  //     shipment.status = ShipmentStatus.collecting;
-
-  //     // optional: update order-level status
-  //     order.status = OrderStatus.processing;
-  //   }
-
-  //   await order.save();
-
-  //   return {
-  //     message: 'Item marked as delivered to pickup center successfully',
-  //   };
   // }
 
+  async getFullOrderWithoutAggregation(
+    orderId: string,
+    session: ClientSession,
+  ) {
+    const order = await this.orderRepository.findOrderById(orderId, session);
+
+    if (!order) {
+      throw new NotFoundException({
+        message: 'Order not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const vendorOrders = await this.orderRepository.findVendorOrdersByOrderId(
+      orderId,
+      session,
+    );
+
+    if (!vendorOrders.length) {
+      throw new NotFoundException({
+        message: 'No vendor order found in this order.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const items = await this.orderRepository.findItemVendorOrdersByOrderId(
+      orderId,
+      session,
+    );
+
+    if (!items.length) {
+      throw new NotFoundException({
+        message: 'No items found in this order.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const itemMap = new Map<string, any[]>();
+
+    for (const item of items) {
+      const key = item.vendorOrderId.toString();
+
+      if (!itemMap.has(key)) {
+        itemMap.set(key, []);
+      }
+
+      itemMap.get(key)!.push(item);
+    }
+
+    const vendorOrdersWithItems = vendorOrders.map((v) => ({
+      ...v.toObject(),
+      items: itemMap.get(v._id.toString()) || [],
+    }));
+
+    return {
+      order: order.toObject(),
+      vendorOrders: vendorOrdersWithItems,
+    };
+  }
   async getPendingPickupCenterItems(
     pickupCenterId: string,
     queryWithPaginationDto: QueryWithPaginationDto,
