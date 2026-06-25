@@ -55,4 +55,12 @@ export class MailService {
       templateData: { businessName, orderId, items, app_name: this.app_name },
     });
   }
+  async sendRiderInviteMail(to: string, title: string, businessName: string) {
+    return this.sendMail({
+      to,
+      subject: title,
+      templateName: 'send-rider-invite-mail.ejs',
+      templateData: { businessName, app_name: this.app_name },
+    });
+  }
 }

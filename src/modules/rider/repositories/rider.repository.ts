@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
-import { RiderDataDto } from '../dtos/rider-data.dto';
 import { RiderProfile, RiderProfileDocument } from '../schemas/rider.schema';
 
 @Injectable()
@@ -12,18 +11,14 @@ export class RiderProfileRepository {
     private riderModel: Model<RiderProfileDocument>,
   ) {}
 
-  async createRiderProfile(
-    userId: string,
-    riderDataDto: RiderDataDto,
-    businessId: Types.ObjectId,
-  ) {
+  async createRiderProfile(userId: string, pickupCenterId: Types.ObjectId) {
     const id = new Types.ObjectId(userId);
 
     const details = await new this.riderModel({
-      businessId,
+      pickupCenterId,
       userId: id,
-      vehicleType: riderDataDto.vehicleType,
-      licenseNumber: riderDataDto.licenseNumber,
+      isApproved: true,
+      isAvailable: true,
     }).save();
 
     return details;

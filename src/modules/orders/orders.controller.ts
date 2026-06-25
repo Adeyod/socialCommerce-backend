@@ -218,6 +218,7 @@ export class OrdersController {
     return response;
   }
 
+  // Vendor uses this to get order to be fulfilled
   @Get('business-orders-to-fulfil/:businessId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user)
@@ -257,6 +258,7 @@ export class OrdersController {
     return response;
   }
 
+  // Vendor uses this endpoint to send multiple items to pickup center
   @Post('send-multiple-orders-to-pickup-center/:businessId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user)
@@ -297,6 +299,7 @@ export class OrdersController {
     return response;
   }
 
+  // Vendor uses this to send single item to pickup center
   @Post('send-single-order-to-pickup/:businessId/:itemId/:pickupCenterId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user)
@@ -338,6 +341,7 @@ export class OrdersController {
     return response;
   }
 
+  // Vendor uses this to get single order to be fulfilled
   @Get('business-single-order-to-fulfil/:businessId/:orderId')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(Role.user)
@@ -378,7 +382,8 @@ export class OrdersController {
     return response;
   }
 
-  @Get('get-pending-pickup-center-orders/:pickupCenterId')
+  // This is the endpoint that pickup center is going to use to get all its orders
+  @Get('get-pickup-center-orders/:pickupCenterId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.admin, Role.user)
   @ApiBearerAuth('JWT-auth')
@@ -417,7 +422,8 @@ export class OrdersController {
     return response;
   }
 
-  @Get('get-pending-pickup-center-orders/:pickupCenterId')
+  // Pickup center will use this to get incoming orders.
+  @Get('get-incoming-pickup-center-orders/:pickupCenterId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.admin, Role.user)
   @ApiBearerAuth('JWT-auth')
@@ -456,6 +462,7 @@ export class OrdersController {
     return response;
   }
 
+  // Pickup center will use this endpoint to mark item as received
   @Post('mark-item-as-received-at-pickup-center/:pickupCenterId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.admin, Role.user)

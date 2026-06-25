@@ -4,6 +4,8 @@ export enum Permission {
   delete_product = 'delete_product',
   view_product = 'view_product',
 
+  invite_rider = 'invite_rider',
+
   create_role = 'create_role',
   view_role = 'view_role',
   update_role = 'update_role',

@@ -3,6 +3,7 @@ import { HydratedDocument, Types } from 'mongoose';
 
 export enum NotificationType {
   order_paid = 'order_paid',
+  rider_invitation_created = 'rider_invitation_created',
   all_vendor_package_in_an_order_received_by_pickup_center = 'all_vendor_package_in_an_order_received_by_pickup_center',
   order_sent_to_pickup_center_by_vendor = 'order_sent_to_pickup_center_by_vendor',
   order_packed = 'order_packed',

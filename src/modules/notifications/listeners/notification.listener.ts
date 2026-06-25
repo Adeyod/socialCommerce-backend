@@ -3,6 +3,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { Types } from 'mongoose';
 import {
   OrderEvents,
+  RiderInviteEvents,
   ShipmentEvents,
 } from '../../../common/events/order.events';
 import { MailService } from '../../../mail/mail.service';
@@ -23,6 +24,7 @@ export class NotificationListener {
     private readonly ordersService: OrdersService,
     private readonly mailService: MailService,
   ) {}
+  private app_name = 'Go Shopping App';
 
   @OnEvent(OrderEvents.order_paid)
   async handleOrderPaid(payload: { orderId: string; shipment: Shipment }) {
@@ -229,6 +231,33 @@ export class NotificationListener {
       buyerType,
       customerId,
       metadata,
+    );
+  }
+
+  @OnEvent(RiderInviteEvents.rider_invite_created)
+  async handleRiderInviteCreated(payload: {
+    userId: string;
+    businessName: string;
+    title: string;
+    email: string;
+  }) {
+    const notify = `You have been invited by a business with ${payload.businessName} to come and be a rider on the ${this.app_name}. Kindly accept or reject the offer.`;
+
+    const inputPayload = {
+      userId: payload.userId,
+      title: payload.title,
+      message: notify,
+      type: NotificationType.rider_invitation_created,
+      metadata: {
+        businessName: payload.businessName,
+      },
+    };
+    await this.notificationsService.notifyUserOfRiderInvite(inputPayload);
+
+    await this.mailService.sendRiderInviteMail(
+      payload.email,
+      payload.title,
+      payload.businessName,
     );
   }
 }

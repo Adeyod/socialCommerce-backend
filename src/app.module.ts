@@ -40,6 +40,7 @@ import { UsersModule } from './modules/users/users.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
+import { RiderInviteModule } from './modules/rider-invite/rider-invite.module';
 
 @Module({
   imports: [
@@ -142,6 +143,7 @@ import { ShipmentsModule } from './modules/shipments/shipments.module';
     InventoryModule,
     CampaignModule,
     ShipmentsModule,
+    RiderInviteModule,
   ],
   controllers: [AppController],
   providers: [AppService],

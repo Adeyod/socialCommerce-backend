@@ -18,6 +18,18 @@ export class NotificationsService {
     private readonly riderProfileRepository: RiderProfileRepository,
   ) {}
 
+  async notifyUserOfRiderInvite(payload: {
+    userId: string;
+    title: string;
+    message: string;
+    type: NotificationType;
+    metadata: any;
+  }) {
+    const response =
+      await this.notificationRepository.createNotification(payload);
+
+    return response;
+  }
   async notifyPickupCenter(
     pickupCenterId: string,
     title: string,

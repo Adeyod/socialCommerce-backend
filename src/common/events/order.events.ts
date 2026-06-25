@@ -4,6 +4,11 @@ export const OrderEvents = {
   order_shipped: 'order_shipped',
 } as const;
 
+export const RiderInviteEvents = {
+  rider_invite_created: 'rider_invite_created',
+  rider_invite_accepted: 'rider_invite_accepted',
+} as const;
+
 export const ShipmentEvents = {
   item_sent_to_pickup_center: 'item_sent_to_pickup_center',
   shipment_entity_created_for_logistic: 'shipment_entity_created_for_logistic',

@@ -42,4 +42,21 @@ export class BusinessesService {
 
     return response;
   }
+
+  async findBusinessByBusinessId(businessId: string) {
+    const id = new Types.ObjectId(businessId);
+
+    const business =
+      await this.businessesRepository.findBusinessByBusinessId(id);
+
+    if (!business) {
+      throw new NotFoundException({
+        message: 'Business not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return business;
+  }
 }

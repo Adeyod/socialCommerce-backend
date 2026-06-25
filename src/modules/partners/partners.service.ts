@@ -13,7 +13,6 @@ import { PickupCenterPartnerDto } from '../pickup-center/dtos/pickup-center.dto'
 import { PickupCenterRepository } from '../pickup-center/repositories/pickup-center.repository';
 import { PromoterDataDto } from '../promoters/dtos/promoter-data.dto';
 import { PromoterProfileRepository } from '../promoters/repositories/promoter.repository';
-import { RiderDataDto } from '../rider/dtos/rider-data.dto';
 import { RiderProfileRepository } from '../rider/repositories/rider.repository';
 import { UsersRepository } from '../users/repositories/users.repository';
 import { VendorDataDto } from '../vendor/dtos/vendor-data.dto';
@@ -59,114 +58,114 @@ export class PartnersService {
     };
   }
 
-  async becomeRider(riderDataDto: RiderDataDto, user: JwtUser) {
-    if (riderDataDto.role !== PartnerRole.rider) {
-      throw new BadRequestException({
-        message: 'Invalid Role.',
-        status: 400,
-        success: false,
-      });
-    }
-    // find business owned by this user.sub
-    const findBusiness = await this.businessesRepository.findBusinessWithUserId(
-      user.sub.toString(),
-    );
+  // async becomeRider(riderDataDto: RiderDataDto, user: JwtUser) {
+  //   if (riderDataDto.role !== PartnerRole.rider) {
+  //     throw new BadRequestException({
+  //       message: 'Invalid Role.',
+  //       status: 400,
+  //       success: false,
+  //     });
+  //   }
+  //   // find business owned by this user.sub
+  //   const findBusiness = await this.businessesRepository.findBusinessWithUserId(
+  //     user.sub.toString(),
+  //   );
 
-    const userPartnerRole =
-      await this.riderProfileRepository.getRiderProfileByUserId(
-        user.sub.toString(),
-      );
+  //   const userPartnerRole =
+  //     await this.riderProfileRepository.getRiderProfileByUserId(
+  //       user.sub.toString(),
+  //     );
 
-    if (userPartnerRole) {
-      throw new BadRequestException({
-        message: `You already have a ${riderDataDto.role} partner account.`,
-        success: false,
-        status: 400,
-      });
-    }
+  //   if (userPartnerRole) {
+  //     throw new BadRequestException({
+  //       message: `You already have a ${riderDataDto.role} partner account.`,
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
 
-    let businessId: Types.ObjectId;
+  //   let businessId: Types.ObjectId;
 
-    if (!findBusiness) {
-      if (!riderDataDto.business) {
-        throw new BadRequestException({
-          message: 'Business data is required.',
-          success: false,
-          status: 400,
-        });
-      }
+  //   if (!findBusiness) {
+  //     if (!riderDataDto.business) {
+  //       throw new BadRequestException({
+  //         message: 'Business data is required.',
+  //         success: false,
+  //         status: 400,
+  //       });
+  //     }
 
-      const userId = user.sub;
-      const createBusinessDto = riderDataDto.business;
+  //     const userId = user.sub;
+  //     const createBusinessDto = riderDataDto.business;
 
-      if (
-        riderDataDto.role.toLowerCase().trim() !==
-        riderDataDto.business.businessRoles[0].toLowerCase().trim()
-      ) {
-        throw new BadRequestException({
-          message:
-            'Selected role and the first role inside business roles must be the same.',
-          success: false,
-          status: 400,
-        });
-      }
+  //     if (
+  //       riderDataDto.role.toLowerCase().trim() !==
+  //       riderDataDto.business.businessRoles[0].toLowerCase().trim()
+  //     ) {
+  //       throw new BadRequestException({
+  //         message:
+  //           'Selected role and the first role inside business roles must be the same.',
+  //         success: false,
+  //         status: 400,
+  //       });
+  //     }
 
-      const createBiz = await this.businessesRepository.createBusiness(
-        userId.toString(),
-        createBusinessDto,
-      );
+  //     const createBiz = await this.businessesRepository.createBusiness(
+  //       userId.toString(),
+  //       createBusinessDto,
+  //     );
 
-      if (!createBiz) {
-        throw new BadRequestException({
-          message: 'Unable to create business.',
-          success: false,
-          status: 400,
-        });
-      }
+  //     if (!createBiz) {
+  //       throw new BadRequestException({
+  //         message: 'Unable to create business.',
+  //         success: false,
+  //         status: 400,
+  //       });
+  //     }
 
-      const userDoc = await this.usersRepository.update(user.sub, {
-        isBusinessPartner: true,
-      });
+  //     const userDoc = await this.usersRepository.update(user.sub, {
+  //       isBusinessPartner: true,
+  //     });
 
-      businessId = createBiz._id;
-    } else {
-      businessId = findBusiness._id;
-    }
+  //     businessId = createBiz._id;
+  //   } else {
+  //     businessId = findBusiness._id;
+  //   }
 
-    // business is found here
+  //   // business is found here
 
-    if (
-      findBusiness &&
-      findBusiness.businessRoles.includes(riderDataDto.role)
-    ) {
-      throw new BadRequestException({
-        message: 'Business already exist.',
-        success: false,
-        status: 400,
-      });
-    }
-    const userId = user.sub.toString();
+  //   if (
+  //     findBusiness &&
+  //     findBusiness.businessRoles.includes(riderDataDto.role)
+  //   ) {
+  //     throw new BadRequestException({
+  //       message: 'Business already exist.',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+  //   const userId = user.sub.toString();
 
-    const riderAcc = await this.riderProfileRepository.createRiderProfile(
-      userId,
-      riderDataDto,
-      businessId,
-    );
+  //   const riderAcc = await this.riderProfileRepository.createRiderProfile(
+  //     userId,
+  //     riderDataDto,
+  //     businessId,
+  //   );
 
-    const updateBusiness = await this.businessesRepository.addPartnerRole(
-      businessId.toString(),
-      riderDataDto.role,
-    );
+  //   const updateBusiness = await this.businessesRepository.addPartnerRole(
+  //     businessId.toString(),
+  //     riderDataDto.role,
+  //   );
 
-    return {
-      message: 'Partnership processed successfully.',
-      partnerProfile: riderAcc,
-    };
+  //   return {
+  //     message: 'Partnership processed successfully.',
+  //     partnerProfile: riderAcc,
+  //   };
 
-    // if business is found, then create the profile for the role using the businessId
-    // if no business, create one for the user and create the profile for the requested role
-    // then return the result
-  }
+  //   // if business is found, then create the profile for the role using the businessId
+  //   // if no business, create one for the user and create the profile for the requested role
+  //   // then return the result
+  // }
   async becomeVendor(vendorDataDto: VendorDataDto, user: JwtUser) {
     if (vendorDataDto.role !== PartnerRole.vendor) {
       throw new BadRequestException({

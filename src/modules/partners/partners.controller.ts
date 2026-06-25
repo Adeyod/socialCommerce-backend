@@ -9,7 +9,6 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtUser } from '../../common/types/jwt-user.type';
 import { PickupCenterPartnerDto } from '../pickup-center/dtos/pickup-center.dto';
 import { PromoterDataDto } from '../promoters/dtos/promoter-data.dto';
-import { RiderDataDto } from '../rider/dtos/rider-data.dto';
 import { Role } from '../users/schemas/user.schema';
 import { VendorDataDto } from '../vendor/dtos/vendor-data.dto';
 import { PartnersService } from './partners.service';
@@ -18,38 +17,38 @@ import { PartnersService } from './partners.service';
 export class PartnersController {
   constructor(private readonly partnersService: PartnersService) {}
 
-  @Post('become-rider')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.user)
-  @ApiBearerAuth('JWT-auth')
-  @SuccessMessage('Business partnership submitted successfully.')
-  @ApiOperation({
-    summary: 'Endpoint to become a rider',
-    description: 'This is the endpoint that user will use to become a rider.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Business partnership submitted successfully.',
-    type: ApiResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description:
-      'Bad request. Unable to process business partnership for this user.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Internal server error',
-  })
-  async becomeRider(
-    @Body() riderDataDto: RiderDataDto,
-    @GetCurrentUser() user: JwtUser,
-  ) {
-    console.log('riderDataDto:', riderDataDto);
-    const response = await this.partnersService.becomeRider(riderDataDto, user);
+  // @Post('become-rider')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.user)
+  // @ApiBearerAuth('JWT-auth')
+  // @SuccessMessage('Business partnership submitted successfully.')
+  // @ApiOperation({
+  //   summary: 'Endpoint to become a rider',
+  //   description: 'This is the endpoint that user will use to become a rider.',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Business partnership submitted successfully.',
+  //   type: ApiResponseDto,
+  // })
+  // @ApiResponse({
+  //   status: 400,
+  //   description:
+  //     'Bad request. Unable to process business partnership for this user.',
+  // })
+  // @ApiResponse({
+  //   status: 500,
+  //   description: 'Internal server error',
+  // })
+  // async becomeRider(
+  //   @Body() riderDataDto: RiderDataDto,
+  //   @GetCurrentUser() user: JwtUser,
+  // ) {
+  //   console.log('riderDataDto:', riderDataDto);
+  //   const response = await this.partnersService.becomeRider(riderDataDto, user);
 
-    return response;
-  }
+  //   return response;
+  // }
 
   @Post('become-vendor')
   @UseGuards(JwtAuthGuard, RolesGuard)
