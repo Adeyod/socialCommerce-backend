@@ -687,12 +687,14 @@ export class OrdersService {
     // =========================
     for (const [vendorKey, cartItems] of cartMap.entries()) {
       console.log('vendorKey:', vendorKey);
+      console.log('typeof vendorKey:', typeof vendorKey);
       const frontendVendor = vendorOrders.find(
         (v) => v.businessId === vendorKey,
       );
 
       vendorOrders.map((v) => {
         console.log('v.businessId:', v.businessId);
+        console.log('typeof v.businessId:', typeof v.businessId);
       });
       console.log('frontendVendor:', frontendVendor);
 
