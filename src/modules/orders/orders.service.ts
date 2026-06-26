@@ -722,7 +722,7 @@ export class OrdersService {
 
       if (!vendorGroups.has(vendorKey)) {
         vendorGroups.set(vendorKey, {
-          businessId: item.businessId,
+          businessId: vendorKey,
           items: [],
         });
       }
@@ -775,7 +775,9 @@ export class OrdersService {
             `Vendor ${vendor.businessId} has no items in order`,
           );
         }
-        const business = businessMap.get(vendor.businessId);
+        const business = businessMap.get(vendor.businessId.toString());
+
+        console.log('business:', business);
 
         if (!business) {
           throw new NotFoundException({
