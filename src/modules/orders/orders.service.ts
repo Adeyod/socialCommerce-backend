@@ -689,7 +689,7 @@ export class OrdersService {
       console.log('vendorKey:', vendorKey);
       console.log('typeof vendorKey:', typeof vendorKey);
       const frontendVendor = vendorOrders.find(
-        (v) => v.businessId === vendorKey,
+        (v) => v.businessId.toString().trim() === vendorKey.toString().trim(),
       );
 
       vendorOrders.map((v) => {
