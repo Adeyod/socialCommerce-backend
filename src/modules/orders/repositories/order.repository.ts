@@ -1295,6 +1295,22 @@ export class OrderRepository {
       },
 
       // 4. Lookup Items for that vendor
+      // {
+      //   $lookup: {
+      //     from: 'itemvendororders',
+      //     let: { vendorOrderId: '$vendorOrder._id' },
+      //     pipeline: [
+      //       {
+      //         $match: {
+      //           $expr: {
+      //             $eq: ['$vendorOrderId', '$$vendorOrderId'],
+      //           },
+      //         },
+      //       },
+      //     ],
+      //     as: 'items',
+      //   },
+      // },
       {
         $lookup: {
           from: 'itemvendororders',
@@ -1305,6 +1321,22 @@ export class OrderRepository {
                 $expr: {
                   $eq: ['$vendorOrderId', '$$vendorOrderId'],
                 },
+              },
+            },
+
+            // 🔥 JOIN PRODUCTS HERE
+            {
+              $lookup: {
+                from: 'products', // 👈 your product collection name
+                localField: 'productId',
+                foreignField: '_id',
+                as: 'product',
+              },
+            },
+
+            {
+              $addFields: {
+                product: { $arrayElemAt: ['$product', 0] },
               },
             },
           ],
@@ -1358,6 +1390,7 @@ export class OrderRepository {
                   price: '$$item.price',
                   quantity: '$$item.quantity',
                   itemStatus: '$$item.status',
+                  media: '$$item.product.media',
                 },
               },
             },

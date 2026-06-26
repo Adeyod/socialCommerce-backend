@@ -616,27 +616,127 @@ export class OrdersService {
 
     console.log('cartExist:', cartExist);
 
+    // =========================
+    // BUILD CART MAP (SOURCE OF TRUTH)
+    // =========================
+    const cartMap = new Map<
+      string,
+      Map<string, { quantity: number; price: number }>
+    >();
+
+    for (const item of cartExist.items) {
+      const vendorKey = item.businessId.toString();
+      const productKey = item.productId.toString();
+
+      if (!cartMap.has(vendorKey)) {
+        cartMap.set(vendorKey, new Map());
+      }
+
+      cartMap.get(vendorKey)!.set(productKey, {
+        quantity: item.quantity,
+        price: item.price,
+      });
+    }
+
+    // =========================
+    // VALIDATE FRONTEND AGAINST CART
+    // =========================
+    for (const vendor of vendorOrders) {
+      const vendorKey = vendor.businessId;
+      const cartVendor = cartMap.get(vendorKey);
+
+      if (!cartVendor) {
+        throw new BadRequestException(`Vendor ${vendorKey} not found in cart`);
+      }
+
+      for (const item of vendor.items) {
+        const productKey = item.productId;
+        const cartItem = cartVendor.get(productKey);
+
+        if (!cartItem) {
+          throw new BadRequestException(
+            `Product ${productKey} not found in cart`,
+          );
+        }
+
+        // ✅ Quantity validation
+        if (cartItem.quantity !== item.quantity) {
+          throw new BadRequestException(
+            `Quantity mismatch for product ${productKey}`,
+          );
+        }
+
+        // ✅ Price validation (VERY IMPORTANT)
+        if (item.price && cartItem.price !== item.price) {
+          throw new BadRequestException(
+            `Price mismatch for product ${productKey}`,
+          );
+        }
+      }
+
+      // ✅ Ensure frontend didn’t omit items
+      if (vendor.items.length !== cartVendor.size) {
+        throw new BadRequestException(
+          `Item count mismatch for vendor ${vendorKey}`,
+        );
+      }
+    }
+
+    // =========================
+    // ENSURE NO CART ITEMS ARE MISSING IN FRONTEND
+    // =========================
+    for (const [vendorKey, cartItems] of cartMap.entries()) {
+      const frontendVendor = vendorOrders.find(
+        (v) => v.businessId === vendorKey,
+      );
+
+      if (!frontendVendor) {
+        throw new BadRequestException(
+          `Vendor ${vendorKey} missing from request`,
+        );
+      }
+    }
+
+    // =========================
+    // GROUP CART ITEMS BY VENDOR
+    // =========================
+    const vendorGroups = new Map<string, any>();
+
+    for (const item of cartExist.items) {
+      const vendorKey = item.businessId.toString();
+
+      if (!vendorGroups.has(vendorKey)) {
+        vendorGroups.set(vendorKey, {
+          businessId: item.businessId,
+          items: [],
+        });
+      }
+
+      vendorGroups.get(vendorKey).items.push(item);
+    }
+
     // FLATTEN
-    const flatItems = vendorOrders.flatMap((v) =>
-      v.items.map((i) => ({
-        productId: i.productId,
-        quantity: i.quantity,
-        businessId: v.businessId,
-      })),
-    );
+    const flatItems = cartExist.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      businessId: item.businessId,
+    }));
 
     // =========================
     // SINGLE PRODUCT QUERY
     // =========================
-    const productIds = flatItems.map((i) => i.productId);
+    const productIds = [
+      ...new Set(flatItems.map((i) => i.productId.toString())),
+    ];
 
     const products = await this.productsRepository.findByIds(productIds);
 
     const productMap = new Map(products.map((p) => [p._id.toString(), p]));
 
     // BUSINESSES
-    const businessIds = vendorOrders.map((v) => v.businessId);
-
+    const businessIds = [
+      ...new Set(cartExist.items.map((i) => i.businessId.toString())),
+    ];
     const businesses =
       await this.businessesRepository.findBusinessesByIds(businessIds);
 
@@ -654,7 +754,7 @@ export class OrdersService {
     session.startTransaction();
 
     try {
-      for (const vendor of vendorOrders) {
+      for (const vendor of vendorGroups.values()) {
         if (!vendor.items || vendor.items.length === 0) {
           throw new BadRequestException(
             `Vendor ${vendor.businessId} has no items in order`,
@@ -714,16 +814,23 @@ export class OrdersService {
             session,
           );
 
-          const itemTotal = product.price * item.quantity;
-          const itemWeight = product.weight * item.quantity;
+          if (!reserved || !inventoryReserve) {
+            throw new BadRequestException(
+              `Unable to reserve stock for product ${item.productId}`,
+            );
+          }
+
+          const itemTotal = item.price * item.quantity;
+          const itemWeight = (item.weight || 0) * item.quantity;
 
           vendorGroup.items.push({
-            productId: product._id,
-            name: product.name,
-            price: product.price,
+            productId: item.productId,
+            name: item.name,
+            price: item.price,
             quantity: item.quantity,
             itemTotalWeight: itemWeight,
             itemSubTotal: itemTotal,
+            media: item.media,
           });
 
           vendorGroup.subtotal += itemTotal;
@@ -967,6 +1074,7 @@ export class OrdersService {
           price: item.price,
           quantity: item.quantity,
           totalWeight: item.itemTotalWeight,
+          media: item.media,
           status: VendorItemOrderStatus.pending,
         }));
 
@@ -1001,6 +1109,460 @@ export class OrdersService {
       throw error;
     }
   }
+  // async createOrder(user: JwtUser, createOrderDto: CreateOrderDto) {
+  //   const {
+  //     customerId,
+  //     vendorOrders,
+  //     deliveryAddress,
+  //     contactPhone,
+  //     idempotencyKey,
+  //     cartId,
+  //     deliveryMode,
+  //     deliveryFee,
+  //     pickupCenter,
+  //     nearestBusStop,
+  //     subTotalSummation,
+  //     shippingFeeSummation,
+  //     interStatePickupFee,
+  //   } = createOrderDto;
+
+  //   console.log('vendorOrders:', vendorOrders);
+
+  //   if (user.sub.toString() !== customerId) {
+  //     throw new BadRequestException({
+  //       message: 'Invalid user mismatch',
+  //       success: false,
+  //       status: 400,
+  //     });
+  //   }
+
+  //   let buyerState: NigeriaState;
+
+  //   if (deliveryMode === DeliveryMode.homeDelivery) {
+  //     if (!deliveryAddress) {
+  //       throw new BadRequestException({
+  //         message: 'deliveryAddress is required for home delivery',
+  //         success: false,
+  //         status: 400,
+  //       });
+  //     }
+
+  //     buyerState = deliveryAddress.state;
+  //   } else {
+  //     if (!pickupCenter) {
+  //       throw new BadRequestException({
+  //         message: 'pickupCenter is required for pickup delivery',
+  //         success: false,
+  //         status: 400,
+  //       });
+  //     }
+
+  //     const pickupCenterData =
+  //       await this.pickupCenterService.getPickupCenterById(pickupCenter);
+
+  //     buyerState = pickupCenterData.state;
+  //   }
+
+  //   // CART
+  //   const cartExist = await this.cartRepository.getCartByCartIdAndUserId(
+  //     cartId,
+  //     user.sub.toString(),
+  //   );
+
+  //   if (!cartExist)
+  //     throw new NotFoundException({
+  //       message: 'Cart not found',
+  //       status: 404,
+  //       success: false,
+  //     });
+
+  //   console.log('cartExist:', cartExist);
+
+  //   // FLATTEN
+  //   const flatItems = vendorOrders.flatMap((v) =>
+  //     v.items.map((i) => ({
+  //       productId: i.productId,
+  //       quantity: i.quantity,
+  //       businessId: v.businessId,
+  //     })),
+  //   );
+
+  //   // =========================
+  //   // SINGLE PRODUCT QUERY
+  //   // =========================
+  //   const productIds = flatItems.map((i) => i.productId);
+
+  //   const products = await this.productsRepository.findByIds(productIds);
+
+  //   const productMap = new Map(products.map((p) => [p._id.toString(), p]));
+
+  //   // BUSINESSES
+  //   const businessIds = vendorOrders.map((v) => v.businessId);
+
+  //   const businesses =
+  //     await this.businessesRepository.findBusinessesByIds(businessIds);
+
+  //   const businessMap = new Map(businesses.map((b) => [b._id.toString(), b]));
+
+  //   let globalSubtotal = 0;
+  //   let globalTotalWeight = 0;
+  //   let shippingFeeTotal = 0;
+  //   let collectionFee = 0;
+  //   const interStateGroups = new Set<string>();
+
+  //   const vendorMap = new Map<string, any>();
+
+  //   const session = await this.connection.startSession();
+  //   session.startTransaction();
+
+  //   try {
+  //     for (const vendor of vendorOrders) {
+  //       if (!vendor.items || vendor.items.length === 0) {
+  //         throw new BadRequestException(
+  //           `Vendor ${vendor.businessId} has no items in order`,
+  //         );
+  //       }
+  //       const business = businessMap.get(vendor.businessId);
+
+  //       if (!business) {
+  //         throw new NotFoundException({
+  //           message: `Business with ID ${vendor.businessId} not found.`,
+  //           success: false,
+  //           status: 404,
+  //         });
+  //       }
+
+  //       const businessState = business?.businessAddress?.state;
+
+  //       if (!businessState) {
+  //         throw new BadRequestException(
+  //           `Business ${business._id.toString()} has no state configured`,
+  //         );
+  //       }
+
+  //       const vendorGroup: VendorGroup = {
+  //         businessId: vendor.businessId,
+  //         items: [],
+  //         subtotal: 0,
+  //         totalWeight: 0,
+  //         shippingFee: 0,
+  //         originState: businessState.toLowerCase(),
+  //       };
+
+  //       for (const item of vendor.items) {
+  //         const product = productMap.get(item.productId.toString());
+
+  //         if (!product) {
+  //           throw new NotFoundException(`Product not found: ${item.productId}`);
+  //         }
+
+  //         const availableStock = product.stock - product.reservedQuantity;
+
+  //         if (availableStock < item.quantity) {
+  //           throw new BadRequestException(
+  //             `Only ${availableStock} ${product.name} left`,
+  //           );
+  //         }
+
+  //         const reserved = await this.productsRepository.reserveStock(
+  //           item.productId,
+  //           item.quantity,
+  //           session,
+  //         );
+
+  //         const inventoryReserve = await this.inventoryRepository.reserveStock(
+  //           item.productId,
+  //           item.quantity,
+  //           session,
+  //         );
+
+  //         const itemTotal = product.price * item.quantity;
+  //         const itemWeight = product.weight * item.quantity;
+
+  //         vendorGroup.items.push({
+  //           productId: product._id,
+  //           name: product.name,
+  //           price: product.price,
+  //           quantity: item.quantity,
+  //           itemTotalWeight: itemWeight,
+  //           itemSubTotal: itemTotal,
+  //         });
+
+  //         vendorGroup.subtotal += itemTotal;
+  //         vendorGroup.totalWeight += itemWeight;
+
+  //         globalSubtotal += itemTotal;
+  //         globalTotalWeight += itemWeight;
+  //       }
+
+  //       // SHIPPING
+  //       const isInterState =
+  //         vendorGroup.originState !== buyerState.toLowerCase();
+
+  //       const shippingFee =
+  //         await this.businessShippingRateService.getBusinessShippingPricePerState(
+  //           vendor.businessId,
+  //           buyerState,
+  //           vendorGroup.totalWeight,
+  //         );
+
+  //       vendorGroup.shippingFee = shippingFee;
+  //       shippingFeeTotal += shippingFee;
+  //       if (isInterState) {
+  //         interStateGroups.add(vendorGroup.originState);
+  //       }
+
+  //       vendorMap.set(vendor.businessId, vendorGroup);
+  //     }
+
+  //     // VALIDATE FRONTEND TOTALS
+  //     if (subTotalSummation && subTotalSummation !== globalSubtotal) {
+  //       throw new BadRequestException({
+  //         message: 'Subtotal mismatch',
+  //         status: 400,
+  //         success: false,
+  //       });
+  //     }
+
+  //     if (shippingFeeSummation && shippingFeeSummation !== shippingFeeTotal) {
+  //       throw new BadRequestException({
+  //         message: 'Shipping mismatch',
+  //         status: 400,
+  //         success: false,
+  //       });
+  //     }
+
+  //     // COLLECTION FEE
+  //     if (interStateGroups.size > 0) {
+  //       const feeConfig =
+  //         await this.collectionFeeRepository.findCollectionFeeByState(
+  //           buyerState,
+  //         );
+
+  //       if (!feeConfig) {
+  //         throw new NotFoundException({
+  //           message: 'No collection fee found for this state.',
+  //           success: false,
+  //           status: 404,
+  //         });
+  //       }
+
+  //       collectionFee =
+  //         feeConfig.baseFee +
+  //         feeConfig.additionalFee * (interStateGroups.size - 1);
+
+  //       console.log('interStatePickupFee:', interStatePickupFee);
+  //       console.log('collectionFee:', collectionFee);
+
+  //       if (!interStatePickupFee || interStatePickupFee === 0) {
+  //         throw new BadRequestException({
+  //           message: 'State logistic fee is required.',
+  //           success: false,
+  //           status: 400,
+  //         });
+  //       }
+
+  //       if (collectionFee !== interStatePickupFee) {
+  //         throw new BadRequestException({
+  //           message: 'State logistic fee mis-match',
+  //           success: false,
+  //           status: 400,
+  //         });
+  //       }
+  //     }
+
+  //     // LAST MILE
+  //     let lastMileFee = 0;
+
+  //     if (deliveryMode === DeliveryMode.homeDelivery) {
+  //       if (!nearestBusStop) {
+  //         throw new BadRequestException({
+  //           message: 'Nearest bus stop is required.',
+  //           success: false,
+  //           status: 400,
+  //         });
+  //       }
+
+  //       lastMileFee =
+  //         await this.homeDeliveryService.findHomeDeliveryFeeUsingWeightStateAndNearestBusStop(
+  //           buyerState,
+  //           nearestBusStop,
+  //           globalTotalWeight,
+  //         );
+
+  //       if (!deliveryFee || deliveryFee === 0) {
+  //         throw new BadRequestException({
+  //           message: 'Delivery fee is required.',
+  //           success: false,
+  //           status: 400,
+  //         });
+  //       }
+
+  //       if (lastMileFee !== deliveryFee) {
+  //         throw new BadRequestException({
+  //           message: 'Home delivery fee mis-match',
+  //           success: false,
+  //           status: 400,
+  //         });
+  //       }
+  //     }
+
+  //     console.log('globalSubtotal:', globalSubtotal);
+  //     console.log('shippingFeeTotal:', shippingFeeTotal);
+  //     console.log('collectionFee:', collectionFee);
+  //     console.log('lastMileFee:', lastMileFee);
+
+  //     const total =
+  //       globalSubtotal + shippingFeeTotal + collectionFee + lastMileFee;
+
+  //     const vendors = Array.from(vendorMap.values());
+
+  //     // =========================
+  //     // PAYMENT BREAKDOWN
+  //     // =========================
+  //     const paymentBreakdown: PaymentBreakdown = {
+  //       vendors: vendors.map((v) => ({
+  //         businessId: v.businessId,
+  //         productTotal: v.subtotal,
+  //         shippingFee: v.shippingFee,
+  //         total: v.subtotal + v.shippingFee,
+  //       })),
+  //       platformFees: {
+  //         collectionFee,
+  //         deliveryFee: lastMileFee,
+  //       },
+  //       deliveryMode,
+  //       deliveryAddress:
+  //         deliveryMode === DeliveryMode.homeDelivery && deliveryAddress
+  //           ? deliveryAddress
+  //           : null,
+  //       pickupCenter:
+  //         deliveryMode === DeliveryMode.pickUpFromOurNearestOffice &&
+  //         pickupCenter
+  //           ? pickupCenter
+  //           : null,
+  //     };
+
+  //     let resolvedPickupCenter: string;
+
+  //     if (deliveryMode === DeliveryMode.pickUpFromOurNearestOffice) {
+  //       if (!pickupCenter) {
+  //         throw new BadRequestException('pickupCenter is required');
+  //       }
+
+  //       resolvedPickupCenter = pickupCenter;
+  //     } else {
+  //       resolvedPickupCenter = 'No pickup center';
+  //     }
+
+  //     const order = await this.orderRepository.createOrder(
+  //       {
+  //         cartId,
+  //         customerId,
+  //         subtotal: globalSubtotal,
+  //         shippingFeeTotal,
+  //         collectionFee,
+  //         deliveryFee: lastMileFee,
+  //         total,
+  //         deliveryAddress:
+  //           deliveryMode === DeliveryMode.homeDelivery
+  //             ? deliveryAddress
+  //             : undefined,
+  //         nearestBusStop: nearestBusStop ? nearestBusStop : undefined,
+  //         destinationPickupCenter:
+  //           deliveryMode === DeliveryMode.pickUpFromOurNearestOffice
+  //             ? pickupCenter
+  //             : null,
+  //         contactPhone,
+  //         isPaid: false,
+  //         deliveryMode,
+  //         status: OrderStatus.pending,
+  //         idempotencyKey,
+  //       },
+  //       session,
+  //     );
+
+  //     if (!order) {
+  //       throw new BadRequestException({
+  //         message: 'Unable to create order.',
+  //         success: false,
+  //         status: 400,
+  //       });
+  //     }
+
+  //     // =========================
+  //     // CREATE VENDOR ORDERS
+  //     // =========================
+  //     const vendorOrderDocs: any[] = [];
+
+  //     for (const vendor of vendors) {
+  //       const vendorOrder = await this.orderRepository.createVendorOrder(
+  //         {
+  //           orderId: order._id,
+  //           businessId: new Types.ObjectId(vendor.businessId),
+  //           subtotal: vendor.subtotal,
+  //           totalWeight: vendor.totalWeight,
+  //           total: vendor.subtotal + vendor.shippingFee,
+  //           shippingFee: vendor.shippingFee,
+  //           status: VendorOrderStatus.pending,
+  //         },
+  //         session,
+  //       );
+
+  //       vendorOrderDocs.push({
+  //         vendorOrder,
+  //         items: vendor.items,
+  //         businessId: vendor.businessId,
+  //       });
+  //     }
+
+  //     // =========================
+  //     // CREATE ITEM ORDERS
+  //     // =========================
+  //     for (const vendor of vendorOrderDocs) {
+  //       const itemDocs = vendor.items.map((item) => ({
+  //         orderId: order._id,
+  //         vendorOrderId: vendor.vendorOrder._id,
+  //         businessId: new Types.ObjectId(vendor.businessId),
+  //         productId: item.productId,
+  //         name: item.name,
+  //         price: item.price,
+  //         quantity: item.quantity,
+  //         totalWeight: item.itemTotalWeight,
+  //         status: VendorItemOrderStatus.pending,
+  //       }));
+
+  //       const itemOrder = await this.orderRepository.createItemVendorOrders(
+  //         itemDocs,
+  //         session,
+  //       );
+  //     }
+
+  //     // =========================
+  //     // SEND METADATA TO PAYSTACK
+  //     // =========================
+  //     const paymentIntent = await this.paymentsService.createPaymentIntent(
+  //       PaymentProvider.PAYSTACK,
+  //       user,
+  //       order._id.toString(),
+  //       total,
+  //       paymentBreakdown,
+  //     );
+
+  //     await session.commitTransaction();
+  //     session.endSession();
+
+  //     return {
+  //       order,
+  //       paymentIntent,
+  //       breakdown: paymentBreakdown,
+  //     };
+  //   } catch (error) {
+  //     await session.abortTransaction();
+  //     session.endSession();
+  //     throw error;
+  //   }
+  // }
 
   async getVendorBusinessSingleOrderDetailsForFulfilment(
     businessId: string,

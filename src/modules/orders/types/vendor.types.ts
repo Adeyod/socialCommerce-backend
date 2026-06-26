@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { MediaType } from '../../products/enums/product.enum';
 
 export type VendorItemWithoutStatus = {
   productId: Types.ObjectId;
@@ -7,6 +8,7 @@ export type VendorItemWithoutStatus = {
   quantity: number;
   itemTotalWeight: number;
   itemSubTotal: number;
+  media: [MediaType];
 };
 
 export type VendorGroup = {
