@@ -682,6 +682,13 @@ export class OrdersService {
       }
     }
 
+    console.log('cartMap.size:', cartMap.size);
+    console.log('vendorOrders.length:', vendorOrders.length);
+    if (vendorOrders.length !== cartMap.size) {
+      throw new BadRequestException(
+        `Vendor count mismatch. Expected ${cartMap.size}, got ${vendorOrders.length}`,
+      );
+    }
     // =========================
     // ENSURE NO CART ITEMS ARE MISSING IN FRONTEND
     // =========================
