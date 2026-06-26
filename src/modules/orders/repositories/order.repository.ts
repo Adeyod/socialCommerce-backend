@@ -384,6 +384,55 @@ export class OrderRepository {
     return result[0] || null;
   }
 
+  async updateVendorIsPaidStatus(
+    orderId: Types.ObjectId,
+    session: ClientSession,
+  ) {
+    const response = await this.vendorOrderModel.updateMany(
+      { orderId, isPaid: false },
+      { $set: { isPaid: true } },
+      { session },
+    );
+
+    return response;
+  }
+
+  async updateVendorIsPaidStatusBulk(
+    orderIds: string[],
+    session: ClientSession,
+  ) {
+    if (!orderIds || orderIds.length === 0) {
+      return { acknowledged: true, matchedCount: 0, modifiedCount: 0 };
+    }
+
+    const ids = orderIds.map((id) => new Types.ObjectId(id));
+
+    const response = await this.vendorOrderModel.updateMany(
+      {
+        orderId: { $in: ids },
+        isPaid: false,
+      },
+      {
+        $set: { isPaid: true },
+      },
+      { session },
+    );
+
+    return response;
+  }
+  async backfillIsPaidField() {
+    const response = await this.vendorOrderModel.updateMany(
+      {
+        isPaid: { $exists: false },
+      },
+      {
+        $set: { isPaid: false },
+      },
+    );
+
+    return response;
+  }
+
   async findOrderById(orderId: string, session: ClientSession) {
     const id = new Types.ObjectId(orderId);
     const response = await this.orderModel.findById(id).session(session).exec();
@@ -1094,6 +1143,7 @@ export class OrderRepository {
     // =====================================================
     const vendorOrderFilter: any = {
       businessId: bizId,
+      isPaid: true,
     };
 
     // optional search
@@ -1147,6 +1197,7 @@ export class OrderRepository {
     const orders = await this.orderModel
       .find({
         _id: { $in: orderIds.map((id) => new Types.ObjectId(id)) },
+        isPaid: true,
       })
       .select('status deliveryMode destinationPickupCenter createdAt')
       .lean();
@@ -1190,6 +1241,7 @@ export class OrderRepository {
     // =====================================================
     const total = await this.vendorOrderModel.countDocuments({
       businessId: bizId,
+      isPaid: true,
     });
 
     return {
@@ -1204,7 +1256,7 @@ export class OrderRepository {
     businessId: Types.ObjectId,
     orderId: Types.ObjectId,
   ) {
-    return this.orderModel.aggregate([
+    const response = await this.orderModel.aggregate([
       // 1. Match Order
       {
         $match: {
@@ -1313,6 +1365,10 @@ export class OrderRepository {
         },
       },
     ]);
+
+    console.log('response:', response);
+
+    return response;
   }
 
   async getOrdersForPickupCenter(

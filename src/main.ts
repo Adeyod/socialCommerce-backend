@@ -10,7 +10,7 @@ import { AppModule } from './app.module';
 import { MongoExceptionFilter } from './common/filters/mongo-exception.filter';
 import { GlobalResponseInterceptor } from './common/interceptor/global-response.interceptor';
 import { FormDataNormalizePipe } from './common/pipes/formdata-normalize.pipe';
-import { WalletRepository } from './modules/wallet/repositories/wallet.repository';
+import { OrderRepository } from './modules/orders/repositories/order.repository';
 import { WalletOwnerType } from './modules/wallet/schemas/wallet.schema';
 
 async function bootstrap() {
@@ -89,7 +89,8 @@ async function bootstrap() {
     businessId: businessObj[4],
   } as const;
 
-  const repo = app.get(WalletRepository);
+  const repo = app.get(OrderRepository);
+  // await repo.backfillIsPaidField();
   // await repo.createWallet(owner);
   // await repo.createBusinessShippingRate(dto);
   // await repo.addBusinessAddress(businessId, addressData);

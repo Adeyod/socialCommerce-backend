@@ -158,6 +158,18 @@ export class OrdersService {
     return response;
   }
 
+  async updateVendorIsPaidStatus(
+    orderId: Types.ObjectId,
+    session: ClientSession,
+  ) {
+    const response = await this.orderRepository.updateVendorIsPaidStatus(
+      orderId,
+      session,
+    );
+
+    return response;
+  }
+
   // async getFullOrderWithoutAggregation(
   //   orderId: string,
   //   session: ClientSession,
@@ -1011,6 +1023,8 @@ export class OrdersService {
         status: 404,
       });
     }
+
+    console.log('response:', response);
 
     return response;
   }

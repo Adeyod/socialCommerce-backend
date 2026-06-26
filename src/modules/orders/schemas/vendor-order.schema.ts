@@ -37,6 +37,9 @@ export class VendorOrder {
   })
   status!: VendorOrderStatus;
 
+  @Prop({ default: false, index: true })
+  isPaid!: boolean;
+
   // Logistics (optional but useful)
   @Prop()
   shipmentId?: string;
@@ -52,3 +55,4 @@ export const VendorOrderSchema = SchemaFactory.createForClass(VendorOrder);
 
 // Prevent duplicate vendor per order
 VendorOrderSchema.index({ orderId: 1, businessId: 1 }, { unique: true });
+VendorOrderSchema.index({ businessId: 1, isPaid: 1 });

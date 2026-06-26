@@ -337,7 +337,6 @@ export class PaymentsService {
   }
 
   private async processSuccessfulPayment(payment: any) {
-    console.log('processSuccessfulPayment service payload:', payment);
     if (payment.processed) {
       return { message: 'Payment already processed.' };
     }
@@ -346,15 +345,9 @@ export class PaymentsService {
     session.startTransaction();
 
     try {
-      console.log('payment.userId:', payment.userId);
-      console.log('payment.orderId:', payment.orderId);
-
       const userObjectId = payment.userId;
       const orderId = payment.orderId;
 
-      console.log('userObjectId:', userObjectId);
-      console.log('orderId:', orderId);
-      console.log('Comment 1');
       // ===============================
       // FETCH USER + ORDER
       // ===============================
@@ -362,10 +355,7 @@ export class PaymentsService {
         userObjectId,
         session,
       );
-      // const orderDoc = await this.orderRepository.findOrderByOrderId(
-      //   orderId.toString(),
-      //   session,
-      // );
+
       const { order, vendorOrders } =
         await this.ordersService.getFullOrderWithoutAggregation(
           orderId.toString(),
@@ -387,11 +377,7 @@ export class PaymentsService {
         return { message: 'Order already processed.' };
       }
 
-      const shipment = vendorOrders;
-
-      console.log('Comment 2');
-
-      if (!shipment || !shipment.length) {
+      if (!vendorOrders || !vendorOrders.length) {
         throw new BadRequestException({
           message: 'Invalid shipment data.',
           success: false,
@@ -433,8 +419,6 @@ export class PaymentsService {
         products.map((prod) => [prod._id.toString(), prod]),
       );
 
-      console.log('Comment 4');
-
       // ===============================
       // PREPARE BULK OPS
       // ===============================
@@ -452,7 +436,6 @@ export class PaymentsService {
         let computedSubtotal = 0;
         const breakdown: LedgerBreakdownType[] = [];
 
-        console.log('Comment 5');
         for (const item of vendor.items) {
           const productInventory = inventoryMap.get(item.productId.toString());
           const productExist = productMap.get(item.productId.toString());
@@ -473,8 +456,6 @@ export class PaymentsService {
             });
           }
 
-          console.log('Comment 6');
-
           const itemTotal = item.price * item.quantity;
           const commission = platformComm * itemTotal;
           const net = itemTotal - commission;
@@ -493,8 +474,6 @@ export class PaymentsService {
             netAmountPlusShipping: net + vendor.shippingFee,
           });
 
-          console.log('Comment 7');
-
           // ATOMIC BULK UPDATE (NO .save())
           stockUpdates.push({
             productId: item.productId.toString(),
@@ -510,7 +489,6 @@ export class PaymentsService {
           });
         }
 
-        console.log('Comment 8');
         if (computedSubtotal !== vendor.subtotal) {
           throw new BadRequestException({
             message: 'Vendor subtotal mismatch.',
@@ -538,7 +516,6 @@ export class PaymentsService {
 
         const referenceId = `order_${orderId.toString()}_vendor_${vendor.businessId.toString()}`;
 
-        console.log('Comment 9');
         const netTotalPlusShipping = vendorNetTotal + vendorShippingTotal;
 
         await this.walletRepository.creditWalletPendingBalance(
@@ -556,7 +533,6 @@ export class PaymentsService {
           session,
         );
       }
-      console.log('Comment 10');
 
       await this.productsRepository.decrementStockBulk(stockUpdates, session);
 
@@ -567,15 +543,10 @@ export class PaymentsService {
 
       await this.inventoryRepository.createLogsBulk(inventoryLogs, session);
 
-      console.log('Comment 11');
-
       // ===============================
       // PLATFORM CREDIT
       // ===============================
       const payObj: PaymentBreakdown = payment.paymentBreakdown;
-
-      console.log('payment.paymentBreakdown:', payment.paymentBreakdown);
-      console.log('payObj.platformFees:', payObj.platformFees);
 
       const collectionFee = payObj.platformFees.collectionFee;
       const deliveryFee = payObj.platformFees.deliveryFee;
@@ -599,8 +570,6 @@ export class PaymentsService {
         session,
       );
 
-      console.log('Comment 12');
-
       // ===============================
       // FINALIZE ORDER
       // ===============================
@@ -609,6 +578,11 @@ export class PaymentsService {
       order.paidAt = new Date();
 
       await order.save({ session });
+
+      // ===============================
+      // NEW: UPDATE VENDOR ORDERS
+      // ===============================
+      await this.ordersService.updateVendorIsPaidStatus(orderId, session);
 
       // ===============================
       // MARK PAYMENT
@@ -623,7 +597,6 @@ export class PaymentsService {
       // ===============================
       await session.commitTransaction();
 
-      console.log('Comment 13');
       // ===============================
       // POST-COMMIT SIDE EFFECTS
       // ===============================
@@ -634,7 +607,6 @@ export class PaymentsService {
         shipment: vendorOrders,
       });
 
-      console.log('Comment 14');
       return { message: 'Payment processed successfully.' };
     } catch (error) {
       await session.abortTransaction();

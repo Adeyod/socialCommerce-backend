@@ -115,3 +115,4 @@ export class Order {
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
 OrderSchema.index({ destinationPickupCenter: 1, isPaid: 1 });
+OrderSchema.index({ isPaid: 1 });
