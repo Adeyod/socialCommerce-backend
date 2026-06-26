@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { MediaType } from '../../products/enums/product.enum';
 
 export type ItemVendorOrderDocument = HydratedDocument<ItemVendorOrder>;
 
@@ -22,6 +23,22 @@ export class ItemVendorOrder {
     index: true,
   })
   vendorOrderId!: Types.ObjectId;
+
+  @Prop({
+    type: [
+      {
+        type: { type: String, enum: Object.values(MediaType) },
+        url: String,
+        publicUrl: String,
+      },
+    ],
+    default: [],
+  })
+  media!: {
+    type: MediaType;
+    url: string;
+    publicUrl: string;
+  }[];
 
   @Prop({ type: Types.ObjectId, ref: 'Business', required: true })
   businessId!: Types.ObjectId;

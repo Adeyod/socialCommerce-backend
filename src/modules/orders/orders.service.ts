@@ -840,6 +840,7 @@ export class OrdersService {
           const itemTotal = item.price * item.quantity;
           const itemWeight = (item.weight || 0) * item.quantity;
 
+          console.log('item.media:', item.media);
           vendorGroup.items.push({
             productId: item.productId,
             name: item.name,
