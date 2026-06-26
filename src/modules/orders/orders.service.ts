@@ -686,9 +686,15 @@ export class OrdersService {
     // ENSURE NO CART ITEMS ARE MISSING IN FRONTEND
     // =========================
     for (const [vendorKey, cartItems] of cartMap.entries()) {
+      console.log('vendorKey:', vendorKey);
       const frontendVendor = vendorOrders.find(
         (v) => v.businessId === vendorKey,
       );
+
+      vendorOrders.map((v) => {
+        console.log('v.businessId:', v.businessId);
+      });
+      console.log('frontendVendor:', frontendVendor);
 
       if (!frontendVendor) {
         throw new BadRequestException(
