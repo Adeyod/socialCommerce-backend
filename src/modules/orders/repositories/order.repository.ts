@@ -420,18 +420,18 @@ export class OrderRepository {
 
     return response;
   }
-  async backfillIsPaidField() {
-    const response = await this.vendorOrderModel.updateMany(
-      {
-        isPaid: { $exists: false },
-      },
-      {
-        $set: { isPaid: false },
-      },
-    );
+  // async backfillIsPaidField() {
+  //   const response = await this.vendorOrderModel.updateMany(
+  //     {
+  //       isPaid: { $exists: false },
+  //     },
+  //     {
+  //       $set: { isPaid: false },
+  //     },
+  //   );
 
-    return response;
-  }
+  //   return response;
+  // }
 
   async findOrderById(orderId: string, session: ClientSession) {
     const id = new Types.ObjectId(orderId);
@@ -439,6 +439,31 @@ export class OrderRepository {
 
     return response;
   }
+
+  //  async backfillMediaField() {
+  //   const itemOrders = await this.itemVendorOrderModel
+  //     .find({ media: { $exists: false } })
+  //     .populate('productId');
+
+  //   let updatedCount = 0;
+
+  //   for (const item of itemOrders) {
+  //     const product = item.productId as any;
+
+  //     // Skip if product or media does not exist
+  //     if (!product || !product.media) continue;
+
+  //     item.media = product.media;
+
+  //     await item.save(); // persist change
+  //     updatedCount++;
+  //   }
+
+  //   return {
+  //     message: 'Backfill completed',
+  //     updatedCount,
+  //   };
+  // }
 
   async findVendorOrdersByOrderId(orderId: string, session: ClientSession) {
     const id = new Types.ObjectId(orderId);
@@ -1295,22 +1320,6 @@ export class OrderRepository {
       },
 
       // 4. Lookup Items for that vendor
-      // {
-      //   $lookup: {
-      //     from: 'itemvendororders',
-      //     let: { vendorOrderId: '$vendorOrder._id' },
-      //     pipeline: [
-      //       {
-      //         $match: {
-      //           $expr: {
-      //             $eq: ['$vendorOrderId', '$$vendorOrderId'],
-      //           },
-      //         },
-      //       },
-      //     ],
-      //     as: 'items',
-      //   },
-      // },
       {
         $lookup: {
           from: 'itemvendororders',
@@ -1323,26 +1332,43 @@ export class OrderRepository {
                 },
               },
             },
-
-            // 🔥 JOIN PRODUCTS HERE
-            {
-              $lookup: {
-                from: 'products', // 👈 your product collection name
-                localField: 'productId',
-                foreignField: '_id',
-                as: 'product',
-              },
-            },
-
-            {
-              $addFields: {
-                product: { $arrayElemAt: ['$product', 0] },
-              },
-            },
           ],
           as: 'items',
         },
       },
+
+      // {
+      //   $lookup: {
+      //     from: 'itemvendororders',
+      //     let: { vendorOrderId: '$vendorOrder._id' },
+      //     pipeline: [
+      //       {
+      //         $match: {
+      //           $expr: {
+      //             $eq: ['$vendorOrderId', '$$vendorOrderId'],
+      //           },
+      //         },
+      //       },
+
+      //       // 🔥 JOIN PRODUCTS HERE
+      //       {
+      //         $lookup: {
+      //           from: 'products', // 👈 your product collection name
+      //           localField: 'productId',
+      //           foreignField: '_id',
+      //           as: 'product',
+      //         },
+      //       },
+
+      //       {
+      //         $addFields: {
+      //           product: { $arrayElemAt: ['$product', 0] },
+      //         },
+      //       },
+      //     ],
+      //     as: 'items',
+      //   },
+      // },
 
       // 5. Lookup Pickup Center
       {
@@ -1390,7 +1416,7 @@ export class OrderRepository {
                   price: '$$item.price',
                   quantity: '$$item.quantity',
                   itemStatus: '$$item.status',
-                  media: '$$item.product.media',
+                  media: '$$item.media',
                 },
               },
             },

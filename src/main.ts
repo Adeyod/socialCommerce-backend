@@ -90,7 +90,7 @@ async function bootstrap() {
   } as const;
 
   const repo = app.get(OrderRepository);
-  // await repo.backfillIsPaidField();
+  // await repo.backfillMediaField();
   // await repo.createWallet(owner);
   // await repo.createBusinessShippingRate(dto);
   // await repo.addBusinessAddress(businessId, addressData);
