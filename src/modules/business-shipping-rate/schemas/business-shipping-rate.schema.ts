@@ -17,7 +17,7 @@ export class WeightRange {
   price!: number;
 }
 
-const WeightRangeSchema = SchemaFactory.createForClass(WeightRange);
+export const WeightRangeSchema = SchemaFactory.createForClass(WeightRange);
 
 @Schema({ timestamps: true })
 export class BusinessShippingRate {

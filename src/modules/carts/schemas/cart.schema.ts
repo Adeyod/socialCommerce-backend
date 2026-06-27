@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import {
-  BusinessShippingRateSchema,
   WeightRange,
+  WeightRangeSchema,
 } from '../../business-shipping-rate/schemas/business-shipping-rate.schema';
 import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
 import { MediaType } from '../../products/enums/product.enum';
@@ -53,7 +53,21 @@ export class Cart {
         },
 
         shippingRates: {
-          type: BusinessShippingRateSchema,
+          type: {
+            originState: {
+              type: String,
+              enum: Object.values(NigeriaState),
+            },
+            destinationState: {
+              type: String,
+              enum: Object.values(NigeriaState),
+            },
+            weightRanges: {
+              type: [WeightRangeSchema], // must be a schema
+              default: [],
+            },
+          },
+          default: null,
         },
 
         quantity: {
