@@ -6,7 +6,7 @@ export type BusinessShippingRateDocument =
   HydratedDocument<BusinessShippingRate>;
 
 @Schema({ _id: false })
-class WeightRange {
+export class WeightRange {
   @Prop({ required: true })
   min!: number;
 

@@ -104,12 +104,14 @@ export class CartsService {
       productExist.name,
       productExist.price,
       businessExist.businessAddress.state,
+      productExist.shippingRates,
       businessExist.businessAddress?.town,
       productExist.media,
       weight,
       businessId,
       quantity,
     );
+    console.log('cart:', cart);
 
     if (!cart) {
       throw new NotFoundException({

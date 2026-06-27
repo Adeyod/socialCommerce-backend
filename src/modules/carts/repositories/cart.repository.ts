@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { WeightRange } from '../../business-shipping-rate/schemas/business-shipping-rate.schema';
+import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
 import { MediaType } from '../../products/enums/product.enum';
 import { Cart, CartDocument } from '../schemas/cart.schema';
 
@@ -51,6 +53,11 @@ export class CartRepository {
     productName: string,
     productPrice: number,
     productState: string,
+    shippingRates: {
+      originState: NigeriaState;
+      destinationState: NigeriaState;
+      weightRanges: WeightRange[];
+    },
     productTown: string,
     productMedia: {
       type: MediaType;
@@ -79,6 +86,7 @@ export class CartRepository {
         media: productMedia,
         name: productName,
         price: productPrice,
+        shippingRates: shippingRates,
         vendorState: productState,
         vendorTown: productTown,
         weight: productweight,

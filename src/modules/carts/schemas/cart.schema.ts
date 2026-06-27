@@ -1,5 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import {
+  BusinessShippingRateSchema,
+  WeightRange,
+} from '../../business-shipping-rate/schemas/business-shipping-rate.schema';
+import { NigeriaState } from '../../collection/schemas/collection-fee.schema';
 import { MediaType } from '../../products/enums/product.enum';
 
 export type CartDocument = HydratedDocument<Cart>;
@@ -47,6 +52,10 @@ export class Cart {
           default: [],
         },
 
+        shippingRates: {
+          type: BusinessShippingRateSchema,
+        },
+
         quantity: {
           type: Number,
           required: true,
@@ -74,6 +83,12 @@ export class Cart {
       url: string;
       publicUrl: string;
     }[];
+
+    shippingRates: {
+      originState: NigeriaState;
+      destinationState: NigeriaState;
+      weightRanges: WeightRange[];
+    };
 
     name: string;
     price: number;
