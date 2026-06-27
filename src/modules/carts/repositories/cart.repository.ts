@@ -57,7 +57,7 @@ export class CartRepository {
       originState: NigeriaState;
       destinationState: NigeriaState;
       weightRanges: WeightRange[];
-    },
+    }[],
     productTown: string,
     productMedia: {
       type: MediaType;

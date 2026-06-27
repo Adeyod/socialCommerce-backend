@@ -52,23 +52,25 @@ export class Cart {
           default: [],
         },
 
-        shippingRates: {
-          type: {
-            originState: {
-              type: String,
-              enum: Object.values(NigeriaState),
+        shippingRates: [
+          {
+            type: {
+              originState: {
+                type: String,
+                enum: Object.values(NigeriaState),
+              },
+              destinationState: {
+                type: String,
+                enum: Object.values(NigeriaState),
+              },
+              weightRanges: {
+                type: [WeightRangeSchema], // must be a schema
+                default: [],
+              },
             },
-            destinationState: {
-              type: String,
-              enum: Object.values(NigeriaState),
-            },
-            weightRanges: {
-              type: [WeightRangeSchema], // must be a schema
-              default: [],
-            },
+            default: null,
           },
-          default: null,
-        },
+        ],
 
         quantity: {
           type: Number,
@@ -102,7 +104,7 @@ export class Cart {
       originState: NigeriaState;
       destinationState: NigeriaState;
       weightRanges: WeightRange[];
-    };
+    }[];
 
     name: string;
     price: number;
