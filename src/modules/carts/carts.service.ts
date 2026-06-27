@@ -72,10 +72,11 @@ export class CartsService {
         success: false,
       });
     }
-    const productExist = await this.productsRepository.findAProductByBusinessId(
-      businessId,
-      productId,
-    );
+    const productExist =
+      await this.productsRepository.findAProductByBusinessIdWithAggregation(
+        businessId,
+        productId,
+      );
 
     if (!productExist) {
       throw new NotFoundException({
@@ -94,6 +95,8 @@ export class CartsService {
     }
 
     const weight = productExist.weight || 1;
+
+    console.log('productExist:', productExist);
 
     const cart = await this.cartRepository.addItem(
       userId,

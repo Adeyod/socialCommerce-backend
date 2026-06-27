@@ -170,6 +170,105 @@ export class ProductsRepository {
 
     return product;
   }
+
+  async findAProductByBusinessIdWithAggregation(
+    businessId: string,
+    productId: string,
+  ) {
+    const id = new Types.ObjectId(businessId);
+    const prodId = new Types.ObjectId(productId);
+
+    const result = await this.productModel.aggregate([
+      {
+        $match: {
+          _id: prodId,
+          businessId: id,
+          isDeleted: false,
+          isActive: true,
+        },
+      },
+
+      // 🔥 JOIN BUSINESS
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: 'businessId',
+          foreignField: '_id',
+          as: 'business',
+        },
+      },
+      { $unwind: '$business' },
+
+      // 🔥 JOIN SHIPPING RATES (SAME AS YOUR MAIN FUNCTION)
+      {
+        $lookup: {
+          from: 'businessshippingrates',
+          let: { businessId: '$businessId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$businessId', '$$businessId'],
+                },
+              },
+            },
+          ],
+          as: 'shippingRates',
+        },
+      },
+
+      // 🔥 FORMAT RESPONSE (KEEP CONSISTENT WITH LIST API)
+      {
+        $project: {
+          id: '$_id',
+          name: 1,
+          description: 1,
+          category: 1,
+          price: 1,
+          stock: 1,
+          inStock: 1,
+          averageRating: 1,
+          reviewCount: 1,
+          media: 1,
+          weight: 1,
+          createdAt: 1,
+
+          business: {
+            id: '$business._id',
+            name: '$business.name',
+            businessAddress: {
+              state: '$business.businessAddress.state',
+              town: '$business.businessAddress.town',
+            },
+          },
+
+          shippingRates: {
+            $map: {
+              input: '$shippingRates',
+              as: 'rate',
+              in: {
+                originState: '$$rate.originState',
+                destinationState: '$$rate.destinationState',
+                weightRanges: {
+                  $map: {
+                    input: '$$rate.weightRanges',
+                    as: 'wr',
+                    in: {
+                      min: '$$wr.min',
+                      max: '$$wr.max',
+                      price: '$$wr.price',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ]);
+
+    return result[0] || null;
+  }
   async findProductsByBusinessId(
     businessId: string,
     queryWithPaginationDto: QueryWithPaginationDto,
